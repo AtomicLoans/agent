@@ -63,7 +63,7 @@ async function requestLoan (txParams, loan, agenda, done) {
 
           loan.save()
 
-          await agenda.now('verify-lock-collateral', { requestId: loan.id })
+          await agenda.now('verify-lock-collateral', { loanModelId: loan.id })
 
           done()
         } else {
@@ -80,9 +80,9 @@ async function requestLoan (txParams, loan, agenda, done) {
 function defineLoansJobs (agenda) {
   agenda.define('request-loan', async (job, done) => {
     const { data } = job.attrs
-    const { requestId } = data
+    const { loanModelId } = data
 
-    const loan = await Loan.findOne({ _id: requestId }).exec()
+    const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
     const {
       principal, collateral, principalAmount, collateralAmount, borrowerPrincipalAddress, borrowerSecretHashes, lenderSecretHashes,
@@ -108,19 +108,19 @@ function defineLoansJobs (agenda) {
 
     const { txParams, ethTransaction } = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_FUNDS_ADDRESS`])
 
-    await agenda.schedule('in 2 minutes', 'verify-request-loan', { ethTransactionId: ethTransaction.id, loanId: loan.id })
+    await agenda.schedule('in 2 minutes', 'verify-request-loan', { ethTransactionId: ethTransaction.id, loanModelId })
 
     await requestLoan(txParams, loan, agenda, done)
   })
 
   agenda.define('verify-request-loan', async (job, done) => {
     const { data } = job.attrs
-    const { ethTransactionId, loanId } = data
+    const { ethTransactionId, loanModelId } = data
 
     const ethTransaction = await EthTransaction.findOne({ _id: ethTransactionId }).exec()
     if (!ethTransaction) return console.log('Error: EthTransaction not found')
 
-    const loan = await Loan.findOne({ _id: loanId }).exec()
+    const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
 
     // await requestLoan(ethTransaction, loan, agenda, done)
@@ -128,9 +128,9 @@ function defineLoansJobs (agenda) {
 
   agenda.define('verify-lock-collateral', async (job, done) => {
     const { data } = job.attrs
-    const { requestId } = data
+    const { loanModelId } = data
 
-    const loan = await Loan.findOne({ _id: requestId }).exec()
+    const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
 
     if (loan.status === 'CANCELLED' || loan.status === 'CANCELLING') { done() } // Don't check if collateral locked if in the middle of canceling loan
@@ -150,13 +150,13 @@ function defineLoansJobs (agenda) {
     if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet) {
       console.log('COLLATERAL LOCKED')
 
-      await agenda.now('approve-loan', { requestId: loan.id })
+      await agenda.now('approve-loan', { loanModelId })
     } else {
       console.log('COLLATERAL NOT LOCKED')
       // TODO: should not schedule if after approveExpiration
       // TODO: add reason for canceling (for example, cancelled because collateral wasn't sufficient)
       // TODO: check current blocktime
-      agenda.schedule('in 5 seconds', 'verify-lock-collateral', { requestId: requestId })
+      agenda.schedule('in 5 seconds', 'verify-lock-collateral', { loanModelId })
       console.log('rescheduled')
     }
 
@@ -165,9 +165,9 @@ function defineLoansJobs (agenda) {
 
   agenda.define('approve-loan', async (job, done) => {
     const { data } = job.attrs
-    const { requestId } = data
+    const { loanModelId } = data
 
-    const loan = await Loan.findOne({ _id: requestId }).exec()
+    const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
 
     const { loanId, principal, collateral, lenderPrincipalAddress } = loan
@@ -210,16 +210,16 @@ function defineLoansJobs (agenda) {
 
   agenda.define('check-loan-repaid', async (job, done) => {
     const { data } = job.attrs
-    const { requestId } = data
+    const { loanModelId } = data
 
     // TODO: complete check loan repaid
   })
 
   agenda.define('accept-or-cancel-loan', async (job, done) => {
     const { data } = job.attrs
-    const { requestId } = data
+    const { loanModelId } = data
 
-    const loan = await Loan.findOne({ _id: requestId }).exec()
+    const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
 
     const { loanId, principal, collateral, lenderPrincipalAddress, lenderSecrets } = loan

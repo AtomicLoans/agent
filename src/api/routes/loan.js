@@ -92,11 +92,11 @@ router.post('/funds/new', asyncHandler(async (req, res, next) => {
   if (custom) {
     fund = Fund.fromCustomFundParams(body)
 
-    await agenda.now('create-custom-fund', { requestId: fund.id })
+    await agenda.now('create-custom-fund', { fundModelId: fund.id })
   } else {
     fund = Fund.fromFundParams(body)
 
-    await agenda.now('create-fund', { requestId: fund.id })
+    await agenda.now('create-fund', { fundModelId: fund.id })
   }
 
   await fund.save()
@@ -188,7 +188,7 @@ router.post('/loans/:loanModelId/proof_of_funds', asyncHandler(async (req, res, 
 
   await loan.save()
 
-  await agenda.now('request-loan', { requestId: loan.id })
+  await agenda.now('request-loan', { loanModelId: loan.id })
 
   console.log('end /loans/:loanModelId/proof_of_funds')
 
@@ -221,7 +221,7 @@ router.post('/loans/:loanModelId/collateral_locked', asyncHandler(async (req, re
     const seizableConfirmationRequirementsMet = seizableUnspent.length === 0 ? false : seizableUnspent[0].confirmations > 0
 
     if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet) {
-      await agenda.now('approve-loan', { requestId: loan.id })
+      await agenda.now('approve-loan', { loanModelId: loan.id })
 
       res.json({ message: 'Approving Loan', status: 0 })
     } else {
@@ -243,7 +243,7 @@ router.post('/loans/:loanModelId/repaid', asyncHandler(async (req, res, next) =>
   const { off, paid } = await loans.methods.bools(numToBytes32(loanId)).call()
 
   if (!off && paid) {
-    await agenda.now('accept-loan', { requestId: loan.id })
+    await agenda.now('accept-loan', { loanModelId: loan.id })
 
     res.json({ message: 'Accepting Loan', status: 0 })
   } else if (!off & !paid) {
@@ -268,7 +268,7 @@ router.post('/loans/cancel_all', asyncHandler(async (req, res, next) => {
   const requestedLoans = await Loan.find({ status: 'AWAITING_COLLATERAL' })
 
   for (const loan of requestedLoans) {
-    await agenda.now('accept-or-cancel-loan', { requestId: loan.id })
+    await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
   }
 
   res.json({ message: 'Cancelling loans', status: 0 })

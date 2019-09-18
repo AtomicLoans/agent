@@ -12,9 +12,9 @@ const { toWei, hexToNumber } = web3().utils
 function defineFundsJobs (agenda) {
   agenda.define('create-custom-fund', async (job, done) => {
     const { data } = job.attrs
-    const { requestId } = data
+    const { fundModelId } = data
 
-    const fund = await Fund.findOne({ _id: requestId }).exec()
+    const fund = await Fund.findOne({ _id: fundModelId }).exec()
     if (!fund) return console.log('Error: Fund not found')
 
     const {
@@ -52,9 +52,9 @@ function defineFundsJobs (agenda) {
 
   agenda.define('create-fund', async (job, done) => {
     const { data } = job.attrs
-    const { requestId } = data
+    const { fundModelId } = data
 
-    const fund = await Fund.findOne({ _id: requestId }).exec()
+    const fund = await Fund.findOne({ _id: fundModelId }).exec()
     if (!fund) return console.log('Error: Fund not found')
 
     const { principal, collateral, maxLoanDuration, fundExpiry, compoundEnabled, amountToDepositOnCreate } = fund
