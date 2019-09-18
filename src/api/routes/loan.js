@@ -137,6 +137,16 @@ router.get('/loans/:loanId', asyncHandler(async (req, res, next) => {
   res.json(loan.json())
 }))
 
+router.get('/loans/contract/:principal/:loanId', asyncHandler(async (req, res, next) => {
+  const { params } = req
+  const { principal, loanId } = params
+
+  const loan = await Loan.findOne({ principal, loanId }).exec()
+  if (!loan) return next(res.createError(401, 'Loan not found'))
+
+  res.json(loan.json())
+}))
+
 router.post('/loans/:loanId/proof_of_funds', asyncHandler(async (req, res, next) => {
   console.log('start /loans/:loanId/proof_of_funds')
   const currentTime = Date.now()
