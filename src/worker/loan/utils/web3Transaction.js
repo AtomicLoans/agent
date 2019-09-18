@@ -12,6 +12,7 @@ async function setTxParams (data, from, to, instance) {
       web3().eth.estimateGas(txParams)
     ])
   } catch(e) {
+    console.log('FAILED AT GAS STEP')
     instance.status = 'FAILED'
     instance.save()
     throw Error(e)
@@ -19,7 +20,7 @@ async function setTxParams (data, from, to, instance) {
 
   txParams.nonce = nonce
   txParams.gasPrice = gasPrice
-  txParams.gasLimit = gasLimit + 1000000
+  txParams.gasLimit = gasLimit + 3000000
 
   const ethTransaction = EthTransaction.fromTxParams(txParams)
   await ethTransaction.save()

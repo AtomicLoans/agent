@@ -18,9 +18,9 @@ function defineFundsJobs (agenda) {
     console.log('JOB create-fund')
 
     const { data } = job.attrs
-    const { requestId } = data
+    const { fundModelId } = data
 
-    const fund = await Fund.findOne({ _id: requestId }).exec()
+    const fund = await Fund.findOne({ _id: fundModelId }).exec()
     if (!fund) return console.log('Error: Fund not found')
 
     console.log('fund', fund)
@@ -42,7 +42,7 @@ function defineFundsJobs (agenda) {
     fund.ethTransactionId = ethTransaction.id
     await fund.save()
 
-    await agenda.schedule(process.env.CHECK_TX_INTERVAL, 'verify-create-fund', { fundId: fund.id })
+    await agenda.schedule(process.env.CHECK_TX_INTERVAL, 'verify-create-fund', { fundModelId: fund.id })
 
     const testing = process.env.NODE_ENV === 'test' && process.env.TEST_TX_OVERWRITE
     if (testing === true) { return } // Don't create fund if testing tx overwrite flow
@@ -52,11 +52,11 @@ function defineFundsJobs (agenda) {
 
   agenda.define('verify-create-fund', async (job, done) => {
     const { data } = job.attrs
-    const { ethTransactionId, fundId } = data
+    const { ethTransactionId, fundModelId } = data
 
     console.log('VERIFY CREATE FUND')
 
-    const fund = await Fund.findOne({ _id: fundId }).exec()
+    const fund = await Fund.findOne({ _id: fundModelId }).exec()
     if (!fund) return console.log('Error: Fund not found')
 
     if (fund.status === 'CREATING' || fund.status === 'INITIATED') {
@@ -82,7 +82,7 @@ function defineFundsJobs (agenda) {
 
       await ethTransaction.save()
 
-      await agenda.schedule(process.env.CHECK_TX_INTERVAL, 'verify-create-fund', { fundId: fund.id })
+      await agenda.schedule(process.env.CHECK_TX_INTERVAL, 'verify-create-fund', { fundModelId: fund.id })
 
       console.log('BUMPING TX FEE')
 
