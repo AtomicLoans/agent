@@ -70,7 +70,7 @@ router.get('/funds/ticker/:principal', asyncHandler(async (req, res, next) => {
 
   console.log('params', params)
 
-  const fund = await Fund.findOne({ principal: params.principal }).exec()
+  const fund = await Fund.findOne({ principal: params.principal.toUpperCase(), status: { $ne: 'FAILED' } }).exec()
   if (!fund) return next(res.createError(401, 'Fund not found'))
 
   res.json(fund.json())
@@ -83,7 +83,7 @@ router.post('/funds/new', asyncHandler(async (req, res, next) => {
   const { body } = req
   const { principal, collateral, custom } = body
 
-  fund = await Fund.findOne(_.pick(body, ['principal', 'collateral'])).exec()
+  fund = await Fund.findOne({ principal, collateral, status: { $ne: 'FAILED' } }).exec()
   if (fund && fund.status === 'CREATED') return next(res.createError(401, 'Fund was already created. Agent can only have one Loan Fund'))
 
   const loanMarket = await LoanMarket.findOne(_.pick(body, ['principal', 'collateral'])).exec()
