@@ -101,7 +101,7 @@ function testFunds (web3Chain, ethNode) {
       const { body } = await chai.request(server).post('/funds/new').send(fundParams)
       const { id: fundModelId } = body
 
-      await sleep(5000)
+      await sleep(14000)
       await ethNode.client.getMethod('jsonrpc')('miner_start')
 
       const fundId = await checkFundCreated(fundModelId)
@@ -221,7 +221,7 @@ function testFunds (web3Chain, ethNode) {
       const { body: fundNewBodySuccess } = await chai.request(server).post('/funds/new').send(successFundParams)
       const { id: fundModelIdSuccess } = fundNewBodySuccess
 
-      await sleep(5000)
+      await sleep(10000)
 
       const { body: fundsIdBodySuccess } = await chai.request(server).get(`/funds/${fundModelIdSuccess}`)
       const { status: statusSuccess } = fundsIdBodySuccess
@@ -231,17 +231,23 @@ function testFunds (web3Chain, ethNode) {
   })
 
   // Only run this test after commenting out `await createFund(txParams, fund, done)`. Ganache does not currently support a mempool
-  describe('Transaction fee bumping', () => {
-    before(function () { rewriteEnv('.env', 'TEST_TX_OVERWRITE', true) })
-    after(function() { rewriteEnv('.env', 'TEST_TX_OVERWRITE', false) })
+  // describe.only('Transaction fee bumping', () => {
+  //   before(function () { rewriteEnv('.env', 'TEST_TX_OVERWRITE', true) })
+  //   after(function() { rewriteEnv('.env', 'TEST_TX_OVERWRITE', false) })
 
-    it('should bump transaction if current tx stuck in mempool for CHECK_TX_INTERVAL', async () => {
-      const currentTime = Math.floor(new Date().getTime() / 1000)
+  //   it('should bump transaction if current tx stuck in mempool for CHECK_TX_INTERVAL', async () => {
+  //     const currentTime = Math.floor(new Date().getTime() / 1000)
 
-      const fundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'USDC')
-      const { status } = await chai.request(server).post('/funds/new').send(fundParams)
-    })
-  })
+  //     await sleep(5000)
+
+  //     const fundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'USDC')
+  //     const { status } = await chai.request(server).post('/funds/new').send(fundParams)
+
+  //     await sleep(13000)
+
+  //     rewriteEnv('.env', 'TEST_TX_OVERWRITE', false)
+  //   })
+  // })
 }
 
 async function createFundFromFixture (web3Chain, fixture, principal_, amount) {

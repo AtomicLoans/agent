@@ -68,7 +68,7 @@ const FundSchema = new mongoose.Schema({
     type: Boolean,
     index: true
   },
-  initiationHash: {
+  createTxHash: {
     type: String,
     index: true
   },
@@ -80,7 +80,7 @@ const FundSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
-  ethTransactionId: {
+  ethTxId: {
     type: String,
     index: true
   },

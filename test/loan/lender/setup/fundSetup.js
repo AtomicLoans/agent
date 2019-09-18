@@ -62,7 +62,7 @@ async function checkFundCreated (fundModelId) {
     await sleep(1000)
     const { body } = await chai.request(server).get(`/funds/${fundModelId}`)
     const { status } = body
-    console.log('status', status)
+    console.log(status)
     if (status === 'CREATED') {
       created = true
       fundId = body.fundId

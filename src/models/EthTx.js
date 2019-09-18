@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 const timestamps = require('mongoose-timestamp')
 
-const EthTransactionSchema = new mongoose.Schema({
+const EthTxSchema = new mongoose.Schema({
   from: {
     type: String,
     index: true
@@ -32,7 +32,7 @@ const EthTransactionSchema = new mongoose.Schema({
   }
 })
 
-EthTransactionSchema.methods.json = function () {
+EthTxSchema.methods.json = function () {
   const json = this.toJSON()
   json.id = json._id
 
@@ -42,10 +42,10 @@ EthTransactionSchema.methods.json = function () {
   return json
 }
 
-EthTransactionSchema.static('fromTxParams', function (params) {
-  return new EthTransaction(params)
+EthTxSchema.static('fromTxParams', function (params) {
+  return new EthTx(params)
 })
 
-EthTransactionSchema.plugin(timestamps)
-const EthTransaction = mongoose.model('EthTransaction', EthTransactionSchema)
-module.exports = EthTransaction
+EthTxSchema.plugin(timestamps)
+const EthTx = mongoose.model('EthTx', EthTxSchema)
+module.exports = EthTx
