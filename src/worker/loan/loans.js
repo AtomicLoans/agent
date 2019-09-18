@@ -1,5 +1,5 @@
 const Loan = require('../../models/Loan')
-const EthTransaction = require('../../models/EthTransaction')
+const EthTx = require('../../models/EthTx')
 const { numToBytes32 } = require('../../utils/finance')
 const { loadObject } = require('../../utils/contracts')
 const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
@@ -42,24 +42,24 @@ function defineLoansJobs (agenda) {
 
     const txData = funds.methods.request(...loanParams).encodeABI()
 
-    const ethTransaction = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_FUNDS_ADDRESS`], loan)
+    const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_FUNDS_ADDRESS`], loan)
 
-    await agenda.schedule('in 2 minutes', 'verify-request-loan', { ethTransactionId: ethTransaction.id, loanModelId: loan.id })
+    await agenda.schedule('in 2 minutes', 'verify-request-loan', { ethTxId: ethTx.id, loanModelId: loan.id })
 
-    await requestLoan(ethTransaction.json(), loan, agenda, done)
+    await requestLoan(ethTx.json(), loan, agenda, done)
   })
 
   agenda.define('verify-request-loan', async (job, done) => {
     const { data } = job.attrs
-    const { ethTransactionId, loanModelId } = data
+    const { ethTxId, loanModelId } = data
 
-    const ethTransaction = await EthTransaction.findOne({ _id: ethTransactionId }).exec()
-    if (!ethTransaction) return console.log('Error: EthTransaction not found')
+    const ethTx = await EthTx.findOne({ _id: ethTxId }).exec()
+    if (!ethTx) return console.log('Error: EthTx not found')
 
     const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
 
-    // await requestLoan(ethTransaction, loan, agenda, done)
+    // await requestLoan(ethTx, loan, agenda, done)
   })
 
   agenda.define('verify-lock-collateral', async (job, done) => {

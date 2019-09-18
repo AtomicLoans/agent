@@ -1,5 +1,5 @@
 const web3 = require('../../../utils/web3')
-const EthTransaction = require('../../../models/EthTransaction')
+const EthTx = require('../../../models/EthTx')
 
 async function setTxParams (data, from, to, instance) {
   const txParams = { data, from, to }
@@ -22,10 +22,10 @@ async function setTxParams (data, from, to, instance) {
   txParams.gasPrice = gasPrice
   txParams.gasLimit = gasLimit + 3000000
 
-  const ethTransaction = EthTransaction.fromTxParams(txParams)
-  await ethTransaction.save()
+  const ethTx = EthTx.fromTxParams(txParams)
+  await ethTx.save()
 
-  return ethTransaction
+  return ethTx
 }
 
 module.exports = {
