@@ -3,6 +3,9 @@ const Agenda = require('agenda')
 
 const agenda = new Agenda({ mongo: mongoose.connection })
 
+agenda.maxConcurrency(1000);
+agenda.defaultConcurrency(1000);
+
 const { defineSwapJobs } = require('./swap/index')
 const { defineLoanJobs } = require('./loan/index')
 
