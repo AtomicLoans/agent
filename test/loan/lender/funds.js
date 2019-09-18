@@ -4,6 +4,7 @@ const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
 const BN = require('bignumber.js')
 const { checksumEncode } = require('@liquality/ethereum-utils')
+const { sleep } = require('@liquality/utils')
 const { generateMnemonic } = require('bip39')
 
 const { chains, connectMetaMask, rewriteEnv } = require('../../common')
@@ -29,7 +30,7 @@ const arbiterChain = chains.web3WithArbiter
 
 const WAD = BN(10).pow(18)
 
-function testFunds (web3Chain) {
+function testFunds (web3Chain, ethNode) {
   describe('Create Custom Loan Fund', () => {
     it('should create a new loan fund and deposit funds into it', async () => {
       const principal = 'DAI'
@@ -52,28 +53,6 @@ function testFunds (web3Chain) {
       expect(actualInterest).to.equal(toWei(rateToSec(interest.toString()), 'gether'))
       expect(actualPenalty).to.equal(toWei(rateToSec(penalty.toString()), 'gether'))
       expect(actualFee).to.equal(toWei(rateToSec(fee.toString()), 'gether'))
-    })
-
-    it('should return 401 when attempting to create more than one fund with same principal', async () => {
-      const currentTime = Math.floor(new Date().getTime() / 1000)
-
-      await createCustomFund(web3Chain, arbiterChain, 200, 'DAI')
-
-      const fundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'DAI')
-      const { status } = await chai.request(server).post('/funds/new').send(fundParams)
-
-      expect(status).to.equal(401)
-    })
-
-    it('should succeed in creating two funds with different principal', async () => {
-      const currentTime = Math.floor(new Date().getTime() / 1000)
-
-      await createCustomFund(web3Chain, arbiterChain, 200, 'DAI')
-
-      const fundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'USDC')
-      const { status } = await chai.request(server).post('/funds/new').send(fundParams)
-
-      expect(status).to.equal(200)
     })
   })
 
@@ -105,7 +84,7 @@ function testFunds (web3Chain) {
     })
   })
 
-  describe('Create Regular Loan Fund', () => {
+  describe.only('Create Regular Loan Fund', () => {
     it('should create a new loan fund and deposit funds into it', async () => {
       const currentTime = Math.floor(new Date().getTime() / 1000)
       const agentPrincipalAddress = await getAgentAddress(server)
@@ -117,8 +96,13 @@ function testFunds (web3Chain) {
       const amountToDeposit = toWei('200', unit)
       await fundTokens(address, amountToDeposit, principal)
 
+      await ethNode.client.getMethod('jsonrpc')('miner_stop')
+
       const { body } = await chai.request(server).post('/funds/new').send(fundParams)
       const { id: fundModelId } = body
+
+      await sleep(14000)
+      await ethNode.client.getMethod('jsonrpc')('miner_start')
 
       const fundId = await checkFundCreated(fundModelId)
 
@@ -159,6 +143,105 @@ function testFunds (web3Chain) {
       expect(actualFundExpiry).to.equal(fundExpiry.toString())
     })
   })
+
+  describe('Create fund agent request status', () => {
+    it('should return 401 when attempting to create more than one fund with same principal', async () => {
+      const currentTime = Math.floor(new Date().getTime() / 1000)
+
+      await createCustomFund(web3Chain, arbiterChain, 200, 'DAI')
+
+      const fundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'DAI')
+      const { status } = await chai.request(server).post('/funds/new').send(fundParams)
+
+      expect(status).to.equal(401)
+    })
+  })
+
+  describe('test', () => {
+    it('should succeed in creating two funds with different principal', async () => {
+      const currentTime = Math.floor(new Date().getTime() / 1000)
+
+      await createCustomFund(web3Chain, arbiterChain, 200, 'USDC')
+
+      const fundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'DAI')
+      const { status } = await chai.request(server).post('/funds/new').send(fundParams)
+
+      expect(status).to.equal(200)
+    })
+  })
+
+  describe('Create Fund Tx Error', () => {
+    it('should set Fund status to FAILED', async () => {
+      const currentTime = Math.floor(new Date().getTime() / 1000)
+      const agentPrincipalAddress = await getAgentAddress(server)
+      const address = await getWeb3Address(web3Chain)
+      const fundParams = fundFixtures.invalidFundWithNillMaxLoanDurAndFundExpiry('DAI')
+      const { principal, fundExpiry } = fundParams
+      const [token, funds] = await getTestObjects(web3Chain, principal, ['erc20', 'funds'])
+      const unit = currencies[principal].unit
+      const amountToDeposit = toWei('200', unit)
+      await fundTokens(address, amountToDeposit, principal)
+
+      const { body: fundNewBody } = await chai.request(server).post('/funds/new').send(fundParams)
+      const { id: fundModelId } = fundNewBody
+
+      await sleep(5000)
+
+      const { body: fundsIdBody } = await chai.request(server).get(`/funds/${fundModelId}`)
+      const { status } = fundsIdBody
+
+      expect(status).to.equal('FAILED')
+    })
+
+    it('should allow creation of Fund after previous Fund creation failed', async () => {
+      const currentTime = Math.floor(new Date().getTime() / 1000)
+      const agentPrincipalAddress = await getAgentAddress(server)
+      const address = await getWeb3Address(web3Chain)
+      const fundParams = fundFixtures.invalidFundWithNillMaxLoanDurAndFundExpiry('DAI')
+      const { principal, fundExpiry } = fundParams
+      const [token, funds] = await getTestObjects(web3Chain, principal, ['erc20', 'funds'])
+      const unit = currencies[principal].unit
+      const amountToDeposit = toWei('200', unit)
+      await fundTokens(address, amountToDeposit, principal)
+
+      const { body: fundNewBody } = await chai.request(server).post('/funds/new').send(fundParams)
+      const { id: fundModelId } = fundNewBody
+
+      await sleep(5000)
+
+      const { body: fundsIdBody } = await chai.request(server).get(`/funds/${fundModelId}`)
+      const { status } = fundsIdBody
+
+      expect(status).to.equal('FAILED')
+
+      // Start success params
+      const successFundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'DAI')
+      await fundTokens(address, amountToDeposit, principal)
+
+      const { body: fundNewBodySuccess } = await chai.request(server).post('/funds/new').send(successFundParams)
+      const { id: fundModelIdSuccess } = fundNewBodySuccess
+
+      await sleep(5000)
+
+      const { body: fundsIdBodySuccess } = await chai.request(server).get(`/funds/${fundModelIdSuccess}`)
+      const { status: statusSuccess } = fundsIdBodySuccess
+
+      expect(statusSuccess).to.equal('CREATED')
+    })
+  })
+
+  // Only run this test after commenting out `await createFund(txParams, fund, done)`. Ganache does not currently support a mempool
+  describe('Transaction fee bumping', () => {
+    before(function () { rewriteEnv('.env', 'TEST_TX_OVERWRITE', true) })
+    after(function() { rewriteEnv('.env', 'TEST_TX_OVERWRITE', false) })
+
+    it('should bump transaction if current tx stuck in mempool for CHECK_TX_INTERVAL', async () => {
+      const currentTime = Math.floor(new Date().getTime() / 1000)
+
+      const fundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'USDC')
+      const { status } = await chai.request(server).post('/funds/new').send(fundParams)
+    })
+  })
 }
 
 async function createFundFromFixture (web3Chain, fixture, principal_, amount) {
@@ -183,7 +266,7 @@ async function createFundFromFixture (web3Chain, fixture, principal_, amount) {
   return { fundId, fundParams, agentAddress: agentPrincipalAddress, amountDeposited: amountToDeposit }
 }
 
-async function testSetup (web3Chain) {
+async function testSetup (web3Chain, ethNode) {
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'ETH_SIGNER', address)
   await cancelLoans(web3Chain)
@@ -198,8 +281,8 @@ async function testSetup (web3Chain) {
 
 describe('Lender Agent - Funds', () => {
   describe('Web3HDWallet / BitcoinJs', () => {
-    beforeEach(async function () { await testSetup(chains.web3WithHDWallet) })
-    testFunds(chains.web3WithHDWallet)
+    beforeEach(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode) })
+    testFunds(chains.web3WithHDWallet, chains.ethereumWithNode)
   })
 
   // describe('MetaMask / Ledger', () => {
@@ -210,7 +293,7 @@ describe('Lender Agent - Funds', () => {
 
   // describe('MetaMask / BitcoinJs', () => {
   //   connectMetaMask()
-  //   beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithJs) })
-  //   testFunds(chains.web3WithMetaMask, chains.bitcoinWithJs)
+  //   beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode) })
+  //   testFunds(chains.web3WithMetaMask, chains.ethereumWithNode)
   // })
 })

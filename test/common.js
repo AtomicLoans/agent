@@ -4,7 +4,7 @@ const { Client, providers } = require('@liquality/bundle')
 const { LoanClient, providers: lproviders } = require('@atomicloans/loan-bundle')
 const MetaMaskConnector = require('node-metamask')
 const Web3 = require('web3')
-const Web3HDWalletProvider = require('web3-hdwallet-provider')
+const HDWalletProvider = require('@truffle/hdwallet-provider')
 const { generateMnemonic } = require('bip39')
 const fs = require('fs')
 const path = require('path')
@@ -61,12 +61,12 @@ ethereumArbiter.addProvider(new providers.ethereum.EthereumJsWalletProvider(ethe
 const web3WithMetaMask = new Web3(metaMaskConnector.getProvider())
 
 const httpProvider = new Web3.providers.HttpProvider(config.ethereum.rpc.host)
-const provider = new Web3HDWalletProvider(mnemonic, httpProvider)
+const provider = new HDWalletProvider(mnemonic, httpProvider)
 const web3WithArbiter = new Web3(provider)
 
 const web3WithNode = new Web3(new Web3.providers.HttpProvider(config.ethereum.rpc.host))
 
-const hdWalletProvider = new Web3HDWalletProvider(getEnvTestValue('ETH_SIGNER_MNEMONIC').toString(), httpProvider)
+const hdWalletProvider = new HDWalletProvider(getEnvTestValue('ETH_SIGNER_MNEMONIC').toString(), httpProvider)
 const web3WithHDWallet = new Web3(hdWalletProvider)
 
 const chains = {
