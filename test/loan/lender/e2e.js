@@ -8,6 +8,7 @@ const bitcoin = require('bitcoinjs-lib')
 const { ensure0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
 const { sha256 } = require('@liquality/crypto')
+const { sleep } = require('@liquality/utils')
 
 const { chains, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, removeFunds } = require('../loanCommon')
@@ -15,7 +16,6 @@ const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
 const { numToBytes32 } = require('../../../src/utils/finance')
 const { testLoadObject } = require('../util/contracts')
-const { sleep } = require('../../../src/utils/async')
 const { createCustomFund } = require('./setup/fundSetup')
 const web3 = require('web3')
 
@@ -172,6 +172,7 @@ async function getLoanStatus (loanId) {
 }
 
 async function testSetup (web3Chain, btcChain) {
+  await chains.ethereumWithNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'ETH_SIGNER', address)
   await cancelLoans(web3Chain)

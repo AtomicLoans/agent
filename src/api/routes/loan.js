@@ -56,10 +56,10 @@ router.post('/withdraw', asyncHandler(async (req, res, next) => {
   res.json({ withdrawHash })
 }))
 
-router.get('/funds/:fundId', asyncHandler(async (req, res, next) => {
+router.get('/funds/:fundModelId', asyncHandler(async (req, res, next) => {
   const { params } = req
 
-  const fund = await Fund.findOne({ _id: params.fundId }).exec()
+  const fund = await Fund.findOne({ _id: params.fundModelId }).exec()
   if (!fund) return next(res.createError(401, 'Fund not found'))
 
   res.json(fund.json())
@@ -70,7 +70,7 @@ router.get('/funds/ticker/:principal', asyncHandler(async (req, res, next) => {
 
   console.log('params', params)
 
-  const fund = await Fund.findOne({ principal: params.principal }).exec()
+  const fund = await Fund.findOne({ principal: params.principal.toUpperCase(), status: { $ne: 'FAILED' } }).exec()
   if (!fund) return next(res.createError(401, 'Fund not found'))
 
   res.json(fund.json())
@@ -83,7 +83,7 @@ router.post('/funds/new', asyncHandler(async (req, res, next) => {
   const { body } = req
   const { principal, collateral, custom } = body
 
-  fund = await Fund.findOne(_.pick(body, ['principal', 'collateral'])).exec()
+  fund = await Fund.findOne({ principal, collateral, status: { $ne: 'FAILED' } }).exec()
   if (fund && fund.status === 'CREATED') return next(res.createError(401, 'Fund was already created. Agent can only have one Loan Fund'))
 
   const loanMarket = await LoanMarket.findOne(_.pick(body, ['principal', 'collateral'])).exec()
@@ -91,13 +91,10 @@ router.post('/funds/new', asyncHandler(async (req, res, next) => {
 
   if (custom) {
     fund = Fund.fromCustomFundParams(body)
-
-    await agenda.now('create-custom-fund', { requestId: fund.id })
   } else {
     fund = Fund.fromFundParams(body)
-
-    await agenda.now('create-fund', { requestId: fund.id })
   }
+  await agenda.now('create-fund', { fundModelId: fund.id })
 
   await fund.save()
 
@@ -128,10 +125,10 @@ router.post('/loans/new', asyncHandler(async (req, res, next) => {
   res.json(loan.json())
 }))
 
-router.get('/loans/:loanId', asyncHandler(async (req, res, next) => {
+router.get('/loans/:loanModelId', asyncHandler(async (req, res, next) => {
   const { params } = req
 
-  const loan = await Loan.findOne({ _id: params.loanId }).exec()
+  const loan = await Loan.findOne({ _id: params.loanModelId }).exec()
   if (!loan) return next(res.createError(401, 'Loan not found'))
 
   res.json(loan.json())
@@ -147,14 +144,14 @@ router.get('/loans/contract/:principal/:loanId', asyncHandler(async (req, res, n
   res.json(loan.json())
 }))
 
-router.post('/loans/:loanId/proof_of_funds', asyncHandler(async (req, res, next) => {
-  console.log('start /loans/:loanId/proof_of_funds')
+router.post('/loans/:loanModelId/proof_of_funds', asyncHandler(async (req, res, next) => {
+  console.log('start /loans/:loanModelId/proof_of_funds')
   const currentTime = Date.now()
   const agenda = req.app.get('agenda')
   const { params, body } = req
   const { proofOfFundsTxHex } = body
 
-  const loan = await Loan.findOne({ _id: params.loanId }).exec()
+  const loan = await Loan.findOne({ _id: params.loanModelId }).exec()
   if (!loan) return next(res.createError(401, 'Loan not found'))
   const {
     principal, collateral, principalAmount, minimumCollateralAmount, requestExpiresAt, requestCreatedAt, lenderCollateralPublicKey
@@ -188,19 +185,20 @@ router.post('/loans/:loanId/proof_of_funds', asyncHandler(async (req, res, next)
 
   await loan.save()
 
-  await agenda.now('request-loan', { requestId: loan.id })
+  await agenda.now('request-loan', { loanModelId: loan.id })
 
-  console.log('end /loans/:loanId/proof_of_funds')
+  console.log('end /loans/:loanModelId/proof_of_funds')
 
   res.json(loan.json())
 }))
 
-router.post('/loans/:loanId/collateral_locked', asyncHandler(async (req, res, next) => {
+router.post('/loans/:loanModelId/collateral_locked', asyncHandler(async (req, res, next) => {
   const { params } = req
   const agenda = req.app.get('agenda')
 
-  const loan = await Loan.findOne({ _id: params.loanId }).exec()
+  const loan = await Loan.findOne({ _id: params.loanModelId }).exec()
   if (!loan) return next(res.createError(401, 'Loan not found'))
+  const { loanId } = loan
 
   const { principal, collateralRefundableP2SHAddress, collateralSeizableP2SHAddress, refundableCollateralAmount, seizableCollateralAmount } = loan
 
@@ -221,7 +219,7 @@ router.post('/loans/:loanId/collateral_locked', asyncHandler(async (req, res, ne
     const seizableConfirmationRequirementsMet = seizableUnspent.length === 0 ? false : seizableUnspent[0].confirmations > 0
 
     if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet) {
-      await agenda.now('approve-loan', { requestId: loan.id })
+      await agenda.now('approve-loan', { loanModelId: loan.id })
 
       res.json({ message: 'Approving Loan', status: 0 })
     } else {
@@ -230,11 +228,11 @@ router.post('/loans/:loanId/collateral_locked', asyncHandler(async (req, res, ne
   }
 }))
 
-router.post('/loans/:loanId/repaid', asyncHandler(async (req, res, next) => {
+router.post('/loans/:loanModelId/repaid', asyncHandler(async (req, res, next) => {
   const { params } = req
   const agenda = req.app.get('agenda')
 
-  const loan = await Loan.findOne({ _id: params.loanId }).exec()
+  const loan = await Loan.findOne({ _id: params.loanModelId }).exec()
   if (!loan) return next(res.createError(401, 'Loan not found'))
 
   const { principal, loanId } = loan
@@ -243,7 +241,7 @@ router.post('/loans/:loanId/repaid', asyncHandler(async (req, res, next) => {
   const { off, paid } = await loans.methods.bools(numToBytes32(loanId)).call()
 
   if (!off && paid) {
-    await agenda.now('accept-loan', { requestId: loan.id })
+    await agenda.now('accept-loan', { loanModelId: loan.id })
 
     res.json({ message: 'Accepting Loan', status: 0 })
   } else if (!off & !paid) {
@@ -268,7 +266,7 @@ router.post('/loans/cancel_all', asyncHandler(async (req, res, next) => {
   const requestedLoans = await Loan.find({ status: 'AWAITING_COLLATERAL' })
 
   for (const loan of requestedLoans) {
-    await agenda.now('accept-or-cancel-loan', { requestId: loan.id })
+    await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
   }
 
   res.json({ message: 'Cancelling loans', status: 0 })

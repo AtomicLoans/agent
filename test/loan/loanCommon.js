@@ -23,7 +23,7 @@ async function cancelJobs () {
 
 async function fundArbiter () {
   const unusedAddress = (await chains.web3WithArbiter.client.currentProvider.getAddresses())[0]
-  await chains.ethereumWithNode.client.chain.sendTransaction(unusedAddress, toWei('0.05', 'ether'))
+  await chains.ethereumWithNode.client.chain.sendTransaction(unusedAddress, toWei('0.3', 'ether'))
 }
 
 async function fundAgent (server) {
@@ -31,7 +31,7 @@ async function fundAgent (server) {
   const { body: addresses } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
   const { principalAddress } = addresses
 
-  await chains.ethereumWithNode.client.chain.sendTransaction(principalAddress, toWei('0.05', 'ether'))
+  await chains.ethereumWithNode.client.chain.sendTransaction(principalAddress, toWei('0.1', 'ether'))
 }
 
 async function fundTokens (recipient, amount, principal) {

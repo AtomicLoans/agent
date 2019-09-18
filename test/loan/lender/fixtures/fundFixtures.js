@@ -56,11 +56,24 @@ function fundWithFundExpiryIn100DaysAndCompoundEnabled (currentTime, principal) 
   }
 }
 
+function invalidFundWithNillMaxLoanDurAndFundExpiry (principal) {
+  return {
+    collateral: 'BTC',
+    principal,
+    custom: false,
+    compoundEnabled: false,
+    amount: 0,
+    maxLoanDuration: 0,
+    fundExpiry: 0,
+  }
+}
+
 const fundFixtures = {
   customFundWithFundExpiryIn100Days,
   fundWithFundExpiryIn100Days,
   customFundWithFundExpiryIn100DaysAndCompoundEnabled,
-  fundWithFundExpiryIn100DaysAndCompoundEnabled
+  fundWithFundExpiryIn100DaysAndCompoundEnabled,
+  invalidFundWithNillMaxLoanDurAndFundExpiry
 }
 
 module.exports = fundFixtures

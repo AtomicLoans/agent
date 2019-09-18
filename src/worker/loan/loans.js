@@ -8,81 +8,17 @@ const { currencies } = require('../../utils/fx')
 const clients = require('../../utils/clients')
 const BN = require('bignumber.js')
 const { getMarketModels } = require('./utils/models')
+const { getLockArgs, getCollateralAmounts } = require('./utils/collateral')
 const { setTxParams } = require('./utils/web3Transaction')
 const web3 = require('../../utils/web3')
 const { fromWei, hexToNumber } = web3().utils
 
-async function requestLoan (txParams, loan, agenda, done) {
-  web3().eth.sendTransaction(txParams)
-    .on('transactionHash', (transactionHash) => {
-      loan.loanRequestTxHash = transactionHash
-      loan.status = 'REQUESTING'
-      loan.save()
-      console.log('LOAN REQUESTING')
-    })
-    .on('confirmation', async (confirmationNumber, receipt) => {
-      const { principal, collateral, collateralAmount } = loan
-      const { loanMarket, market } = await getMarketModels(principal, collateral)
-      const { minConf } = loanMarket
-      const { rate } = market
-
-      if (confirmationNumber === minConf) {
-        const loanCreateLog = receipt.logs.filter(log => log.topics[0] === ensure0x(keccak256('Create(bytes32)').toString('hex')))
-
-        if (loanCreateLog.length > 0) {
-          const { data: loanId } = loanCreateLog[0]
-
-          const loans = await loadObject('loans', process.env[`${principal}_LOAN_LOANS_ADDRESS`])
-
-          const { borrowerPubKey, lenderPubKey, arbiterPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
-          const { secretHashA1, secretHashB1, secretHashC1 } = await loans.methods.secretHashes(numToBytes32(loanId)).call()
-          const approveExpiration = await loans.methods.approveExpiration(numToBytes32(loanId)).call()
-          const liquidationExpiration = await loans.methods.liquidationExpiration(numToBytes32(loanId)).call()
-          const seizureExpiration = await loans.methods.seizureExpiration(numToBytes32(loanId)).call()
-
-          const pubKeys = { borrowerPubKey: remove0x(borrowerPubKey), lenderPubKey: remove0x(lenderPubKey), agentPubKey: remove0x(arbiterPubKey) }
-          const secretHashes = { secretHashA1: remove0x(secretHashA1), secretHashB1: remove0x(secretHashB1), secretHashC1: remove0x(secretHashC1) }
-          const expirations = { approveExpiration, liquidationExpiration, seizureExpiration }
-
-          const { refundableAddress, seizableAddress } = await clients[collateral].loan.collateral.getLockAddresses(pubKeys, secretHashes, expirations)
-
-          loan.collateralRefundableP2SHAddress = refundableAddress
-          loan.collateralSeizableP2SHAddress = seizableAddress
-
-          const owedForLoanInWei = await loans.methods.owedForLoan(loanId).call()
-          const owedForLoan = fromWei(owedForLoanInWei, currencies[principal].unit)
-
-          const seizableCollateral = BN(owedForLoan).dividedBy(rate)
-          const refundableCollateral = BN(collateralAmount).minus(seizableCollateral)
-
-          loan.refundableCollateralAmount = refundableCollateral.toFixed(currencies[collateral].decimals)
-          loan.seizableCollateralAmount = seizableCollateral.toFixed(currencies[collateral].decimals)
-          loan.loanId = hexToNumber(loanId)
-          loan.status = 'AWAITING_COLLATERAL'
-          console.log('AWAITING_COLLATERAL')
-
-          loan.save()
-
-          await agenda.now('verify-lock-collateral', { requestId: loan.id })
-
-          done()
-        } else {
-          console.error('Error: Loan Id could not be found in transaction logs')
-        }
-      }
-    })
-    .on('error', (error) => {
-      console.log(error)
-      done()
-    })
-}
-
 function defineLoansJobs (agenda) {
   agenda.define('request-loan', async (job, done) => {
     const { data } = job.attrs
-    const { requestId } = data
+    const { loanModelId } = data
 
-    const loan = await Loan.findOne({ _id: requestId }).exec()
+    const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
     const {
       principal, collateral, principalAmount, collateralAmount, borrowerPrincipalAddress, borrowerSecretHashes, lenderSecretHashes,
@@ -106,21 +42,21 @@ function defineLoansJobs (agenda) {
 
     const txData = funds.methods.request(...loanParams).encodeABI()
 
-    const { txParams, ethTransaction } = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_FUNDS_ADDRESS`])
+    const ethTransaction = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_FUNDS_ADDRESS`], loan)
 
-    await agenda.schedule('in 2 minutes', 'verify-request-loan', { ethTransactionId: ethTransaction.id, loanId: loan.id })
+    await agenda.schedule('in 2 minutes', 'verify-request-loan', { ethTransactionId: ethTransaction.id, loanModelId: loan.id })
 
-    await requestLoan(txParams, loan, agenda, done)
+    await requestLoan(ethTransaction.json(), loan, agenda, done)
   })
 
   agenda.define('verify-request-loan', async (job, done) => {
     const { data } = job.attrs
-    const { ethTransactionId, loanId } = data
+    const { ethTransactionId, loanModelId } = data
 
     const ethTransaction = await EthTransaction.findOne({ _id: ethTransactionId }).exec()
     if (!ethTransaction) return console.log('Error: EthTransaction not found')
 
-    const loan = await Loan.findOne({ _id: loanId }).exec()
+    const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
 
     // await requestLoan(ethTransaction, loan, agenda, done)
@@ -128,9 +64,9 @@ function defineLoansJobs (agenda) {
 
   agenda.define('verify-lock-collateral', async (job, done) => {
     const { data } = job.attrs
-    const { requestId } = data
+    const { loanModelId } = data
 
-    const loan = await Loan.findOne({ _id: requestId }).exec()
+    const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
 
     if (loan.status === 'CANCELLED' || loan.status === 'CANCELLING') { done() } // Don't check if collateral locked if in the middle of canceling loan
@@ -150,13 +86,13 @@ function defineLoansJobs (agenda) {
     if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet) {
       console.log('COLLATERAL LOCKED')
 
-      await agenda.now('approve-loan', { requestId: loan.id })
+      await agenda.now('approve-loan', { loanModelId: loan.id })
     } else {
       console.log('COLLATERAL NOT LOCKED')
       // TODO: should not schedule if after approveExpiration
       // TODO: add reason for canceling (for example, cancelled because collateral wasn't sufficient)
       // TODO: check current blocktime
-      agenda.schedule('in 5 seconds', 'verify-lock-collateral', { requestId: requestId })
+      agenda.schedule('in 5 seconds', 'verify-lock-collateral', { loanModelId })
       console.log('rescheduled')
     }
 
@@ -165,9 +101,9 @@ function defineLoansJobs (agenda) {
 
   agenda.define('approve-loan', async (job, done) => {
     const { data } = job.attrs
-    const { requestId } = data
+    const { loanModelId } = data
 
-    const loan = await Loan.findOne({ _id: requestId }).exec()
+    const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
 
     const { loanId, principal, collateral, lenderPrincipalAddress } = loan
@@ -210,16 +146,16 @@ function defineLoansJobs (agenda) {
 
   agenda.define('check-loan-repaid', async (job, done) => {
     const { data } = job.attrs
-    const { requestId } = data
+    const { loanModelId } = data
 
     // TODO: complete check loan repaid
   })
 
   agenda.define('accept-or-cancel-loan', async (job, done) => {
     const { data } = job.attrs
-    const { requestId } = data
+    const { loanModelId } = data
 
-    const loan = await Loan.findOne({ _id: requestId }).exec()
+    const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
 
     const { loanId, principal, collateral, lenderPrincipalAddress, lenderSecrets } = loan
@@ -267,6 +203,56 @@ function defineLoansJobs (agenda) {
     } else {
       console.log(`Loan wasn't accepted or cancelled because off: ${off}, withdrawn: ${withdrawn}, paid: ${paid}}`)
     }
+  })
+}
+
+async function requestLoan (txParams, loan, agenda, done) {
+  web3().eth.sendTransaction(txParams)
+  .on('transactionHash', (transactionHash) => {
+    loan.loanRequestTxHash = transactionHash
+    loan.status = 'REQUESTING'
+    loan.save()
+    console.log('LOAN REQUESTING')
+  })
+  .on('confirmation', async (confirmationNumber, receipt) => {
+    const { principal, collateral, collateralAmount } = loan
+    const { loanMarket, market } = await getMarketModels(principal, collateral)
+    const { minConf } = loanMarket
+    const { rate } = market
+
+    if (confirmationNumber === minConf) {
+      const loanCreateLog = receipt.logs.filter(log => log.topics[0] === ensure0x(keccak256('Create(bytes32)').toString('hex')))
+
+      if (loanCreateLog.length > 0) {
+        const { data: loanId } = loanCreateLog[0]
+
+        const loans = await loadObject('loans', process.env[`${principal}_LOAN_LOANS_ADDRESS`])
+
+        const lockArgs = await getLockArgs(numToBytes32(loanId), principal, collateral)
+        const { refundableAddress, seizableAddress } = await clients[collateral].loan.collateral.getLockAddresses(...lockArgs)
+        const { refundableCollateral, seizableCollateral } = await getCollateralAmounts(numToBytes32(loanId), loan, rate)
+
+        loan.refundableCollateralAmount = refundableCollateral
+        loan.seizableCollateralAmount = seizableCollateral
+        loan.collateralRefundableP2SHAddress = refundableAddress
+        loan.collateralSeizableP2SHAddress = seizableAddress
+        loan.loanId = hexToNumber(loanId)
+        loan.status = 'AWAITING_COLLATERAL'
+        console.log('AWAITING_COLLATERAL')
+
+        loan.save()
+
+        await agenda.now('verify-lock-collateral', { loanModelId: loan.id })
+
+        done()
+      } else {
+        console.error('Error: Loan Id could not be found in transaction logs')
+      }
+    }
+  })
+  .on('error', (error) => {
+    console.log(error)
+    done()
   })
 }
 

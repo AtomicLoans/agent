@@ -80,9 +80,13 @@ const FundSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
+  ethTransactionId: {
+    type: String,
+    index: true
+  },
   status: {
     type: String,
-    enum: ['INITIATED', 'CREATING', 'CREATED'],
+    enum: ['INITIATED', 'CREATING', 'CREATED', 'FAILED'],
     index: true
   }
 })
@@ -126,27 +130,6 @@ FundSchema.static('fromFundParams', function (params) {
     status: 'INITIATED'
   })
 })
-
-// FundSchema.static('fromCustomFundParams', function (fundParams, fundId, initiationHash, principal, collateral) {
-//   return new Fund({
-//     minLoanAmount: fundParams[0],
-//     maxLoanAmount: fundParams[1],
-//     minLoanDuration: fundParams[2],
-//     maxLoanDuration: fundParams[3],
-//     maxFundDuration: fundParams[4],
-//     liquidationRatio: fundParams[5],
-//     interest: fundParams[6],
-//     penalty: fundParams[7],
-//     fee: fundParams[8],
-//     compoundEnabled: fundParams[10],
-//     custom: true,
-//     confirmed: false,
-//     initiationHash,
-//     fundId,
-//     principal,
-//     collateral
-//   })
-// })
 
 const Fund = mongoose.model('Fund', FundSchema)
 module.exports = Fund

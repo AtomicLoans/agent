@@ -2,12 +2,12 @@ const chai = require('chai')
 const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
 const web3 = require('web3')
+const { sleep } = require('@liquality/utils')
 
 const { getWeb3Address } = require('../../util/web3Helpers')
 const { getTestObjects, fundTokens } = require('../../loanCommon')
 const { numToBytes32 } = require('../../../../src/utils/finance')
 const { currencies } = require('../../../../src/utils/fx')
-const { sleep } = require('../../../../src/utils/async')
 const fundFixtures = require('../fixtures/fundFixtures')
 
 const { toWei } = web3.utils
@@ -47,8 +47,6 @@ async function depositToFund (web3Chain, amount, principal) {
   await fundTokens(address, amountToDeposit, principal)
 
   const { body, status } = await chai.request(server).get(`/funds/ticker/${principal}`)
-  console.log('body', body)
-  console.log('status', status)
   const { fundId } = body
 
   await token.methods.approve(process.env[`${principal}_LOAN_FUNDS_ADDRESS`], amountToDeposit).send({ gas: 100000 })
@@ -64,6 +62,7 @@ async function checkFundCreated (fundModelId) {
     await sleep(1000)
     const { body } = await chai.request(server).get(`/funds/${fundModelId}`)
     const { status } = body
+    console.log('status', status)
     if (status === 'CREATED') {
       created = true
       fundId = body.fundId
