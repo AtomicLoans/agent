@@ -106,11 +106,14 @@ function defineLoansJobs (agenda) {
 
     const txData = funds.methods.request(...loanParams).encodeABI()
 
-    const { txParams, ethTransaction } = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_FUNDS_ADDRESS`])
+    const { txParams, ethTransaction } = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_FUNDS_ADDRESS`], loan)
+
+    console.log('ethTransaction', ethTransaction.txParams())
+    console.log('txParams', txParams)
 
     await agenda.schedule('in 2 minutes', 'verify-request-loan', { ethTransactionId: ethTransaction.id, loanModelId })
 
-    await requestLoan(txParams, loan, agenda, done)
+    await requestLoan(ethTransaction.txParams(), loan, agenda, done)
   })
 
   agenda.define('verify-request-loan', async (job, done) => {

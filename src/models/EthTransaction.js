@@ -10,7 +10,7 @@ const EthTransactionSchema = new mongoose.Schema({
     type: String,
     index: true
   },
-  gas: {
+  gasLimit: {
     type: Number,
     index: true
   },
@@ -38,6 +38,19 @@ EthTransactionSchema.methods.json = function () {
 
   delete json._id
   delete json.__v
+
+  return json
+}
+
+EthTransactionSchema.methods.txParams = function () {
+  const json = this.toJSON()
+  json.id = json._id
+
+  delete json._id
+  delete json.__v
+  delete json.status
+  delete json.updatedAt
+  delete json.createdAt
 
   return json
 }

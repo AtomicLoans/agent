@@ -42,7 +42,7 @@ function defineFundsJobs (agenda) {
 
     const funds = await loadObject('funds', process.env[`${principal}_LOAN_FUNDS_ADDRESS`])
     const txData = funds.methods.createCustom(...fundParams).encodeABI()
-    const { txParams, ethTransaction } = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_FUNDS_ADDRESS`])
+    const { txParams, ethTransaction } = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_FUNDS_ADDRESS`], fund)
 
     // TODO
     // await agenda.schedule('in 2 minutes', 'verify-create-custom-fund', { ethTransactionId: ethTransaction.id, fundId: fund.id })
@@ -72,7 +72,7 @@ function defineFundsJobs (agenda) {
 
     const funds = await loadObject('funds', process.env[`${principal}_LOAN_FUNDS_ADDRESS`])
     const txData = funds.methods.create(...fundParams).encodeABI()
-    const { txParams, ethTransaction } = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_FUNDS_ADDRESS`])
+    const { txParams, ethTransaction } = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_FUNDS_ADDRESS`], fund)
 
     // TODO
     // await agenda.schedule('in 2 minutes', 'verify-create-custom-fund', { ethTransactionId: ethTransaction.id, fundId: fund.id })
