@@ -26,20 +26,12 @@ async function createCustomFund (web3Chain, arbiterChain, amount, principal) {
   const [token, funds] = await getTestObjects(web3Chain, principal, ['erc20', 'funds'])
   const unit = currencies[principal].unit
   const amountToDeposit = toWei(amount.toString(), unit)
-  console.log('testing1')
   await fundTokens(address, amountToDeposit, principal)
-  console.log('testing2')
-
-  console.log('fundParams', fundParams)
 
   const { body } = await chai.request(server).post('/funds/new').send(fundParams)
   const { id: fundModelId } = body
 
-  console.log('testing3')
-
   const fundId = await checkFundCreated(fundModelId)
-
-  console.log('testing4')
 
   await token.methods.approve(process.env[`${principal}_LOAN_FUNDS_ADDRESS`], amountToDeposit).send({ gas: 100000 })
   await funds.methods.deposit(numToBytes32(fundId), amountToDeposit).send({ gas: 100000 })
@@ -55,8 +47,6 @@ async function depositToFund (web3Chain, amount, principal) {
   await fundTokens(address, amountToDeposit, principal)
 
   const { body, status } = await chai.request(server).get(`/funds/ticker/${principal}`)
-  console.log('body', body)
-  console.log('status', status)
   const { fundId } = body
 
   await token.methods.approve(process.env[`${principal}_LOAN_FUNDS_ADDRESS`], amountToDeposit).send({ gas: 100000 })
@@ -72,7 +62,6 @@ async function checkFundCreated (fundModelId) {
     await sleep(1000)
     const { body } = await chai.request(server).get(`/funds/${fundModelId}`)
     const { status } = body
-    console.log('testing check fund created')
     console.log('status', status)
     if (status === 'CREATED') {
       created = true

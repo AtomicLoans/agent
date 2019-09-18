@@ -10,7 +10,7 @@ const EthTransactionSchema = new mongoose.Schema({
     type: String,
     index: true
   },
-  gas: {
+  gasLimit: {
     type: Number,
     index: true
   },

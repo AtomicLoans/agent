@@ -84,7 +84,7 @@ function testFunds (web3Chain, ethNode) {
     })
   })
 
-  describe.only('Create Regular Loan Fund', () => {
+  describe('Create Loan Fund with delayed mining time', () => {
     it('should create a new loan fund and deposit funds into it', async () => {
       const currentTime = Math.floor(new Date().getTime() / 1000)
       const agentPrincipalAddress = await getAgentAddress(server)
@@ -101,7 +101,7 @@ function testFunds (web3Chain, ethNode) {
       const { body } = await chai.request(server).post('/funds/new').send(fundParams)
       const { id: fundModelId } = body
 
-      await sleep(14000)
+      await sleep(5000)
       await ethNode.client.getMethod('jsonrpc')('miner_start')
 
       const fundId = await checkFundCreated(fundModelId)
@@ -267,6 +267,7 @@ async function createFundFromFixture (web3Chain, fixture, principal_, amount) {
 }
 
 async function testSetup (web3Chain, ethNode) {
+  await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'ETH_SIGNER', address)
   await cancelLoans(web3Chain)
@@ -285,15 +286,15 @@ describe('Lender Agent - Funds', () => {
     testFunds(chains.web3WithHDWallet, chains.ethereumWithNode)
   })
 
-  // describe('MetaMask / Ledger', () => {
-  //   connectMetaMask()
-  //   beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
-  //   testFunds(chains.web3WithMetaMask, chains.bitcoinWithLedger)
-  // })
+  describe('MetaMask / Ledger', () => {
+    connectMetaMask()
+    beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
+    testFunds(chains.web3WithMetaMask, chains.bitcoinWithLedger)
+  })
 
-  // describe('MetaMask / BitcoinJs', () => {
-  //   connectMetaMask()
-  //   beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode) })
-  //   testFunds(chains.web3WithMetaMask, chains.ethereumWithNode)
-  // })
+  describe('MetaMask / BitcoinJs', () => {
+    connectMetaMask()
+    beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode) })
+    testFunds(chains.web3WithMetaMask, chains.ethereumWithNode)
+  })
 })

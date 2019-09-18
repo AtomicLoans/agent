@@ -172,6 +172,7 @@ async function getLoanStatus (loanId) {
 }
 
 async function testSetup (web3Chain, btcChain) {
+  await chains.ethereumWithNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'ETH_SIGNER', address)
   await cancelLoans(web3Chain)

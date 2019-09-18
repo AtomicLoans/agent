@@ -15,15 +15,11 @@ const { toWei, hexToNumber } = web3().utils
 
 function defineFundsJobs (agenda) {
   agenda.define('create-fund', async (job, done) => {
-    console.log('JOB create-fund')
-
     const { data } = job.attrs
     const { fundModelId } = data
 
     const fund = await Fund.findOne({ _id: fundModelId }).exec()
     if (!fund) return console.log('Error: Fund not found')
-
-    console.log('fund', fund)
 
     const { principal, custom } = fund
     const fundContractAddress = process.env[`${principal}_LOAN_FUNDS_ADDRESS`]
@@ -99,6 +95,10 @@ function defineFundsJobs (agenda) {
     const receipt = await web3().eth.getTransactionReceipt(transactionHash)
     console.log('receipt', receipt)
 
+    if (receipt === null) {
+      await agenda.schedule(process.env.CHECK_TX_INTERVAL, 'check-tx', { transactionHash })
+    }
+    
     done()
   })
 }
@@ -135,6 +135,7 @@ async function createFund (txParams, fund, agenda, done) {
   })
   .on('error', (error) => {
     console.log('FUND CREATION FAILED')
+    console.log(error)
     fund.status = 'FAILED'
     fund.save()
     done(error)

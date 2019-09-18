@@ -89,16 +89,12 @@ router.post('/funds/new', asyncHandler(async (req, res, next) => {
   const loanMarket = await LoanMarket.findOne(_.pick(body, ['principal', 'collateral'])).exec()
   if (!loanMarket) return next(res.createError(401, `LoanMarket not found with ${principal} principal and ${collateral} collateral`))
 
-  console.log('body', body)
-
   if (custom) {
     fund = Fund.fromCustomFundParams(body)
   } else {
     fund = Fund.fromFundParams(body)
   }
-  console.log('about to create-fund')
   await agenda.now('create-fund', { fundModelId: fund.id })
-  console.log('just did create-fund')
 
   await fund.save()
 

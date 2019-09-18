@@ -8,6 +8,7 @@ const { currencies } = require('../../utils/fx')
 const clients = require('../../utils/clients')
 const BN = require('bignumber.js')
 const { getMarketModels } = require('./utils/models')
+const { getLockArgs, getCollateralAmounts } = require('./utils/collateral')
 const { setTxParams } = require('./utils/web3Transaction')
 const web3 = require('../../utils/web3')
 const { fromWei, hexToNumber } = web3().utils
@@ -38,8 +39,6 @@ function defineLoansJobs (agenda) {
       ensure0x(borrowerCollateralPublicKey),
       ensure0x(lenderCollateralPublicKey)
     ]
-
-    console.log('loanParams', loanParams)
 
     const txData = funds.methods.request(...loanParams).encodeABI()
 
@@ -208,7 +207,6 @@ function defineLoansJobs (agenda) {
 }
 
 async function requestLoan (txParams, loan, agenda, done) {
-  console.log('txParams, loan', txParams, loan)
   web3().eth.sendTransaction(txParams)
   .on('transactionHash', (transactionHash) => {
     loan.loanRequestTxHash = transactionHash
@@ -230,31 +228,14 @@ async function requestLoan (txParams, loan, agenda, done) {
 
         const loans = await loadObject('loans', process.env[`${principal}_LOAN_LOANS_ADDRESS`])
 
-        const { borrowerPubKey, lenderPubKey, arbiterPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
-        const { secretHashA1, secretHashB1, secretHashC1 } = await loans.methods.secretHashes(numToBytes32(loanId)).call()
-        const approveExpiration = await loans.methods.approveExpiration(numToBytes32(loanId)).call()
-        const liquidationExpiration = await loans.methods.liquidationExpiration(numToBytes32(loanId)).call()
-        const seizureExpiration = await loans.methods.seizureExpiration(numToBytes32(loanId)).call()
+        const lockArgs = await getLockArgs(numToBytes32(loanId), principal, collateral)
+        const { refundableAddress, seizableAddress } = await clients[collateral].loan.collateral.getLockAddresses(...lockArgs)
+        const { refundableCollateral, seizableCollateral } = await getCollateralAmounts(numToBytes32(loanId), loan, rate)
 
-        const pubKeys = { borrowerPubKey: remove0x(borrowerPubKey), lenderPubKey: remove0x(lenderPubKey), agentPubKey: remove0x(arbiterPubKey) }
-        const secretHashes = { secretHashA1: remove0x(secretHashA1), secretHashB1: remove0x(secretHashB1), secretHashC1: remove0x(secretHashC1) }
-        const expirations = { approveExpiration, liquidationExpiration, seizureExpiration }
-
-        console.log('pubKeys, secretHashes, expirations', pubKeys, secretHashes, expirations)
-
-        const { refundableAddress, seizableAddress } = await clients[collateral].loan.collateral.getLockAddresses(pubKeys, secretHashes, expirations)
-
+        loan.refundableCollateralAmount = refundableCollateral
+        loan.seizableCollateralAmount = seizableCollateral
         loan.collateralRefundableP2SHAddress = refundableAddress
         loan.collateralSeizableP2SHAddress = seizableAddress
-
-        const owedForLoanInWei = await loans.methods.owedForLoan(loanId).call()
-        const owedForLoan = fromWei(owedForLoanInWei, currencies[principal].unit)
-
-        const seizableCollateral = BN(owedForLoan).dividedBy(rate)
-        const refundableCollateral = BN(collateralAmount).minus(seizableCollateral)
-
-        loan.refundableCollateralAmount = refundableCollateral.toFixed(currencies[collateral].decimals)
-        loan.seizableCollateralAmount = seizableCollateral.toFixed(currencies[collateral].decimals)
         loan.loanId = hexToNumber(loanId)
         loan.status = 'AWAITING_COLLATERAL'
         console.log('AWAITING_COLLATERAL')
