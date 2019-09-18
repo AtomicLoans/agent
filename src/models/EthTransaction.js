@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const timestamps = require('mongoose-timestamp')
 
 const EthTransactionSchema = new mongoose.Schema({
   from: {
@@ -45,5 +46,6 @@ EthTransactionSchema.static('fromTxParams', function (params) {
   return new EthTransaction(params)
 })
 
+EthTransactionSchema.plugin(timestamps)
 const EthTransaction = mongoose.model('EthTransaction', EthTransactionSchema)
 module.exports = EthTransaction

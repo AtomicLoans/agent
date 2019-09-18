@@ -81,6 +81,7 @@
     "keccak256": "^1.0.0",
     "level": "^5.0.1",
     "mongoose": "^5.6.6",
+    "mongoose-timestamp": "^0.6.0",
     "node-metamask": "^1.1.2",
     "path": "^0.12.7",
     "truffle-hdwallet-provider": "^1.0.17",
