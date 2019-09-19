@@ -1,5 +1,7 @@
+const axios = require('axios')
 const web3 = require('../../../utils/web3')
 const EthTx = require('../../../models/EthTx')
+const { toWei } = web3().utils
 
 async function setTxParams (data, from, to, instance) {
   const txParams = { data, from, to }
@@ -28,6 +30,28 @@ async function setTxParams (data, from, to, instance) {
   return ethTx
 }
 
+async function bumpTxFee (ethTx) {
+  const { gasPrice: currentGasPrice } = ethTx
+
+  let fastPriceInWei
+  try {
+    const { data: gasPricesFromOracle } = await axios(`https://www.etherchain.org/api/gasPriceOracle`)
+    const { fast } = gasPricesFromOracle
+    fastPriceInWei = parseInt(toWei(fast, 'gwei'))
+  } catch (e) {
+    fastPriceInWei = currentGasPrice
+  }
+
+  if (fastPriceInWei > (currentGasPrice * 1.1)) {
+    ethTx.gasPrice = Math.ceil(fastPriceInWei)
+  } else {
+    ethTx.gasPrice = Math.ceil(currentGasPrice * 1.15)
+  }
+
+  await ethTx.save()
+}
+
 module.exports = {
-  setTxParams
+  setTxParams,
+  bumpTxFee
 }

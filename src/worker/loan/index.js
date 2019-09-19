@@ -1,4 +1,4 @@
-const { defineFundsJobs } = require('./funds')
+const { defineFundsJobs } = require('./funds/index')
 const { defineLoansJobs } = require('./loans/index')
 
 function defineLoanJobs (agenda) {

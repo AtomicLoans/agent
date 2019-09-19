@@ -12,6 +12,26 @@ function loadObject (type, address) {
   return new web3.eth.Contract(schema[type].abi, address)
 }
 
+async function getObject (contract, principal) {
+  if (contract === 'erc20' || contract === 'ctoken') {
+    const cPrefix = contract === 'ctoken' ? 'C' : ''
+    return loadObject(contract, process.env[`${cPrefix}${principal}_ADDRESS`])
+  } else {
+    return loadObject(contract, process.env[`${principal}_LOAN_${contract.toUpperCase()}_ADDRESS`])
+  }
+}
+
+async function getObjects (contracts, principal) {
+  const objects = []
+  for (const contract of contracts) {
+    const object = await getObject(contract, principal)
+    objects.push(object)
+  }
+  return objects
+}
+
 module.exports = {
-  loadObject
+  loadObject,
+  getObject,
+  getObjects
 }

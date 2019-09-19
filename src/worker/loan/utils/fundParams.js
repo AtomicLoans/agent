@@ -7,7 +7,7 @@ const { toWei } = web3.utils
 
 async function getFundParams (fund) {
   const {
-    principal, collateral, maxLoanDuration, fundExpiry, compoundEnabled, liquidationRatio, interest, penalty, fee, custom, amountToDepositOnCreate
+    principal, collateral, custom
   } = fund
 
   const { loanMarket } = await getMarketModels(principal, collateral)
@@ -27,7 +27,7 @@ async function getFundParams (fund) {
 }
 
 function getRegularFundParams (fund, lenderAddress, unit) {
-  const { principal, collateral, maxLoanDuration, fundExpiry, compoundEnabled, amountToDepositOnCreate } = fund
+  const { maxLoanDuration, fundExpiry, compoundEnabled, amountToDepositOnCreate } = fund
 
   return [
     maxLoanDuration,
@@ -40,7 +40,7 @@ function getRegularFundParams (fund, lenderAddress, unit) {
 
 function getCustomFundParams (fund, lenderAddress, unit, loanMarket) {
   const {
-    principal, collateral, maxLoanDuration, fundExpiry, compoundEnabled, liquidationRatio, interest, penalty, fee, amountToDepositOnCreate
+    maxLoanDuration, fundExpiry, compoundEnabled, liquidationRatio, interest, penalty, fee, amountToDepositOnCreate
   } = fund
   const { minPrincipal, maxPrincipal, minLoanDuration } = loanMarket
 

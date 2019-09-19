@@ -9,7 +9,6 @@ const { generateMnemonic } = require('bip39')
 
 const { chains, connectMetaMask, rewriteEnv } = require('../../common')
 const { fundArbiter, fundAgent, fundTokens, getAgentAddress, generateSecretHashesArbiter, getTestObjects, cancelLoans, removeFunds, cancelJobs, fundWeb3Address } = require('../loanCommon')
-const { testLoadObject } = require('../util/contracts')
 const fundFixtures = require('./fixtures/fundFixtures')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
@@ -110,7 +109,7 @@ function testFunds (web3Chain, ethNode) {
       await funds.methods.deposit(numToBytes32(fundId), amountToDeposit).send({ gas: 500000 })
 
       const {
-        lender, maxLoanDur, fundExpiry: actualFundExpiry, interest: actualInterest, penalty: actualPenalty, fee: actualFee, liquidationRatio: actualLiquidationRatio, balance
+        lender, maxLoanDur, fundExpiry: actualFundExpiry, balance
       } = await funds.methods.funds(numToBytes32(fundId)).call()
 
       expect(fromWei(balance, 'wei')).to.equal(amountToDeposit)
@@ -128,10 +127,10 @@ function testFunds (web3Chain, ethNode) {
       const [funds, ctoken] = await getTestObjects(web3Chain, principal, ['funds', 'ctoken'])
 
       const { fundId, fundParams, amountDeposited, agentAddress } = await createFundFromFixture(web3Chain, fixture, principal, amount)
-      const { fundExpiry, liquidationRatio, interest, penalty, fee } = fundParams
+      const { fundExpiry } = fundParams
 
       const {
-        lender, maxLoanDur, fundExpiry: actualFundExpiry, interest: actualInterest, penalty: actualPenalty, fee: actualFee, liquidationRatio: actualLiquidationRatio, cBalance
+        lender, maxLoanDur, fundExpiry: actualFundExpiry, cBalance
       } = await funds.methods.funds(numToBytes32(fundId)).call()
 
       const exchangeRateCurrent = await ctoken.methods.exchangeRateCurrent().call()
@@ -172,12 +171,9 @@ function testFunds (web3Chain, ethNode) {
 
   describe('Create Fund Tx Error', () => {
     it('should set Fund status to FAILED', async () => {
-      const currentTime = Math.floor(new Date().getTime() / 1000)
-      const agentPrincipalAddress = await getAgentAddress(server)
       const address = await getWeb3Address(web3Chain)
       const fundParams = fundFixtures.invalidFundWithNillMaxLoanDurAndFundExpiry('DAI')
-      const { principal, fundExpiry } = fundParams
-      const [token, funds] = await getTestObjects(web3Chain, principal, ['erc20', 'funds'])
+      const { principal } = fundParams
       const unit = currencies[principal].unit
       const amountToDeposit = toWei('200', unit)
       await fundTokens(address, amountToDeposit, principal)
@@ -195,11 +191,9 @@ function testFunds (web3Chain, ethNode) {
 
     it('should allow creation of Fund after previous Fund creation failed', async () => {
       const currentTime = Math.floor(new Date().getTime() / 1000)
-      const agentPrincipalAddress = await getAgentAddress(server)
       const address = await getWeb3Address(web3Chain)
       const fundParams = fundFixtures.invalidFundWithNillMaxLoanDurAndFundExpiry('DAI')
-      const { principal, fundExpiry } = fundParams
-      const [token, funds] = await getTestObjects(web3Chain, principal, ['erc20', 'funds'])
+      const { principal } = fundParams
       const unit = currencies[principal].unit
       const amountToDeposit = toWei('200', unit)
       await fundTokens(address, amountToDeposit, principal)
@@ -255,7 +249,7 @@ async function createFundFromFixture (web3Chain, fixture, principal_, amount) {
   const agentPrincipalAddress = await getAgentAddress(server)
   const address = await getWeb3Address(web3Chain)
   const fundParams = fixture(currentTime, principal_)
-  const { principal, fundExpiry, liquidationRatio, interest, penalty, fee } = fundParams
+  const { principal } = fundParams
   const [token, funds] = await getTestObjects(web3Chain, principal, ['erc20', 'funds'])
   const unit = currencies[principal].unit
   const amountToDeposit = toWei(amount.toString(), unit)
