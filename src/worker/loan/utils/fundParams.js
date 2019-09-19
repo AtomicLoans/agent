@@ -15,7 +15,7 @@ async function getFundParams (fund) {
   const lenderAddress = ensure0x(principalAddress)
 
   const unit = currencies[principal].unit
-  
+
   let fundParams
   if (custom) {
     fundParams = getCustomFundParams(fund, lenderAddress, unit, loanMarket)

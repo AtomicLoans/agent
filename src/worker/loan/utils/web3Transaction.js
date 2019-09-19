@@ -11,7 +11,7 @@ async function setTxParams (data, from, to, instance) {
       web3().eth.getGasPrice(),
       web3().eth.estimateGas(txParams)
     ])
-  } catch(e) {
+  } catch (e) {
     console.log('FAILED AT GAS STEP')
     instance.status = 'FAILED'
     instance.save()

@@ -24,7 +24,7 @@ function fundWithFundExpiryIn100Days (currentTime, principal) {
     compoundEnabled: false,
     amount: 0,
     maxLoanDuration: 0,
-    fundExpiry: currentTime + toSecs({ days: 100 }),
+    fundExpiry: currentTime + toSecs({ days: 100 })
   }
 }
 
@@ -52,7 +52,7 @@ function fundWithFundExpiryIn100DaysAndCompoundEnabled (currentTime, principal) 
     compoundEnabled: true,
     amount: 0,
     maxLoanDuration: 0,
-    fundExpiry: currentTime + toSecs({ days: 100 }),
+    fundExpiry: currentTime + toSecs({ days: 100 })
   }
 }
 
@@ -64,7 +64,7 @@ function invalidFundWithNillMaxLoanDurAndFundExpiry (principal) {
     compoundEnabled: false,
     amount: 0,
     maxLoanDuration: 0,
-    fundExpiry: 0,
+    fundExpiry: 0
   }
 }
 

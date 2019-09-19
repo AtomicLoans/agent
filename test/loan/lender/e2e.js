@@ -97,7 +97,7 @@ function testE2E (web3Chain, btcChain) {
         await sleep(5000)
         const { body: requestedBody } = await chai.request(server).get(`/loans/${requestId}`)
         const { status } = requestedBody
-        console.log('status', status)
+        console.log(status)
         if (status === 'AWAITING_COLLATERAL') requested = true
       }
 
