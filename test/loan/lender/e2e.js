@@ -142,7 +142,7 @@ function testE2E (web3Chain, btcChain) {
       expect(approvedAfter).to.equal(true)
 
       await loans.methods.withdraw(numToBytes32(loanId), ensure0x(secrets[0])).send({ gas: 100000 })
-      const withdrawn = loans.methods.withdrawn(numToBytes32(loanId)).call()
+      const withdrawn = await loans.methods.withdrawn(numToBytes32(loanId)).call()
       expect(withdrawn).to.equal(true)
 
       const owedForLoan = await loans.methods.owedForLoan(numToBytes32(loanId)).call()
@@ -156,10 +156,12 @@ function testE2E (web3Chain, btcChain) {
       const testToken = await getTestObject(web3Chain, 'erc20', principal)
       await testToken.methods.approve(process.env[`${principal}_LOAN_LOANS_ADDRESS`], toWei(owedForLoan, 'wei')).send({ gas: 100000 })
 
-      loans.methods.repay(numToBytes32(loanId), owedForLoan).send({ gas: 100000 })
-      const paid = loans.methods.paid(numToBytes32(loanId)).call()
+      await loans.methods.repay(numToBytes32(loanId), owedForLoan).send({ gas: 100000 })
+
+      const paid = await loans.methods.paid(numToBytes32(loanId)).call()
       expect(paid).to.equal(true)
 
+      console.log('REPAY LOAN')
       await secondsCountDown(10)
 
       const off = await loans.methods.off(numToBytes32(loanId)).call()

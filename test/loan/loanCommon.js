@@ -2,9 +2,11 @@ const { chains } = require('../common')
 const { testLoadObject } = require('./util/contracts')
 const { getWeb3Address } = require('./util/web3Helpers')
 const { ensure0x, remove0x, checksumEncode } = require('@liquality/ethereum-utils')
+const { sleep } = require('@liquality/utils')
 const { sha256 } = require('@liquality/crypto')
 const web3 = require('web3')
 const { numToBytes32 } = require('../../src/utils/finance')
+const { getCurrentTime } = require('../../src/utils/time')
 const { toWei } = web3.utils
 
 const chai = require('chai')
@@ -116,6 +118,24 @@ async function removeFunds () {
   await chai.request(lenderServer).post('/remove_funds').send()
 }
 
+async function increaseTime (seconds) {
+  await chains.ethereumWithNode.client.getMethod('jsonrpc')('evm_increaseTime', seconds)
+  await chains.ethereumWithNode.client.getMethod('jsonrpc')('evm_mine')
+
+  const currentTime = await getCurrentTime()
+
+  await chains.bitcoinWithNode.client.getMethod('jsonrpc')('setmocktime', currentTime)
+
+  await chains.bitcoinWithNode.client.chain.generateBlock(10)
+}
+
+async function secondsCountDown (num) {
+  for (let i = num; i >= 0; i--) {
+    console.log(`${i}s`)
+    await sleep(1000)
+  }
+}
+
 module.exports = {
   fundArbiter,
   fundAgent,
@@ -128,5 +148,7 @@ module.exports = {
   cancelLoans,
   cancelJobs,
   removeFunds,
-  fundWeb3Address
+  fundWeb3Address,
+  increaseTime,
+  secondsCountDown
 }

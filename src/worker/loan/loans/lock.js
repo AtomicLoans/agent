@@ -1,4 +1,7 @@
 const Loan = require('../../../models/Loan')
+const { getCurrentTime } = require('../../../utils/time')
+const { numToBytes32 } = require('../../../utils/finance')
+const { getObject } = require('../../../utils/contracts')
 
 function defineLoanLockJobs (agenda) {
   agenda.define('verify-lock-collateral', async (job, done) => {
@@ -12,11 +15,12 @@ function defineLoanLockJobs (agenda) {
 
     const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress, refundableCollateralAmount, seizableCollateralAmount } = loan
 
-    const refundableBalance = await loan.collateralClient().chain.getBalance([collateralRefundableP2SHAddress])
-    const seizableBalance = await loan.collateralClient().chain.getBalance([collateralSeizableP2SHAddress])
-
-    const refundableUnspent = await loan.collateralClient().getMethod('getUnspentTransactions')([collateralRefundableP2SHAddress])
-    const seizableUnspent = await loan.collateralClient().getMethod('getUnspentTransactions')([collateralSeizableP2SHAddress])
+    const [refundableBalance, seizableBalance, refundableUnspent, seizableUnspent] = await Promise.all([
+      loan.collateralClient().chain.getBalance([collateralRefundableP2SHAddress]),
+      loan.collateralClient().chain.getBalance([collateralSeizableP2SHAddress]),
+      loan.collateralClient().getMethod('getUnspentTransactions')([collateralRefundableP2SHAddress]),
+      loan.collateralClient().getMethod('getUnspentTransactions')([collateralSeizableP2SHAddress])
+    ])
 
     const collateralRequirementsMet = (refundableBalance.toNumber() >= refundableCollateralAmount && seizableBalance.toNumber() >= seizableCollateralAmount)
     const refundableConfirmationRequirementsMet = refundableUnspent.length === 0 ? false : refundableUnspent[0].confirmations > 0
@@ -28,11 +32,22 @@ function defineLoanLockJobs (agenda) {
       await agenda.now('approve-loan', { loanModelId: loan.id })
     } else {
       console.log('COLLATERAL NOT LOCKED')
-      // TODO: should not schedule if after approveExpiration
       // TODO: add reason for canceling (for example, cancelled because collateral wasn't sufficient)
-      // TODO: check current blocktime
-      agenda.schedule('in 5 seconds', 'verify-lock-collateral', { loanModelId })
-      console.log('rescheduled')
+      const { loanId, principal } = loan
+      const loans = await getObject('loans', principal)
+
+      const [approved, approveExpiration, currentTime] = await Promise.all([
+        loans.methods.approved(numToBytes32(loanId)).call(), // Sanity check
+        loans.methods.approveExpiration(numToBytes32(loanId)).call(),
+        getCurrentTime()
+      ])
+
+      if (currentTime > approveExpiration && !approved) {
+        await agenda.now('accept-or-cancel-loan', { loanModelId })
+      } else {
+        agenda.schedule('in 5 seconds', 'verify-lock-collateral', { loanModelId })
+        console.log('rescheduled')
+      }
     }
 
     done()
