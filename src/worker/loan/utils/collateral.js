@@ -1,8 +1,7 @@
 const BN = require('bignumber.js')
 const web3 = require('web3')
-const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
+const { remove0x } = require('@liquality/ethereum-utils')
 const { loadObject } = require('../../../utils/contracts')
-const clients = require('../../../utils/clients')
 const { currencies } = require('../../../../src/utils/fx')
 
 const { fromWei } = web3.utils
@@ -31,7 +30,7 @@ async function getCollateralAmounts (loanId, loan, rate) {
   const colDecimals = currencies[collateral].decimals
 
   const owedForLoanInWei = await loans.methods.owedForLoan(loanId).call()
-  const owedForLoan = fromWei(owedForLoanInWei, currencies[principal].unit)
+  const owedForLoan = fromWei(owedForLoanInWei, unit)
 
   const seizableCollateral = BN(owedForLoan).dividedBy(rate).toFixed(colDecimals)
   const refundableCollateral = BN(collateralAmount).minus(seizableCollateral).toFixed(colDecimals)

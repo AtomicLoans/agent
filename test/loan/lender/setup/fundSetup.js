@@ -46,7 +46,7 @@ async function depositToFund (web3Chain, amount, principal) {
   const amountToDeposit = toWei(amount.toString(), unit)
   await fundTokens(address, amountToDeposit, principal)
 
-  const { body, status } = await chai.request(server).get(`/funds/ticker/${principal}`)
+  const { body } = await chai.request(server).get(`/funds/ticker/${principal}`)
   const { fundId } = body
 
   await token.methods.approve(process.env[`${principal}_LOAN_FUNDS_ADDRESS`], amountToDeposit).send({ gas: 100000 })

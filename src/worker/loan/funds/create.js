@@ -2,17 +2,17 @@ const axios = require('axios')
 const keccak256 = require('keccak256')
 const { ensure0x } = require('@liquality/ethereum-utils')
 
-const Fund = require('../../models/Fund')
-const EthTx = require('../../models/EthTx')
-const { loadObject } = require('../../utils/contracts')
-const { setTxParams } = require('./utils/web3Transaction')
-const { getFundParams } = require('./utils/fundParams')
-const web3 = require('../../utils/web3')
+const Fund = require('../../../models/Fund')
+const EthTx = require('../../../models/EthTx')
+const { loadObject } = require('../../../utils/contracts')
+const { setTxParams } = require('../utils/web3Transaction')
+const { getFundParams } = require('../utils/fundParams')
+const web3 = require('../../../utils/web3')
 const { toWei, hexToNumber } = web3().utils
 
 const date = require('date.js')
 
-function defineFundsJobs (agenda) {
+function defineFundCreateJobs (agenda) {
   agenda.define('create-fund', async (job, done) => {
     const { data } = job.attrs
     const { fundModelId } = data
@@ -82,6 +82,9 @@ function defineFundsJobs (agenda) {
       } else {
         await agenda.schedule(process.env.CHECK_TX_INTERVAL, 'verify-create-fund', { fundModelId })
       }
+    } else if (receipt.status === false) {
+      console.log('RECEIPT STATUS IS FALSE')
+      console.log('TX WAS MINED BUT TX FAILED')
     } else {
       console.log('RECEIPT IS NOT NULL')
       const fundCreateLog = receipt.logs.filter(log => log.topics[0] === ensure0x(keccak256('Create(bytes32)').toString('hex')))
@@ -124,5 +127,5 @@ async function createFund (ethTx, fund, agenda, done) {
 }
 
 module.exports = {
-  defineFundsJobs
+  defineFundCreateJobs
 }

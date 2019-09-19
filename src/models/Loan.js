@@ -98,7 +98,11 @@ const LoanSchema = new mongoose.Schema({
     type: String,
     index: true
   },
-  acceptTxHash: {
+  acceptOrCancelTxHash: {
+    type: String,
+    index: true
+  },
+  cancelTxHash: {
     type: String,
     index: true
   },
@@ -137,7 +141,7 @@ const LoanSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['QUOTE', 'REQUESTING', 'AWAITING_COLLATERAL', 'APPROVING', 'APPROVED', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'FAILED'],
+    enum: ['QUOTE', 'REQUESTING', 'AWAITING_COLLATERAL', 'APPROVING', 'APPROVED', 'CANCELLING', 'CANCELLED', 'WITHDRAWN', 'REPAID', 'ACCEPTING', 'ACCEPTED', 'FAILED'],
     index: true
   }
 })
@@ -194,6 +198,16 @@ LoanSchema.methods.setSecretHashes = async function (collateralAmount) {
   this.lenderSecretHashes = secretHashes
 
   this.collateralAmount = collateralAmount
+}
+
+LoanSchema.methods.setCollateralAddressValues = function (addresses, amounts) {
+  const { refundableAddress, seizableAddress } = addresses
+  const { refundableCollateral, seizableCollateral } = amounts
+
+  this.refundableCollateralAmount = refundableCollateral
+  this.seizableCollateralAmount = seizableCollateral
+  this.collateralRefundableP2SHAddress = refundableAddress
+  this.collateralSeizableP2SHAddress = seizableAddress
 }
 
 LoanSchema.static('fromLoanMarket', function (loanMarket, params, minimumCollateralAmount) {
