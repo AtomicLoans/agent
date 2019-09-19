@@ -8,7 +8,7 @@ const { sleep } = require('@liquality/utils')
 const { generateMnemonic } = require('bip39')
 
 const { chains, connectMetaMask, rewriteEnv } = require('../../common')
-const { fundArbiter, fundAgent, fundTokens, getAgentAddress, generateSecretHashesArbiter, getTestObjects, cancelLoans, removeFunds, cancelJobs, fundWeb3Address,  } = require('../loanCommon')
+const { fundArbiter, fundAgent, fundTokens, getAgentAddress, generateSecretHashesArbiter, getTestObjects, cancelLoans, removeFunds, cancelJobs, fundWeb3Address } = require('../loanCommon')
 const { testLoadObject } = require('../util/contracts')
 const fundFixtures = require('./fixtures/fundFixtures')
 const { getWeb3Address } = require('../util/web3Helpers')
@@ -157,7 +157,7 @@ function testFunds (web3Chain, ethNode) {
     })
   })
 
-  describe('test', () => {
+  describe('Create fund with different principal', () => {
     it('should succeed in creating two funds with different principal', async () => {
       const currentTime = Math.floor(new Date().getTime() / 1000)
 
@@ -287,7 +287,7 @@ async function testSetup (web3Chain, ethNode) {
 }
 
 describe('Lender Agent - Funds', () => {
-  describe('Web3HDWallet / BitcoinJs', () => {
+  describe.only('Web3HDWallet / BitcoinJs', () => {
     beforeEach(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode) })
     testFunds(chains.web3WithHDWallet, chains.ethereumWithNode)
   })

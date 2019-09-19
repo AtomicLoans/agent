@@ -4,10 +4,7 @@ const { ensure0x } = require('@liquality/ethereum-utils')
 
 const Fund = require('../../models/Fund')
 const EthTx = require('../../models/EthTx')
-const { rateToSec } = require('../../utils/finance')
 const { loadObject } = require('../../utils/contracts')
-const { currencies } = require('../../utils/fx')
-const { getMarketModels } = require('./utils/models')
 const { setTxParams } = require('./utils/web3Transaction')
 const { getFundParams } = require('./utils/fundParams')
 const web3 = require('../../utils/web3')
@@ -68,7 +65,7 @@ function defineFundsJobs (agenda) {
           const { data: gasPricesFromOracle } = await axios(`https://www.etherchain.org/api/gasPriceOracle`)
           const { fast } = gasPricesFromOracle
           fastPriceInWei = parseInt(toWei(fast, 'gwei'))
-        } catch(e) {
+        } catch (e) {
           fastPriceInWei = currentGasPrice
         }
 
@@ -108,21 +105,22 @@ function defineFundsJobs (agenda) {
 
 async function createFund (ethTx, fund, agenda, done) {
   web3().eth.sendTransaction(ethTx.json())
-  .on('transactionHash', async (transactionHash) => {
-    fund.ethTxId = ethTx.id
-    fund.createTxHash = transactionHash
-    fund.status = 'CREATING'
-    fund.save()
-    console.log(`${fund.principal} FUND CREATING`)
-    await agenda.now('verify-create-fund', { fundModelId: fund.id })
-  })
-  .on('error', (error) => {
-    console.log(`${fund.principal} FUND CREATION FAILED`)
-    console.log(error)
-    fund.status = 'FAILED'
-    fund.save()
-    done(error)
-  })
+    .on('transactionHash', async (transactionHash) => {
+      fund.ethTxId = ethTx.id
+      fund.createTxHash = transactionHash
+      fund.status = 'CREATING'
+      fund.save()
+      console.log(`${fund.principal} FUND CREATING`)
+      await agenda.now('verify-create-fund', { fundModelId: fund.id })
+      done()
+    })
+    .on('error', (error) => {
+      console.log(`${fund.principal} FUND CREATION FAILED`)
+      console.log(error)
+      fund.status = 'FAILED'
+      fund.save()
+      done(error)
+    })
 }
 
 module.exports = {

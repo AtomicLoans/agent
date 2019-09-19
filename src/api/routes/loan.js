@@ -198,7 +198,6 @@ router.post('/loans/:loanModelId/collateral_locked', asyncHandler(async (req, re
 
   const loan = await Loan.findOne({ _id: params.loanModelId }).exec()
   if (!loan) return next(res.createError(401, 'Loan not found'))
-  const { loanId } = loan
 
   const { principal, collateralRefundableP2SHAddress, collateralSeizableP2SHAddress, refundableCollateralAmount, seizableCollateralAmount } = loan
 

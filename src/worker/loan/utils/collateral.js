@@ -20,7 +20,7 @@ async function getLockArgs (loanId, principal, collateral) {
   const secretHashes = { secretHashA1: remove0x(secretHashA1), secretHashB1: remove0x(secretHashB1), secretHashC1: remove0x(secretHashC1) }
   const expirations = { approveExpiration, liquidationExpiration, seizureExpiration }
 
-  return [ pubKeys, secretHashes, expirations ]
+  return [pubKeys, secretHashes, expirations]
 }
 
 async function getCollateralAmounts (loanId, loan, rate) {

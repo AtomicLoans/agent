@@ -131,6 +131,10 @@ const LoanSchema = new mongoose.Schema({
   loanId: {
     type: Number
   },
+  ethTxId: {
+    type: String,
+    index: true
+  },
   status: {
     type: String,
     enum: ['QUOTE', 'REQUESTING', 'AWAITING_COLLATERAL', 'APPROVING', 'APPROVED', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'FAILED'],
