@@ -204,6 +204,11 @@ LoanSchema.methods.setCollateralAddressValues = function (addresses, amounts) {
   const { refundableAddress, seizableAddress } = addresses
   const { refundableCollateral, seizableCollateral } = amounts
 
+  if (process.env.NODE_ENV !== 'production') {
+    const { importBitcoinAddressesByAddress } = require('../../test/common')
+    importBitcoinAddressesByAddress([refundableAddress, seizableAddress])
+  }
+
   this.refundableCollateralAmount = refundableCollateral
   this.seizableCollateralAmount = seizableCollateral
   this.collateralRefundableP2SHAddress = refundableAddress
