@@ -23,7 +23,7 @@ function defineLoanRequestJobs (agenda) {
     if (!loan) return console.log('Error: Loan not found')
     const {
       principal, collateral, principalAmount, collateralAmount, borrowerPrincipalAddress, borrowerSecretHashes, lenderSecretHashes,
-      lenderPrincipalAddress, requestLoanDuration, borrowerCollateralPublicKey, lenderCollateralPublicKey
+      lenderPrincipalAddress, requestLoanDuration, borrowerCollateralPublicKey, lenderCollateralPublicKey, requestCreatedAt
     } = loan
 
     const funds = await loadObject('funds', process.env[`${principal}_LOAN_FUNDS_ADDRESS`])
@@ -36,6 +36,7 @@ function defineLoanRequestJobs (agenda) {
       BN(principalAmount).times(currencies[principal].multiplier).toFixed(),
       BN(collateralAmount).times(currencies[collateral].multiplier).toFixed(),
       requestLoanDuration,
+      requestCreatedAt,
       borrowerSecretHashes.concat(lenderSecretHashes).map(secretHashes => ensure0x(secretHashes)),
       ensure0x(borrowerCollateralPublicKey),
       ensure0x(lenderCollateralPublicKey)
