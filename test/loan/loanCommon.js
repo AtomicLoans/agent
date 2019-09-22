@@ -19,12 +19,17 @@ chai.use(chaiAsPromised)
 
 const lenderServer = 'http://localhost:3030/api/loan'
 
-async function cancelJobs () {
-  await chai.request(lenderServer).post('/cancel_jobs').send()
+async function cancelJobs (server) {
+  await chai.request(server).post('/cancel_jobs').send()
 }
 
 async function fundArbiter () {
   const unusedAddress = (await chains.web3WithArbiter.client.currentProvider.getAddresses())[0]
+  await chains.ethereumWithNode.client.chain.sendTransaction(unusedAddress, toWei('0.3', 'ether'))
+}
+
+async function fundLender () {
+  const unusedAddress = (await chains.web3WithLender.client.currentProvider.getAddresses())[0]
   await chains.ethereumWithNode.client.chain.sendTransaction(unusedAddress, toWei('0.3', 'ether'))
 }
 
@@ -51,15 +56,23 @@ async function getAgentAddress (server) {
   return checksumEncode(principalAddress)
 }
 
+async function getAgentAddresses (server) {
+  const { body: loanMarkets } = await chai.request(server).get('/loanmarketinfo')
+  const { body: addresses } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
+  const { principalAddress, collateralAddress, collateralPublicKey } = addresses
+
+  return { principalAddress: checksumEncode(principalAddress), collateralAddress, collateralPublicKey }
+}
+
 async function generateSecretHashesArbiter (principal) {
   const address = (await chains.web3WithArbiter.client.currentProvider.getAddresses())[0]
   const { publicKey } = await chains.bitcoinArbiter.client.wallet.getUnusedAddress()
 
-  const secrets = await chains.bitcoinWithJs.client.loan.secrets.generateSecrets('test', 40)
+  const secrets = await chains.bitcoinWithJs.client.loan.secrets.generateSecrets('test', 160)
   const secretHashes = secrets.map(secret => ensure0x(sha256(secret)))
 
   const testFunds = await testLoadObject('funds', process.env[`${principal}_LOAN_FUNDS_ADDRESS`], chains.web3WithArbiter, address)
-  await testFunds.methods.generate(secretHashes).send({ from: address, gas: 6000000 })
+  await testFunds.methods.generate(secretHashes).send({ from: address, gas: 6700000 })
   await testFunds.methods.setPubKey(ensure0x(publicKey.toString('hex'))).send({ from: address, gas: 100000 })
 }
 
@@ -138,6 +151,7 @@ async function secondsCountDown (num) {
 
 module.exports = {
   fundArbiter,
+  fundLender,
   fundAgent,
   fundTokens,
   getAgentAddress,

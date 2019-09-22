@@ -44,6 +44,22 @@ bitcoinArbiter.addProvider(new providers.bitcoin.BitcoinJsWalletProvider(bitcoin
 bitcoinArbiter.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
 bitcoinArbiter.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralSwapProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
 
+const bitcoinLender = new Client()
+const bitcoinLoanLender = new LoanClient(bitcoinLender)
+bitcoinLender.loan = bitcoinLoanLender
+bitcoinLender.addProvider(new providers.bitcoin.BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
+bitcoinLender.addProvider(new providers.bitcoin.BitcoinJsWalletProvider(bitcoinNetworks[config.bitcoin.network], config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('LENDER_MNEMONIC').toString(), 'bech32'))
+bitcoinLender.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinLender.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralSwapProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
+
+const bitcoinBorrower = new Client()
+const bitcoinLoanBorrower = new LoanClient(bitcoinBorrower)
+bitcoinBorrower.loan = bitcoinLoanBorrower
+bitcoinBorrower.addProvider(new providers.bitcoin.BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
+bitcoinBorrower.addProvider(new providers.bitcoin.BitcoinJsWalletProvider(bitcoinNetworks[config.bitcoin.network], config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('BORROWER_MNEMONIC').toString(), 'bech32'))
+bitcoinBorrower.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinBorrower.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralSwapProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
+
 const ethereumNetworks = providers.ethereum.networks
 const ethereumNetwork = ethereumNetworks[config.ethereum.network]
 
@@ -64,6 +80,12 @@ const httpProvider = new Web3.providers.HttpProvider(config.ethereum.rpc.host)
 const provider = new HDWalletProvider(mnemonic, httpProvider)
 const web3WithArbiter = new Web3(provider)
 
+const lenderProvider = new HDWalletProvider(getEnvTestValue('LENDER_MNEMONIC').toString(), httpProvider)
+const web3WithLender = new Web3(lenderProvider)
+
+const borrowerProvider = new HDWalletProvider(getEnvTestValue('BORROWER_MNEMONIC').toString(), httpProvider)
+const web3WithBorrower = new Web3(borrowerProvider)
+
 const web3WithNode = new Web3(new Web3.providers.HttpProvider(config.ethereum.rpc.host))
 
 const hdWalletProvider = new HDWalletProvider(getEnvTestValue('ETH_SIGNER_MNEMONIC').toString(), httpProvider)
@@ -74,12 +96,16 @@ const chains = {
   bitcoinWithJs: { id: 'Bitcoin Js', name: 'bitcoin', client: bitcoinWithJs, network: bitcoinNetwork },
   bitcoinWithNode: { id: 'Bitcoin Node', name: 'bitcoin', client: bitcoinWithNode, network: bitcoinNetwork },
   bitcoinArbiter: { id: 'Bitcoin Arbiter', name: 'bitcoin', client: bitcoinArbiter, network: bitcoinNetwork },
+  bitcoinLender: { id: 'Bitcoin Lender', name: 'bitcoin', client: bitcoinLender, network: bitcoinNetwork },
+  bitcoinBorrower: { id: 'Bitcoin Borrower', name: 'bitcoin', client: bitcoinBorrower, network: bitcoinNetwork },
   ethereumWithNode: { id: 'Ethereum Node', name: 'ethereum', client: ethereumWithNode },
   ethereumWithMetaMask: { id: 'Ethereum MetaMask', name: 'ethereum', client: ethereumWithMetaMask },
   ethereumArbiter: { id: 'Ethereum Arbiter', name: 'ethereum', client: ethereumArbiter },
   web3WithNode: { id: 'Web3 Node', name: 'ethereum', client: web3WithNode },
   web3WithMetaMask: { id: 'Web3 MetaMask', name: 'ethereum', client: web3WithMetaMask },
   web3WithArbiter: { id: 'Web3 Arbiter', name: 'ethereum', client: web3WithArbiter },
+  web3WithLender: { id: 'Web3 Lender', name: 'ethereum', client: web3WithLender },
+  web3WithBorrower: { id: 'Web3 Borrower', name: 'ethereum', client: web3WithBorrower },
   web3WithHDWallet: { id: 'Web3 HDWallet', name: 'ethereum', client: web3WithHDWallet }
 }
 

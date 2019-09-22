@@ -3,6 +3,6 @@ const { rewriteEnv } = require('../../../common')
 
 describe('Reset Mnemonic', () => {
   it('should generate Mnemonic and insert into .env', async () => {
-    rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
+    rewriteEnv('.env', 'LENDER_MNEMONIC', `"${generateMnemonic(128)}"`)
   })
 })

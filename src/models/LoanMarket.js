@@ -40,6 +40,10 @@ const LoanMarketSchema = new mongoose.Schema({
   fundCreateTxHash: {
     type: String
   },
+  secretIndex: {
+    type: Number,
+    default: 0
+  },
   status: {
     type: String,
     enum: ['ACTIVE', 'INACTIVE'],
@@ -55,6 +59,7 @@ LoanMarketSchema.methods.json = function () {
 
   delete json._id
   delete json.__v
+  delete json.secretIndex
 
   return json
 }
