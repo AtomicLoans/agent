@@ -22,7 +22,7 @@ async function setTxParams (data, from, to, instance) {
 
   txParams.nonce = nonce
   txParams.gasPrice = gasPrice
-  txParams.gasLimit = gasLimit + 3000000
+  txParams.gasLimit = gasLimit + 500000
 
   const ethTx = EthTx.fromTxParams(txParams)
   await ethTx.save()

@@ -9,7 +9,7 @@ const { generateMnemonic } = require('bip39')
 
 const { chains, connectMetaMask, rewriteEnv } = require('../../common')
 const { fundArbiter, fundAgent, fundTokens, getAgentAddress, generateSecretHashesArbiter, getTestObjects, cancelLoans, removeFunds, cancelJobs, fundWeb3Address } = require('../loanCommon')
-const fundFixtures = require('./fixtures/fundFixtures')
+const fundFixtures = require('../fixtures/fundFixtures')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
 const { numToBytes32, rateToSec } = require('../../../src/utils/finance')
@@ -100,7 +100,7 @@ function testFunds (web3Chain, ethNode) {
       const { body } = await chai.request(server).post('/funds/new').send(fundParams)
       const { id: fundModelId } = body
 
-      await sleep(14000)
+      await sleep(5000)
       await ethNode.client.getMethod('jsonrpc')('miner_start')
 
       const fundId = await checkFundCreated(fundModelId)
@@ -271,8 +271,8 @@ async function testSetup (web3Chain, ethNode) {
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'ETH_SIGNER', address)
   await cancelLoans(web3Chain)
-  await cancelJobs()
-  rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
+  await cancelJobs(server)
+  rewriteEnv('.env', 'LENDER_MNEMONIC', `"${generateMnemonic(128)}"`)
   await removeFunds()
   await fundAgent(server)
   await fundArbiter()

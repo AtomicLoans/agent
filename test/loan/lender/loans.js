@@ -34,7 +34,7 @@ function testLoans (web3Chain, btcChain) {
 
       console.log('WAITING FOR CANCEL')
 
-      await secondsCountDown(12)
+      await secondsCountDown(15)
 
       const { off, withdrawn } = await loans.methods.bools(numToBytes32(loanId)).call()
 
@@ -49,8 +49,8 @@ async function testSetup (web3Chain, btcChain) {
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'ETH_SIGNER', address)
   await cancelLoans(web3Chain)
-  rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
-  await cancelJobs()
+  rewriteEnv('.env', 'LENDER_MNEMONIC', `"${generateMnemonic(128)}"`)
+  await cancelJobs(server)
   await removeFunds()
   await fundAgent(server)
   await fundArbiter()

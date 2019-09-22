@@ -78,15 +78,15 @@ const LoanSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
+  borrowerSecretHashes: {
+    type: Array,
+    index: true
+  },
   lenderSecretHashes: {
     type: Array,
     index: true
   },
   lenderSecrets: {
-    type: Array,
-    index: true
-  },
-  borrowerSecretHashes: {
     type: Array,
     index: true
   },
@@ -139,6 +139,9 @@ const LoanSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  sales: [{
+    type: mongoose.Schema.Types.ObjectId, ref: 'Sale'
+  }],
   status: {
     type: String,
     enum: ['QUOTE', 'REQUESTING', 'AWAITING_COLLATERAL', 'APPROVING', 'APPROVED', 'CANCELLING', 'CANCELLED', 'WITHDRAWN', 'REPAID', 'ACCEPTING', 'ACCEPTED', 'FAILED'],

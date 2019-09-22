@@ -8,7 +8,7 @@ const { getWeb3Address } = require('../../util/web3Helpers')
 const { getTestObjects, fundTokens } = require('../../loanCommon')
 const { numToBytes32 } = require('../../../../src/utils/finance')
 const { currencies } = require('../../../../src/utils/fx')
-const fundFixtures = require('../fixtures/fundFixtures')
+const fundFixtures = require('../../fixtures/fundFixtures')
 
 const { toWei } = web3.utils
 

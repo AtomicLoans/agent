@@ -11,11 +11,10 @@ agenda.defaultConcurrency(1000)
 
 async function start () {
   await agenda.start()
-  await agenda.every('5 minutes', 'update-market-data')
+  await agenda.every('30 seconds', 'update-market-data')
 
   if (process.env.PARTY === 'arbiter') {
-    console.log('arbiter check started')
-    // await agenda.every('5 minutes', 'check-loan-statuses') // TODO
+    await agenda.every(process.env.ARBITER_STATUS_INTERVAL, 'check-arbiter-status')
   }
 }
 

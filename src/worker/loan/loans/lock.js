@@ -46,7 +46,6 @@ function defineLoanLockJobs (agenda) {
         await agenda.now('accept-or-cancel-loan', { loanModelId })
       } else {
         agenda.schedule('in 5 seconds', 'verify-lock-collateral', { loanModelId })
-        console.log('rescheduled')
       }
     }
 

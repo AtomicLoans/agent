@@ -2,13 +2,15 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config()
 }
 
+const { MONGOOSE_DEBUG, MONGODB_ARBITER_URI, MONGODB_LENDER_URI } = process.env
+const { isArbiter } = require('./utils/env')
 const mongoose = require('mongoose')
 
-if (process.env.MONGOOSE_DEBUG === 'true') {
+if (MONGOOSE_DEBUG === 'true') {
   mongoose.set('debug', true)
 }
 
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useCreateIndex: true })
+mongoose.connect(isArbiter() ? MONGODB_ARBITER_URI : MONGODB_LENDER_URI, { useNewUrlParser: true, useCreateIndex: true })
 
 switch (process.env.PROCESS_TYPE) {
   case 'api':
