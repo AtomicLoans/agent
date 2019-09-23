@@ -4,6 +4,7 @@
   "repository": "https://github.com/atomicloans/atomicagent",
   "logo": "https://labs.consensys.net/static/f2d9ac9d2c48ef3f13e8f43497ce7907/3318a/atomic-loans.png",
   "keywords": ["atomic loans", "loans", "ethereum", "bitcoin", "cryptocurrency"],
+  "addons": ["mongolab:sandbox"],
   "env": {
     "METAMASK_ETH_ADDRESS": {
       "description": "Please enter the Etheruem address associated with your Metamask Wallet",
@@ -14,5 +15,6 @@
       "value": "",
       "required": false
     }
-  }
+  },
+  "postdeploy": "npm run api:lender"
 }
