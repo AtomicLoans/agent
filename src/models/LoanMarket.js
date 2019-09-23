@@ -79,7 +79,7 @@ LoanMarketSchema.methods.getAgentAddresses = async function () {
   return {
     principalAddress: principalAddresses[0],
     collateralAddress: collateralAddresses[0].address,
-    collateralPublicKey: collateralAddresses[0].publicKey
+    collateralPublicKey: collateralAddresses[0].publicKey.toString('hex')
   }
 }
 

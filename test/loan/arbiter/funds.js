@@ -2,15 +2,12 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
-const BN = require('bignumber.js')
 const { generateMnemonic } = require('bip39')
 
 const { createFundAndRequestMultipleTimes } = require('./common')
 const { fundAgent, fundLender, getTestObjects, cancelJobs, fundWeb3Address } = require('../loanCommon')
 const { chains, connectMetaMask, rewriteEnv } = require('../../common')
 const { getWeb3Address } = require('../util/web3Helpers')
-
-const web3 = require('web3')
 
 chai.should()
 const expect = chai.expect
@@ -19,8 +16,6 @@ chai.use(chaiHttp)
 chai.use(chaiAsPromised)
 
 const server = 'http://localhost:3032/api/loan'
-
-const lenderChain =  chains.web3WithLender
 
 function testFunds (web3Chain, ethNode) {
   describe('Create Custom Loan Fund', () => {

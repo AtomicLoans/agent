@@ -4,7 +4,6 @@ const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
 const BN = require('bignumber.js')
 const { generateMnemonic } = require('bip39')
-const { sleep } = require('@liquality/utils')
 
 const { chains, connectMetaMask, rewriteEnv } = require('../../common')
 const { fundWeb3Address } = require('../loanCommon')
