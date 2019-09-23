@@ -155,6 +155,7 @@ module.exports = {
   fundAgent,
   fundTokens,
   getAgentAddress,
+  getAgentAddresses,
   generateSecretHashesArbiter,
   getLockParams,
   getTestObject,

@@ -27,10 +27,13 @@ function defineFundsRouter (router) {
 
   router.post('/funds/new', asyncHandler(async (req, res, next) => {
     console.log('start /funds/new')
+
     let fund
     const agenda = req.app.get('agenda')
     const { body } = req
     const { principal, collateral, custom } = body
+
+    // TODO: implement verify signature
 
     fund = await Fund.findOne({ principal, collateral, status: { $ne: 'FAILED' } }).exec()
     if (fund && fund.status === 'CREATED') return next(res.createError(401, 'Fund was already created. Agent can only have one Loan Fund'))

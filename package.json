@@ -25,6 +25,7 @@
     "test:lender:loans": "mocha test/loan/lender/loans $npm_package_options_mocha",
     "test:lender:e2e": "mocha test/loan/lender/e2e $npm_package_options_mocha",
     "test:arbiter:funds": "mocha test/loan/arbiter/funds $npm_package_options_mocha",
+    "test:arbiter:agents": "mocha test/loan/arbiter/agents $npm_package_options_mocha",
     "deploy:fund": "mocha test/loan/lender/deploy/fund $npm_package_options_mocha",
     "deploy:deposit": "mocha test/loan/lender/deploy/deposit $npm_package_options_mocha",
     "reset:jobs": "mocha test/loan/lender/reset/jobs $npm_package_options_mocha",
@@ -90,6 +91,7 @@
     "mongoose-timestamp": "^0.6.0",
     "node-metamask": "^1.1.2",
     "path": "^0.12.7",
+    "request-ip": "^2.1.3",
     "truffle-hdwallet-provider": "^1.0.17",
     "web3": "^1.2.1"
   },
