@@ -1,0 +1,18 @@
+{
+  "name": "Atomic Agent",
+  "description": "Lending on autopilot",
+  "repository": "https://github.com/atomicloans/atomicagent",
+  "logo": "https://labs.consensys.net/static/f2d9ac9d2c48ef3f13e8f43497ce7907/3318a/atomic-loans.png",
+  "keywords": ["atomic loans", "loans", "ethereum", "bitcoin", "cryptocurrency"],
+  "env": {
+    "METAMASK_ETH_ADDRESS": {
+      "description": "Please enter the Etheruem address associated with your Metamask Wallet",
+      "value": ""
+    },
+    "MNEMONIC": {
+      "description": "(OPTIONAL) Enter a 12 word mnemonic if you are importing an existing agent",
+      "value": "",
+      "required": false
+    }
+  }
+}

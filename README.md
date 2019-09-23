@@ -16,3 +16,7 @@ npm run migrate
 npm run api
 npm run worker # in a separate shell
 ```
+
+## Deploy your own Atomic Agent
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
