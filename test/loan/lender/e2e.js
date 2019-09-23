@@ -187,7 +187,7 @@ async function testSetup (web3Chain, btcChain) {
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'ETH_SIGNER', address)
   await cancelLoans(web3Chain)
-  rewriteEnv('.env', 'LENDER_MNEMONIC', `"${generateMnemonic(128)}"`)
+  rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
   await cancelJobs(server)
   await removeFunds()
   await fundAgent(server)

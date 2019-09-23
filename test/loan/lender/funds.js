@@ -272,7 +272,7 @@ async function testSetup (web3Chain, ethNode) {
   rewriteEnv('.env', 'ETH_SIGNER', address)
   await cancelLoans(web3Chain)
   await cancelJobs(server)
-  rewriteEnv('.env', 'LENDER_MNEMONIC', `"${generateMnemonic(128)}"`)
+  rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
   await removeFunds()
   await fundAgent(server)
   await fundArbiter()

@@ -5,7 +5,7 @@ const { isArbiter } = require('./env')
 const {
   BTC_RPC, BTC_USER, BTC_PASS,
   ETH_RPC, ETH_USER, ETH_PASS,
-  DAI_ADDRESS, USDC_ADDRESS, LENDER_MNEMONIC, ARBITER_MNEMONIC
+  DAI_ADDRESS, USDC_ADDRESS, MNEMONIC, ARBITER_MNEMONIC
 } = process.env
 
 const BitcoinRpcProvider = require('@liquality/bitcoin-rpc-provider')
@@ -23,7 +23,7 @@ const BTC = new Client()
 const BTCLoan = new LoanClient(BTC)
 BTC.loan = BTCLoan
 BTC.addProvider(new BitcoinRpcProvider(BTC_RPC, BTC_USER, BTC_PASS))
-BTC.addProvider(new BitcoinJsWalletProvider(BitcoinNetworks.bitcoin_regtest, BTC_RPC, BTC_USER, BTC_PASS, isArbiter() ? ARBITER_MNEMONIC : LENDER_MNEMONIC, 'bech32'))
+BTC.addProvider(new BitcoinJsWalletProvider(BitcoinNetworks.bitcoin_regtest, BTC_RPC, BTC_USER, BTC_PASS, isArbiter() ? ARBITER_MNEMONIC : MNEMONIC, 'bech32'))
 BTC.addProvider(new BitcoinSwapProvider({ network: BitcoinNetworks.bitcoin_regtest }))
 BTC.loan.addProvider(new BitcoinCollateralProvider({ network: BitcoinNetworks.bitcoin_regtest }))
 BTC.loan.addProvider(new BitcoinCollateralSwapProvider({ network: BitcoinNetworks.bitcoin_regtest }))
