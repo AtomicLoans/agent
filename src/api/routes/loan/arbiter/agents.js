@@ -12,7 +12,7 @@ function defineAgentsRouter (router) {
     const { ethSigner, principalAddress, collateralPublicKey } = body
     const endpoint = requestIp.getClientIp(req)
     const host = req.get('host')
-    const origin = req.get('origin')
+    const origin = req.headers.origin
 
     const agentExists = await Agent.findOne({ ethSigner, principalAddress, collateralPublicKey }).exec()
     if (!agentExists) {
