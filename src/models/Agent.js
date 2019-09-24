@@ -9,14 +9,6 @@ const AgentSchema = new mongoose.Schema({
     type: String,
     index: true
   },
-  host: {
-    type: String,
-    index: true
-  },
-  origin: {
-    type: String,
-    index: true
-  },
   principalAddress: {
     type: String,
     index: true

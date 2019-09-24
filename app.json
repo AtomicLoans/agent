@@ -18,9 +18,13 @@
       "value": "",
       "required": false
     },
+    "HEROKU_APP": {
+      "require": true
+    },
     "NPM_CONFIG_PRODUCTION": {
       "description": "test",
       "value": "true"
     }
-  }
+  },
+  "success_url": "https://atomicloans.io"
 }
