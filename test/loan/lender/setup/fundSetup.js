@@ -5,7 +5,7 @@ const web3 = require('web3')
 const { sleep } = require('@liquality/utils')
 
 const { getWeb3Address } = require('../../util/web3Helpers')
-const { getTestObjects, fundTokens } = require('../../loanCommon')
+const { getTestContract, getTestObjects, fundTokens } = require('../../loanCommon')
 const { numToBytes32 } = require('../../../../src/utils/finance')
 const { currencies } = require('../../../../src/utils/fx')
 const fundFixtures = require('../../fixtures/fundFixtures')
@@ -33,7 +33,7 @@ async function createCustomFund (web3Chain, arbiterChain, amount, principal) {
 
   const fundId = await checkFundCreated(fundModelId)
 
-  await token.methods.approve(process.env[`${principal}_LOAN_FUNDS_ADDRESS`], amountToDeposit).send({ gas: 100000 })
+  await token.methods.approve(getTestContract('funds', principal), amountToDeposit).send({ gas: 100000 })
   await funds.methods.deposit(numToBytes32(fundId), amountToDeposit).send({ gas: 100000 })
 
   return fundId
@@ -49,7 +49,7 @@ async function depositToFund (web3Chain, amount, principal) {
   const { body } = await chai.request(server).get(`/funds/ticker/${principal}`)
   const { fundId } = body
 
-  await token.methods.approve(process.env[`${principal}_LOAN_FUNDS_ADDRESS`], amountToDeposit).send({ gas: 100000 })
+  await token.methods.approve(getTestContract('funds', principal), amountToDeposit).send({ gas: 100000 })
   await funds.methods.deposit(numToBytes32(fundId), amountToDeposit).send({ gas: 100000 })
 
   return fundId

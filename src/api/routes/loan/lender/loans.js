@@ -3,7 +3,7 @@ const BN = require('bignumber.js')
 const { ensure0x } = require('@liquality/ethereum-utils')
 const { verifySignature } = require('../../../../utils/signatures')
 const clients = require('../../../../utils/clients')
-const { loadObject } = require('../../../../utils/contracts')
+const { getObject } = require('../../../../utils/contracts')
 const { getEthSigner } = require('../../../../utils/address')
 const { numToBytes32 } = require('../../../../utils/finance')
 const web3 = require('web3')
@@ -23,7 +23,7 @@ function defineLoansRouter (router) {
     const { rate } = market
     const { fundId } = fund
 
-    const funds = await loadObject('funds', process.env[`${principal}_LOAN_FUNDS_ADDRESS`])
+    const funds = getObject('funds', principal)
     const liquidationRatio = await funds.methods.liquidationRatio(numToBytes32(fundId)).call()
     const minimumCollateralAmount = BN(principalAmount).dividedBy(rate).times(fromWei(liquidationRatio, 'gether')).toFixed(8)
 
@@ -113,7 +113,7 @@ function defineLoansRouter (router) {
 
     const { principal, collateralRefundableP2SHAddress, collateralSeizableP2SHAddress, refundableCollateralAmount, seizableCollateralAmount } = loan
 
-    const loans = await loadObject('loans', process.env[`${principal}_LOAN_LOANS_ADDRESS`])
+    const loans = getObject('loans', principal)
     const approved = await loans.methods.approved(numToBytes32(params.loanId)).call()
 
     if (approved) {
@@ -148,7 +148,7 @@ function defineLoansRouter (router) {
 
     const { principal, loanId } = loan
 
-    const loans = await loadObject('loans', process.env[`${principal}_LOAN_LOANS_ADDRESS`])
+    const loans = getObject('loans', principal)
     const { off, paid } = await loans.methods.bools(numToBytes32(loanId)).call()
 
     if (!off && paid) {

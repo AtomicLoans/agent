@@ -7,7 +7,7 @@ const toSecs = require('@mblackmblack/to-seconds')
 const { sha256 } = require('@liquality/crypto')
 const { ensure0x } = require('@liquality/ethereum-utils')
 
-const { getTestObjects, getAgentAddress, fundTokens } = require('../loanCommon')
+const { getTestContract, getTestObjects, getAgentAddress, fundTokens } = require('../loanCommon')
 const { chains } = require('../../common')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
@@ -55,7 +55,7 @@ async function createFundAndRequestMultipleTimes (principal, collateral, amount,
 
   await fundTokens(lenderAddress, amountInWei, principal)
 
-  await lenderToken.methods.approve(process.env[`${principal}_LOAN_FUNDS_ADDRESS`], amountInWei).send({ gas: 100000 })
+  await lenderToken.methods.approve(getTestContract('funds', principal), amountInWei).send({ gas: 100000 })
   await lenderFunds.methods.deposit(fundId, amountInWei).send({ gas: 400000 })
 
   console.log('fundId', fundId)

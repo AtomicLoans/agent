@@ -6,7 +6,8 @@ const EthTx = require('../../../models/EthTx')
 const LoanMarket = require('../../../models/LoanMarket')
 const Secret = require('../../../models/Secret')
 const Secrets = require('../../../models/Secrets')
-const { getObject } = require('../../../utils/contracts')
+const { getObject, getContract } = require('../../../utils/contracts')
+const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
 const web3 = require('../../../utils/web3')
 
@@ -21,14 +22,13 @@ function defineArbiterSecretsJobs (agenda) {
     const { principal, secretIndex } = loanMarket
     const { principalAddress: lenderAddress } = await loanMarket.getAgentAddresses()
 
-    const funds = await getObject('funds', principal)
-    const fundContractAddress = process.env[`${principal}_LOAN_FUNDS_ADDRESS`]
+    const funds = getObject('funds', principal)
 
     const secretHashesCount = await funds.methods.secretHashesCount(lenderAddress).call()
 
     const message = `${lenderAddress}-${principal}-atomic-loans-${secretIndex}`
 
-    const secrets = await loanMarket.collateralClient().loan.secrets.generateSecrets(message, parseInt(process.env.LOAN_SECRET_HASH_COUNT) * 4)
+    const secrets = await loanMarket.collateralClient().loan.secrets.generateSecrets(message, parseInt(getInterval('LOAN_SECRET_HASH_COUNT')) * 4)
 
     const secretsModel = Secrets.fromSecretHashesCount(secretHashesCount)
     await secretsModel.save()
@@ -42,7 +42,7 @@ function defineArbiterSecretsJobs (agenda) {
 
     const txData = funds.methods.generate(secretHashes).encodeABI()
 
-    const ethTx = await setTxParams(txData, lenderAddress, fundContractAddress, secretsModel)
+    const ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), secretsModel)
 
     secretsModel.principal = principal
     secretsModel.ethTxId = ethTx.id
@@ -69,7 +69,7 @@ function defineArbiterSecretsJobs (agenda) {
       const ethTx = await EthTx.findOne({ _id: secretsModel.ethTxId }).exec()
       if (!ethTx) return console.log('Error: EthTx not found')
 
-      if (date(process.env.BUMP_TX_INTERVAL) > ethTx.updatedAt && secretsModel.status !== 'FAILED') {
+      if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && secretsModel.status !== 'FAILED') {
         console.log('BUMPING TX FEE')
 
         const loanMarket = await LoanMarket.findOne({ _id: loanMarketId }).exec()
@@ -78,7 +78,7 @@ function defineArbiterSecretsJobs (agenda) {
         await bumpTxFee(ethTx)
         await generateSecretHashes(ethTx, secretsModel, loanMarket, agenda, done) // TODO: ensure loanMarket is found
       } else {
-        await agenda.schedule(process.env.SECRETS_BUMP_TX_INTERVAL, 'verify-add-secret-hashes', { loanMarketId, secretsModelId })
+        await agenda.schedule(getInterval('SECRETS_BUMP_TX_INTERVAL'), 'verify-add-secret-hashes', { loanMarketId, secretsModelId })
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')

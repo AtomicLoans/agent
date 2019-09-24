@@ -11,8 +11,6 @@ const path = require('path')
 
 const metaMaskConnector = new MetaMaskConnector({ port: config.ethereum.metaMaskConnector.port })
 
-const mnemonic = 'shield various crystal grape prize weasel antique raven acoustic course rich stone keep ramp soldier joy matter fetch miracle connect banner apology risk junk'
-
 const bitcoinNetworks = providers.bitcoin.networks
 const bitcoinNetwork = bitcoinNetworks[config.bitcoin.network]
 
@@ -40,7 +38,7 @@ const bitcoinArbiter = new Client()
 const bitcoinLoanArbiter = new LoanClient(bitcoinArbiter)
 bitcoinArbiter.loan = bitcoinLoanArbiter
 bitcoinArbiter.addProvider(new providers.bitcoin.BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
-bitcoinArbiter.addProvider(new providers.bitcoin.BitcoinJsWalletProvider(bitcoinNetworks[config.bitcoin.network], config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, mnemonic, 'bech32'))
+bitcoinArbiter.addProvider(new providers.bitcoin.BitcoinJsWalletProvider(bitcoinNetworks[config.bitcoin.network], config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('ARBITER_MNEMONIC').toString(), 'bech32'))
 bitcoinArbiter.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
 bitcoinArbiter.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralSwapProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
 
@@ -72,12 +70,12 @@ ethereumWithMetaMask.addProvider(new providers.ethereum.EthereumMetaMaskProvider
 
 const ethereumArbiter = new Client()
 ethereumArbiter.addProvider(new providers.ethereum.EthereumRpcProvider(config.ethereum.rpc.host))
-ethereumArbiter.addProvider(new providers.ethereum.EthereumJsWalletProvider(ethereumNetwork, mnemonic))
+ethereumArbiter.addProvider(new providers.ethereum.EthereumJsWalletProvider(ethereumNetwork, getEnvTestValue('ARBITER_MNEMONIC').toString()))
 
 const web3WithMetaMask = new Web3(metaMaskConnector.getProvider())
 
 const httpProvider = new Web3.providers.HttpProvider(config.ethereum.rpc.host)
-const provider = new HDWalletProvider(mnemonic, httpProvider)
+const provider = new HDWalletProvider(getEnvTestValue('ARBITER_MNEMONIC').toString(), httpProvider)
 const web3WithArbiter = new Web3(provider)
 
 const lenderProvider = new HDWalletProvider(getEnvTestValue('LENDER_MNEMONIC').toString(), httpProvider)

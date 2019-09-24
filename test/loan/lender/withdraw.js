@@ -21,7 +21,7 @@ const server = 'http://localhost:3030/api/loan'
 
 function testWithdraw (chain) {
   describe('/POST withdraw - Withdraw excess funds', () => {
-    it('should return eth to metamask user if ETH_SIGNER', async () => {
+    it('should return eth to metamask user if METAMASK_ETH_ADDRESS', async () => {
       const timestamp = Math.floor(new Date().getTime() / 1000)
       const amount = 1
       const currency = 'ETH'
@@ -47,8 +47,8 @@ describe('Lender Agent - Withdraw', () => {
     before(async function () {
       await fundWeb3Address(chains.web3WithHDWallet)
       const address = await getWeb3Address(chains.web3WithHDWallet)
-      rewriteEnv('.env', 'ETH_SIGNER', address)
-      rewriteEnv('.env', 'LENDER_MNEMONIC', `"${generateMnemonic(128)}"`)
+      rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
+      rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
     })
     testWithdraw(chains.web3WithHDWallet)
   })
@@ -58,8 +58,8 @@ describe('Lender Agent - Withdraw', () => {
     before(async function () {
       await fundWeb3Address(chains.web3WithMetaMask)
       const address = await getWeb3Address(chains.web3WithMetaMask)
-      rewriteEnv('.env', 'ETH_SIGNER', address)
-      rewriteEnv('.env', 'LENDER_MNEMONIC', `"${generateMnemonic(128)}"`)
+      rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
+      rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
     })
     testWithdraw(chains.web3WithMetaMask)
   })

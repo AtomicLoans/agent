@@ -1,7 +1,8 @@
 const Loan = require('../../../models/Loan')
 const EthTx = require('../../../models/EthTx')
 const { numToBytes32 } = require('../../../utils/finance')
-const { loadObject } = require('../../../utils/contracts')
+const { getObject, getContract } = require('../../../utils/contracts')
+const { getInterval } = require('../../../utils/intervals')
 const { ensure0x } = require('@liquality/ethereum-utils')
 const keccak256 = require('keccak256')
 const { currencies } = require('../../../utils/fx')
@@ -26,7 +27,7 @@ function defineLoanRequestJobs (agenda) {
       lenderPrincipalAddress, requestLoanDuration, borrowerCollateralPublicKey, lenderCollateralPublicKey, requestCreatedAt
     } = loan
 
-    const funds = await loadObject('funds', process.env[`${principal}_LOAN_FUNDS_ADDRESS`])
+    const funds = getObject('funds', principal)
 
     const fundId = await funds.methods.fundOwner(ensure0x(lenderPrincipalAddress)).call()
 
@@ -44,7 +45,7 @@ function defineLoanRequestJobs (agenda) {
 
     const txData = funds.methods.request(...loanParams).encodeABI()
 
-    const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_FUNDS_ADDRESS`], loan)
+    const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), getContract('funds', principal), loan)
 
     await requestLoan(ethTx, loan, agenda, done)
   })
@@ -67,12 +68,12 @@ function defineLoanRequestJobs (agenda) {
       const ethTx = await EthTx.findOne({ _id: loan.ethTxId }).exec()
       if (!ethTx) return console.log('Error: EthTx not found')
 
-      if (date(process.env.BUMP_TX_INTERVAL) > ethTx.updatedAt && loan.status !== 'FAILED') {
+      if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && loan.status !== 'FAILED') {
         console.log('BUMPING TX FEE')
         await bumpTxFee(ethTx)
         await requestLoan(ethTx, loan, agenda, done)
       } else {
-        await agenda.schedule(process.env.CHECK_TX_INTERVAL, 'verify-request-loan', { loanModelId })
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan', { loanModelId })
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')

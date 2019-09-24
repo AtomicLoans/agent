@@ -6,7 +6,7 @@ const { checksumEncode } = require('@liquality/ethereum-utils')
 
 function getEthSigner () {
   checkEnv()
-  return checksumEncode(process.env.ETH_SIGNER)
+  return checksumEncode(process.env.METAMASK_ETH_ADDRESS)
 }
 
 function checkEnv () {
@@ -14,7 +14,7 @@ function checkEnv () {
     const fs = require('fs')
     const path = require('path')
     const env = fs.readFileSync(path.resolve(process.cwd(), '.env'), 'utf-8')
-    process.env.ETH_SIGNER = env.match(/ETH_SIGNER=([0-9a-z])\w+/g).toString().replace('ETH_SIGNER=', '')
+    process.env.METAMASK_ETH_ADDRESS = env.match(/METAMASK_ETH_ADDRESS=([0-9a-z])\w+/g).toString().replace('METAMASK_ETH_ADDRESS=', '')
   }
 }
 

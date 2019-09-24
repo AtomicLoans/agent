@@ -1,6 +1,7 @@
 const Loan = require('../../../models/Loan')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject } = require('../../../utils/contracts')
+const { getInterval } = require('../../../utils/intervals')
 
 function defineLoanStatusJobs (agenda) {
   agenda.define('check-loan-status', async (job, done) => {
@@ -11,15 +12,15 @@ function defineLoanStatusJobs (agenda) {
     if (!loan) return console.log('Error: Loan not found')
 
     const { loanId, principal } = loan
-    const loans = await getObject('loans', principal)
+    const loans = getObject('loans', principal)
     const { withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
 
     if (!withdrawn && !paid && !sale && !off) {
-      await agenda.schedule(process.env.REPAID_TX_INTERVAL, 'check-loan-status', { loanModelId })
+      await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status', { loanModelId })
     } else if (withdrawn && !paid && !sale && !off) {
       loan.status = 'WITHDRAWN'
       await loan.save()
-      await agenda.schedule(process.env.REPAID_TX_INTERVAL, 'check-loan-status', { loanModelId })
+      await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status', { loanModelId })
     } else if (withdrawn && paid && !sale && !off) {
       loan.status = 'REPAID'
       await loan.save()

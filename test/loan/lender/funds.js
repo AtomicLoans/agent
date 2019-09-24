@@ -8,7 +8,7 @@ const { sleep } = require('@liquality/utils')
 const { generateMnemonic } = require('bip39')
 
 const { chains, connectMetaMask, rewriteEnv } = require('../../common')
-const { fundArbiter, fundAgent, fundTokens, getAgentAddress, generateSecretHashesArbiter, getTestObjects, cancelLoans, removeFunds, cancelJobs, fundWeb3Address } = require('../loanCommon')
+const { fundArbiter, fundAgent, fundTokens, getAgentAddress, generateSecretHashesArbiter, getTestContract, getTestObjects, cancelLoans, removeFunds, cancelJobs, fundWeb3Address } = require('../loanCommon')
 const fundFixtures = require('../fixtures/fundFixtures')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
@@ -105,7 +105,7 @@ function testFunds (web3Chain, ethNode) {
 
       const fundId = await checkFundCreated(fundModelId)
 
-      await token.methods.approve(process.env[`${principal}_LOAN_FUNDS_ADDRESS`], amountToDeposit).send({ gas: 100000 })
+      await token.methods.approve(getTestContract('funds', principal), amountToDeposit).send({ gas: 100000 })
       await funds.methods.deposit(numToBytes32(fundId), amountToDeposit).send({ gas: 500000 })
 
       const {
@@ -260,7 +260,7 @@ async function createFundFromFixture (web3Chain, fixture, principal_, amount) {
 
   const fundId = await checkFundCreated(fundModelId)
 
-  await token.methods.approve(process.env[`${principal}_LOAN_FUNDS_ADDRESS`], amountToDeposit).send({ gas: 500000 })
+  await token.methods.approve(getTestContract('funds', principal), amountToDeposit).send({ gas: 500000 })
   await funds.methods.deposit(numToBytes32(fundId), amountToDeposit).send({ gas: 2000000 })
 
   return { fundId, fundParams, agentAddress: agentPrincipalAddress, amountDeposited: amountToDeposit }
@@ -269,10 +269,10 @@ async function createFundFromFixture (web3Chain, fixture, principal_, amount) {
 async function testSetup (web3Chain, ethNode) {
   await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
-  rewriteEnv('.env', 'ETH_SIGNER', address)
+  rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
   await cancelLoans(web3Chain)
   await cancelJobs(server)
-  rewriteEnv('.env', 'LENDER_MNEMONIC', `"${generateMnemonic(128)}"`)
+  rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
   await removeFunds()
   await fundAgent(server)
   await fundArbiter()

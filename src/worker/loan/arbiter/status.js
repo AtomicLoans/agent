@@ -1,6 +1,7 @@
 const LoanMarket = require('../../../models/LoanMarket')
 const Secrets = require('../../../models/Secrets')
 const { getObject } = require('../../../utils/contracts')
+const { getInterval } = require('../../../utils/intervals')
 
 function defineArbiterStatusJobs (agenda) {
   agenda.define('check-arbiter-status', async (job, done) => {
@@ -13,7 +14,7 @@ function defineArbiterStatusJobs (agenda) {
       const { principal } = loanMarket
       const { principalAddress } = await loanMarket.getAgentAddresses()
 
-      const funds = await getObject('funds', principal)
+      const funds = getObject('funds', principal)
 
       const [secretHashesCount, secretHashIndex] = await Promise.all([
         funds.methods.secretHashesCount(principalAddress).call(),
@@ -27,7 +28,7 @@ function defineArbiterStatusJobs (agenda) {
 
       const secretsModel = await Secrets.findOne({ secretHashesCount, principal, status: { $ne: 'FAILED' } }).exec()
       if (!secretsModel) {
-        if (loansRemaining < parseInt(process.env.LOAN_SECRET_HASH_COUNT)) {
+        if (loansRemaining < parseInt(getInterval('LOAN_SECRET_HASH_COUNT'))) {
           agenda.now('add-secrets-hashes', { loanMarketId: loanMarket.id })
         }
       }
