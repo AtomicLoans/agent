@@ -23,5 +23,7 @@
       "value": "true"
     }
   },
-  "postdeploy": ""
+  "scripts": {
+    "start": "./bin/atomicagent-api && ./bin/atomicagent-worker"
+  }
 }
