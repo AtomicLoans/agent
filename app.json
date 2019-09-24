@@ -24,6 +24,6 @@
     }
   },
   "scripts": {
-    "postdeploy": "node ./bin/atomicagent-migrate && node ./bin/atomicagent-worker &"
+    "postdeploy": "./bin/atomicagent-migrate & ./bin/atomicagent-worker &"
   }
 }
