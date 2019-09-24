@@ -1,7 +1,26 @@
 require('dotenv').config()
 const config = require('./config')
-const { Client, providers } = require('@liquality/bundle')
-const { LoanClient, providers: lproviders } = require('@atomicloans/loan-bundle')
+
+const Client = require('@liquality/client')
+const LoanClient = require('@atomicloans/loan-client')
+
+const BitcoinRpcProvider = require('@liquality/bitcoin-rpc-provider')
+const BitcoinEsploraApiProvider = require('@liquality/bitcoin-esplora-api-provider')
+const BitcoinJsWalletProvider = require('@liquality/bitcoin-js-wallet-provider')
+const BitcoinLedgerProvider = require('@liquality/bitcoin-ledger-provider')
+const BitcoinNodeWalletProvider = require('@liquality/bitcoin-node-wallet-provider')
+const BitcoinSwapProvider = require('@liquality/bitcoin-swap-provider')
+const BitcoinCollateralProvider = require('@atomicloans/bitcoin-collateral-provider')
+const BitcoinCollateralSwapProvider = require('@atomicloans/bitcoin-collateral-swap-provider')
+const BitcoinNetworks = require('@liquality/bitcoin-networks')
+
+const EthereumRpcProvider = require('@liquality/ethereum-rpc-provider')
+const EthereumMetaMaskProvider = require('@liquality/ethereum-metamask-provider')
+const EthereumJsWalletProvider = require('@liquality/ethereum-js-wallet-provider')
+const EthereumSwapProvider = require('@liquality/ethereum-swap-provider')
+const EthereumErc20Provider = require('@liquality/ethereum-erc20-provider')
+const EthereumNetworks = require('@liquality/ethereum-networks')
+
 const MetaMaskConnector = require('node-metamask')
 const Web3 = require('web3')
 const HDWalletProvider = require('@truffle/hdwallet-provider')
@@ -11,66 +30,64 @@ const path = require('path')
 
 const metaMaskConnector = new MetaMaskConnector({ port: config.ethereum.metaMaskConnector.port })
 
-const bitcoinNetworks = providers.bitcoin.networks
-const bitcoinNetwork = bitcoinNetworks[config.bitcoin.network]
+const bitcoinNetwork = BitcoinNetworks[config.bitcoin.network]
 
 const bitcoinWithLedger = new Client()
 const bitcoinLoanWithLedger = new LoanClient(bitcoinWithLedger)
 bitcoinWithLedger.loan = bitcoinLoanWithLedger
-bitcoinWithLedger.addProvider(new providers.bitcoin.BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
-bitcoinWithLedger.addProvider(new providers.bitcoin.BitcoinLedgerProvider({ network: bitcoinNetworks[config.bitcoin.network], segwit: false }))
-bitcoinWithLedger.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
-bitcoinWithLedger.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralSwapProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinWithLedger.addProvider(new BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
+bitcoinWithLedger.addProvider(new BitcoinLedgerProvider({ network: bitcoinNetwork, segwit: false }))
+bitcoinWithLedger.loan.addProvider(new BitcoinCollateralProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinWithLedger.loan.addProvider(new BitcoinCollateralSwapProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 
 const bitcoinWithJs = new Client()
 const bitcoinLoanWithJs = new LoanClient(bitcoinWithJs)
 bitcoinWithJs.loan = bitcoinLoanWithJs
-bitcoinWithJs.addProvider(new providers.bitcoin.BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
-bitcoinWithJs.addProvider(new providers.bitcoin.BitcoinJsWalletProvider(bitcoinNetworks[config.bitcoin.network], config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, generateMnemonic(256), 'bech32'))
-bitcoinWithJs.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
-bitcoinWithJs.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralSwapProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinWithJs.addProvider(new BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
+bitcoinWithJs.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, generateMnemonic(256), 'bech32'))
+bitcoinWithJs.loan.addProvider(new BitcoinCollateralProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinWithJs.loan.addProvider(new BitcoinCollateralSwapProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 
 const bitcoinWithNode = new Client()
-bitcoinWithNode.addProvider(new providers.bitcoin.BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
-bitcoinWithNode.addProvider(new providers.bitcoin.BitcoinNodeWalletProvider(bitcoinNetwork, config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, 'bech32'))
+bitcoinWithNode.addProvider(new BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
+bitcoinWithNode.addProvider(new BitcoinNodeWalletProvider(bitcoinNetwork, config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, 'bech32'))
 
 const bitcoinArbiter = new Client()
 const bitcoinLoanArbiter = new LoanClient(bitcoinArbiter)
 bitcoinArbiter.loan = bitcoinLoanArbiter
-bitcoinArbiter.addProvider(new providers.bitcoin.BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
-bitcoinArbiter.addProvider(new providers.bitcoin.BitcoinJsWalletProvider(bitcoinNetworks[config.bitcoin.network], config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('ARBITER_MNEMONIC').toString(), 'bech32'))
-bitcoinArbiter.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
-bitcoinArbiter.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralSwapProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinArbiter.addProvider(new BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
+bitcoinArbiter.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('ARBITER_MNEMONIC').toString(), 'bech32'))
+bitcoinArbiter.loan.addProvider(new BitcoinCollateralProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinArbiter.loan.addProvider(new BitcoinCollateralSwapProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 
 const bitcoinLender = new Client()
 const bitcoinLoanLender = new LoanClient(bitcoinLender)
 bitcoinLender.loan = bitcoinLoanLender
-bitcoinLender.addProvider(new providers.bitcoin.BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
-bitcoinLender.addProvider(new providers.bitcoin.BitcoinJsWalletProvider(bitcoinNetworks[config.bitcoin.network], config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('LENDER_MNEMONIC').toString(), 'bech32'))
-bitcoinLender.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
-bitcoinLender.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralSwapProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinLender.addProvider(new BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
+bitcoinLender.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('LENDER_MNEMONIC').toString(), 'bech32'))
+bitcoinLender.loan.addProvider(new BitcoinCollateralProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinLender.loan.addProvider(new BitcoinCollateralSwapProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 
 const bitcoinBorrower = new Client()
 const bitcoinLoanBorrower = new LoanClient(bitcoinBorrower)
 bitcoinBorrower.loan = bitcoinLoanBorrower
-bitcoinBorrower.addProvider(new providers.bitcoin.BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
-bitcoinBorrower.addProvider(new providers.bitcoin.BitcoinJsWalletProvider(bitcoinNetworks[config.bitcoin.network], config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('BORROWER_MNEMONIC').toString(), 'bech32'))
-bitcoinBorrower.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
-bitcoinBorrower.loan.addProvider(new lproviders.bitcoin.BitcoinCollateralSwapProvider({ network: bitcoinNetworks[config.bitcoin.network] }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinBorrower.addProvider(new BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
+bitcoinBorrower.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('BORROWER_MNEMONIC').toString(), 'bech32'))
+bitcoinBorrower.loan.addProvider(new BitcoinCollateralProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinBorrower.loan.addProvider(new BitcoinCollateralSwapProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 
-const ethereumNetworks = providers.ethereum.networks
-const ethereumNetwork = ethereumNetworks[config.ethereum.network]
+const ethereumNetwork = EthereumNetworks[config.ethereum.network]
 
 const ethereumWithNode = new Client()
-ethereumWithNode.addProvider(new providers.ethereum.EthereumRpcProvider(config.ethereum.rpc.host))
+ethereumWithNode.addProvider(new EthereumRpcProvider(config.ethereum.rpc.host))
 
 const ethereumWithMetaMask = new Client()
-ethereumWithMetaMask.addProvider(new providers.ethereum.EthereumRpcProvider(config.ethereum.rpc.host))
-ethereumWithMetaMask.addProvider(new providers.ethereum.EthereumMetaMaskProvider(metaMaskConnector.getProvider()))
+ethereumWithMetaMask.addProvider(new EthereumRpcProvider(config.ethereum.rpc.host))
+ethereumWithMetaMask.addProvider(new EthereumMetaMaskProvider(metaMaskConnector.getProvider()))
 
 const ethereumArbiter = new Client()
-ethereumArbiter.addProvider(new providers.ethereum.EthereumRpcProvider(config.ethereum.rpc.host))
-ethereumArbiter.addProvider(new providers.ethereum.EthereumJsWalletProvider(ethereumNetwork, getEnvTestValue('ARBITER_MNEMONIC').toString()))
+ethereumArbiter.addProvider(new EthereumRpcProvider(config.ethereum.rpc.host))
+ethereumArbiter.addProvider(new EthereumJsWalletProvider(ethereumNetwork, getEnvTestValue('ARBITER_MNEMONIC').toString()))
 
 const web3WithMetaMask = new Web3(metaMaskConnector.getProvider())
 

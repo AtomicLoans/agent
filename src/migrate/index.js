@@ -10,6 +10,8 @@ async function main () {
 
   const newLoanMarkets = await LoanMarket.insertMany(loanMarkets, { ordered: false })
   console.log(`${newLoanMarkets.length} loan markets have been created`)
+
+  process.exit()
 }
 
 main()

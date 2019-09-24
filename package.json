@@ -4,6 +4,7 @@
   "description": "Atomic Swap Agent",
   "main": "src/index.js",
   "scripts": {
+    "start": "./postdeploy.sh",
     "lint": "standard --fix $npm_package_options_standard",
     "api:lender": "PARTY=lender PORT=3030 PROCESS_TYPE=api nodemon src/index.js",
     "api:lender:test": "NODE_ENV=test PARTY=lender PORT=3030 PROCESS_TYPE=api nodemon src/index.js",
@@ -46,17 +47,16 @@
   "dependencies": {
     "@atomicloans/bitcoin-collateral-provider": "0.3.2-alpha.1",
     "@atomicloans/bitcoin-collateral-swap-provider": "0.3.2-alpha.1",
-    "@atomicloans/loan-bundle": "0.3.2-alpha.1",
     "@atomicloans/loan-client": "0.3.2-alpha.1",
     "@liquality/bitcoin-esplora-api-provider": "^0.3.9-beta.1",
+    "@liquality/bitcoin-js-wallet-provider": "^0.3.9-beta.1",
     "@liquality/bitcoin-networks": "^0.3.6",
-    "@liquality/bitcoin-node-wallet-provider": "^0.3.6",
     "@liquality/bitcoin-rpc-provider": "^0.3.6",
     "@liquality/bitcoin-swap-provider": "^0.3.6",
-    "@liquality/bundle": "^0.3.6",
     "@liquality/client": "^0.3.6",
     "@liquality/crypto": "^0.3.6",
     "@liquality/ethereum-erc20-provider": "^0.3.6",
+    "@liquality/ethereum-networks": "^0.3.9-beta.1",
     "@liquality/ethereum-rpc-provider": "^0.3.6",
     "@liquality/ethereum-swap-provider": "^0.3.6",
     "@liquality/ethereum-utils": "^0.3.6",
@@ -97,6 +97,10 @@
     "web3": "^1.2.1"
   },
   "devDependencies": {
+    "@liquality/bitcoin-ledger-provider": "^0.3.9-beta.1",
+    "@liquality/bitcoin-node-wallet-provider": "^0.3.8",
+    "@liquality/ethereum-js-wallet-provider": "^0.3.9-beta.1",
+    "@liquality/ethereum-metamask-provider": "^0.3.9-beta.1",
     "chai": "^4.2.0",
     "chai-http": "^4.3.0",
     "mocha": "^6.2.0",
