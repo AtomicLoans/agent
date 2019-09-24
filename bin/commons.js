@@ -1,4 +1,7 @@
 const program = require('commander')
+const fs = require('fs')
+const path = require('path')
+const { generateMnemonic } = require('bip39')
 
 const CONFIG_ENV_MAP = {
   port: 'PORT',
@@ -12,6 +15,25 @@ const CONFIG_ENV_MAP = {
   metamaskAddress: 'METAMASK_ETH_ADDRESS',
   mnemonic: 'MNEMONIC',
   network: 'NETWORK'
+}
+
+function rewriteEnv (envFile, key, value) {
+  if (fs.existsSync(path.resolve(process.cwd(), envFile))) {
+    const env = fs.readFileSync(path.resolve(process.cwd(), envFile), 'utf-8')
+    const regex = new RegExp(`${key}=("(.*?)"|([0-9a-zA-Z])\\w+)`, 'g')
+    const newEnv = env.replace(regex, `${key}=${value}`)
+    fs.writeFileSync(path.resolve(process.cwd(), envFile), newEnv, 'utf-8')
+  } else {
+    const newEnv = `${key}=${value}`
+    fs.writeFileSync(path.resolve(process.cwd(), envFile), newEnv, 'utf-8')
+  }
+}
+
+function getEnvValue (envFile, key) {
+  const env = fs.readFileSync(path.resolve(process.cwd(), envFile), 'utf-8')
+  const regex = new RegExp(`${key}=("(.*?)"|([0-9a-zA-Z])\\w+)`, 'g')
+  const value = env.match(regex)
+  return value.toString().replace(`${key}=`, '').replace('"', '').replace('"', '')
 }
 
 module.exports.loadVariables = (config = {}) => {
@@ -38,4 +60,16 @@ module.exports.loadVariables = (config = {}) => {
   })
 
   process.env.PROCESS_TYPE = config.processType
+
+  if (process.env.MNEMONIC !== 'undefined') {
+    rewriteEnv('.env', 'MNEMONIC', `"${process.env.MNEMONIC}"`)
+  } else {
+    if (fs.existsSync(path.resolve(process.cwd(), '.env'))) {
+      process.env.MNEMONIC = getEnvValue('.env', 'MNEMONIC')
+    } else {
+      const mnemonic = generateMnemonic(128)
+      rewriteEnv('.env', 'MNEMONIC', `"${mnemonic}"`)
+      process.env.MNEMONIC = mnemonic
+    }
+  }
 }
