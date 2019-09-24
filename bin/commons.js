@@ -9,6 +9,7 @@ const CONFIG_ENV_MAP = {
   btcRpc: 'BTC_RPC',
   btcUser: 'BTC_PASS',
   btcPass: 'BTC_USER',
+  btcApi: 'BTC_API',
   ethRpc: 'ETH_RPC',
   ethUser: 'ETH_USER',
   ethPass: 'ETH_PASS',
@@ -40,10 +41,11 @@ module.exports.loadVariables = (config = {}) => {
   program
     .option('-p, --port <port>', 'Application port', config.defaultPort ? config.defaultPort : 3000)
     .option('--mongo <uri>', 'mongoDB uri', 'mongodb://localhost/agent')
-    .option('--btc-rpc <url>', 'Bitcoin RPC endpoint', 'http://localhost:18443')
+    .option('--btc-rpc <url>', 'Bitcoin RPC endpoint', 'https://atomicloans.io/bitcointestnetrpc/')
     .option('--btc-user <user>', 'Bitcoin RPC user', 'bitcoin')
     .option('--btc-pass <pass>', 'Bitcoin RPC pass,', 'local321')
-    .option('--eth-rpc <url>', 'Ethereum RPC endpoint', 'http://localhost:8545')
+    .option('--btc-api <api>', 'Bitcoin API Endpoint,', 'https://blockstream.info/testnet/api')
+    .option('--eth-rpc <url>', 'Ethereum RPC endpoint', 'https://kovan.infura.io/v3/53bcde36e0404a6da87b71e780783f79')
     .option('--eth-user <user>', 'Ethereum RPC user')
     .option('--eth-pass <pass>', 'Ethereum RPC pass')
     .option('--metamask <addr>', 'Metamask Ethereum Address')

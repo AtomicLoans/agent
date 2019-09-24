@@ -1,8 +1,8 @@
 {
-  "CHECK_TX_INTERVAL": "in 2 seconds",
-  "BUMP_TX_INTERVAL": "15 seconds ago",
-  "REPAID_TX_INTERVAL": "in 5 seconds",
-  "ARBITER_STATUS_INTERVAL": "15 seconds",
-  "SECRETS_BUMP_TX_INTERVAL": "in 5 seconds",
-  "LOAN_SECRET_HASH_COUNT": 3
+  "CHECK_TX_INTERVAL": "in 15 seconds",
+  "BUMP_TX_INTERVAL": "1 minute ago",
+  "REPAID_TX_INTERVAL": "in 15 seconds",
+  "ARBITER_STATUS_INTERVAL": "30 seconds",
+  "SECRETS_BUMP_TX_INTERVAL": "in 2 minutes",
+  "LOAN_SECRET_HASH_COUNT": 40
 }

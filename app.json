@@ -16,5 +16,5 @@
       "required": false
     }
   },
-  "postdeploy": "npm run api:lender"
+  "postdeploy": ""
 }
