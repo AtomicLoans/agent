@@ -4,12 +4,13 @@ const { isArbiter } = require('./env')
 const { contractAddresses } = require('../networks/index')
 
 const {
-  BTC_RPC, BTC_USER, BTC_PASS,
+  BTC_RPC, BTC_USER, BTC_PASS, BTC_API,
   ETH_RPC, ETH_USER, ETH_PASS,
   NETWORK, MNEMONIC, MNEMONIC_ARBITER
 } = process.env
 
 const BitcoinRpcProvider = require('@liquality/bitcoin-rpc-provider')
+const BitcoinEsploraApiProvider = require('@liquality/bitcoin-esplora-api-provider')
 const BitcoinJsWalletProvider = require('@liquality/bitcoin-js-wallet-provider')
 const BitcoinSwapProvider = require('@liquality/bitcoin-swap-provider')
 const BitcoinCollateralProvider = require('@atomicloans/bitcoin-collateral-provider')
@@ -26,6 +27,9 @@ const BTC = new Client()
 const BTCLoan = new LoanClient(BTC)
 BTC.loan = BTCLoan
 BTC.addProvider(new BitcoinRpcProvider(BTC_RPC, BTC_USER, BTC_PASS))
+if (NETWORK !== 'test') {
+  BTC.addProvider(new BitcoinEsploraApiProvider(BTC_API))
+}
 BTC.addProvider(new BitcoinJsWalletProvider(BitcoinNetworks.bitcoin_regtest, BTC_RPC, BTC_USER, BTC_PASS, isArbiter() ? MNEMONIC_ARBITER : MNEMONIC, 'bech32'))
 BTC.addProvider(new BitcoinSwapProvider({ network: BitcoinNetworks.bitcoin_regtest }))
 BTC.loan.addProvider(new BitcoinCollateralProvider({ network: BitcoinNetworks.bitcoin_regtest }))
