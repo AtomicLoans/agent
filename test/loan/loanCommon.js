@@ -6,6 +6,7 @@ const { sleep } = require('@liquality/utils')
 const { sha256 } = require('@liquality/crypto')
 const web3 = require('web3')
 const { numToBytes32 } = require('../../src/utils/finance')
+const { contractAddresses } = require('../../src/networks/index')
 const { getCurrentTime } = require('../../src/utils/time')
 const { toWei } = web3.utils
 
@@ -18,6 +19,8 @@ chai.use(chaiHttp)
 chai.use(chaiAsPromised)
 
 const lenderServer = 'http://localhost:3030/api/loan'
+
+const addresses = contractAddresses(process.env.NETWORK)
 
 async function cancelJobs (server) {
   await chai.request(server).post('/cancel_jobs').send()
@@ -44,7 +47,7 @@ async function fundAgent (server) {
 async function fundTokens (recipient, amount, principal) {
   const { address: ethereumWithNodeAddress } = await chains.ethereumWithNode.client.wallet.getUnusedAddress()
 
-  const token = await testLoadObject('erc20', process.env[`${principal}_ADDRESS`], chains.web3WithNode, ensure0x(ethereumWithNodeAddress))
+  const token = await testLoadObject('erc20', getTestContract('erc20', principal), chains.web3WithNode, ensure0x(ethereumWithNodeAddress))
   await token.methods.transfer(recipient, amount).send({ gas: 100000 })
 }
 
@@ -71,14 +74,13 @@ async function generateSecretHashesArbiter (principal) {
   const secrets = await chains.bitcoinWithJs.client.loan.secrets.generateSecrets('test', 160)
   const secretHashes = secrets.map(secret => ensure0x(sha256(secret)))
 
-  const testFunds = await testLoadObject('funds', process.env[`${principal}_LOAN_FUNDS_ADDRESS`], chains.web3WithArbiter, address)
+  const testFunds = await testLoadObject('funds', getTestContract('funds', principal), chains.web3WithArbiter, address)
   await testFunds.methods.generate(secretHashes).send({ from: address, gas: 6700000 })
   await testFunds.methods.setPubKey(ensure0x(publicKey.toString('hex'))).send({ from: address, gas: 100000 })
 }
 
 async function getLockParams (web3Chain, principal, values, loanId) {
-  const address = await getWeb3Address(web3Chain)
-  const testLoans = await testLoadObject('loans', process.env[`${principal}_LOAN_LOANS_ADDRESS`], web3Chain, address)
+  const testLoans = await getTestObject(web3Chain, 'loans', principal)
 
   const { borrowerPubKey, lenderPubKey, arbiterPubKey } = await testLoans.methods.pubKeys(numToBytes32(loanId)).call()
   const { secretHashA1, secretHashB1, secretHashC1 } = await testLoans.methods.secretHashes(numToBytes32(loanId)).call()
@@ -93,14 +95,18 @@ async function getLockParams (web3Chain, principal, values, loanId) {
   return [values, pubKeys, secretHashes, expirations]
 }
 
-async function getTestObject (web3Chain, contract, principal) {
-  const address = await getWeb3Address(web3Chain)
+function getTestContract (contract, principal) {
   if (contract === 'erc20' || contract === 'ctoken') {
     const cPrefix = contract === 'ctoken' ? 'C' : ''
-    return testLoadObject(contract, process.env[`${cPrefix}${principal}_ADDRESS`], web3Chain, address)
+    return addresses[`${cPrefix}${principal}`]
   } else {
-    return testLoadObject(contract, process.env[`${principal}_LOAN_${contract.toUpperCase()}_ADDRESS`], web3Chain, address)
+    return addresses[`${principal}_${contract.toUpperCase()}`]
   }
+}
+
+async function getTestObject (web3Chain, contract, principal) {
+  const address = await getWeb3Address(web3Chain)
+  return testLoadObject(contract, getTestContract(contract, principal), web3Chain, address)
 }
 
 async function getTestObjects (web3Chain, principal, contracts) {
@@ -158,6 +164,7 @@ module.exports = {
   getAgentAddresses,
   generateSecretHashesArbiter,
   getLockParams,
+  getTestContract,
   getTestObject,
   getTestObjects,
   cancelLoans,

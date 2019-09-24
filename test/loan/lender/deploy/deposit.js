@@ -5,7 +5,7 @@ const chaiAsPromised = require('chai-as-promised')
 const BN = require('bignumber.js')
 
 const { chains, connectMetaMask } = require('../../../common')
-const { fundArbiter, fundAgent, generateSecretHashesArbiter, fundWeb3Address, getAgentAddress, getTestObjects } = require('../../loanCommon')
+const { fundArbiter, fundAgent, generateSecretHashesArbiter, fundWeb3Address, getAgentAddress, getTestContract, getTestObjects } = require('../../loanCommon')
 const { depositToFund } = require('../setup/fundSetup')
 const { currencies } = require('../../../../src/utils/fx')
 const { numToBytes32 } = require('../../../../src/utils/finance')
@@ -29,11 +29,11 @@ function depositForFund (web3Chain) {
     it(`should deposit ${amount} ${principal} to loan fund`, async () => {
       const [token, funds] = await getTestObjects(web3Chain, principal, ['erc20', 'funds'])
       const agentAddress = await getAgentAddress(server)
-      const balanceBefore = await token.methods.balanceOf(process.env[`${principal}_LOAN_FUNDS_ADDRESS`]).call()
+      const balanceBefore = await token.methods.balanceOf(getTestContract('funds', principal)).call()
 
       const fundId = await depositToFund(web3Chain, amount, principal) // Create Custom Loan Fund with 200 DAI
 
-      const balanceAfter = await token.methods.balanceOf(process.env[`${principal}_LOAN_FUNDS_ADDRESS`]).call()
+      const balanceAfter = await token.methods.balanceOf(getTestContract('funds', principal)).call()
       const { lender } = await funds.methods.funds(numToBytes32(fundId)).call()
 
       expect(balanceAfter.toString()).to.equal(BN(balanceBefore).plus(toWei(amount.toString(), currencies[principal].unit)).toString())

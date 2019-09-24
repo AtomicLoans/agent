@@ -4,7 +4,8 @@ const { ensure0x } = require('@liquality/ethereum-utils')
 
 const Fund = require('../../../models/Fund')
 const EthTx = require('../../../models/EthTx')
-const { loadObject } = require('../../../utils/contracts')
+const { getObject, getContract } = require('../../../utils/contracts')
+const { getInterval } = require('../../../utils/intervals')
 const { setTxParams } = require('../utils/web3Transaction')
 const { getFundParams } = require('../utils/fundParams')
 const web3 = require('../../../utils/web3')
@@ -21,8 +22,7 @@ function defineFundCreateJobs (agenda) {
     if (!fund) return console.log('Error: Fund not found')
 
     const { principal, custom } = fund
-    const fundContractAddress = process.env[`${principal}_LOAN_FUNDS_ADDRESS`]
-    const funds = await loadObject('funds', fundContractAddress)
+    const funds = getObject('funds', principal)
     const { fundParams, lenderAddress } = await getFundParams(fund)
 
     let txData
@@ -32,7 +32,7 @@ function defineFundCreateJobs (agenda) {
       txData = funds.methods.create(...fundParams).encodeABI()
     }
 
-    const ethTx = await setTxParams(txData, lenderAddress, fundContractAddress, fund)
+    const ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
 
     fund.ethTxId = ethTx.id
     await fund.save()
@@ -58,7 +58,7 @@ function defineFundCreateJobs (agenda) {
       const ethTx = await EthTx.findOne({ _id: fund.ethTxId }).exec()
       if (!ethTx) return console.log('Error: EthTx not found')
 
-      if (date(process.env.BUMP_TX_INTERVAL) > ethTx.updatedAt && fund.status !== 'FAILED') {
+      if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && fund.status !== 'FAILED') {
         const { gasPrice: currentGasPrice } = ethTx
         let fastPriceInWei
         try {
@@ -80,7 +80,7 @@ function defineFundCreateJobs (agenda) {
 
         await createFund(ethTx, fund, agenda, done)
       } else {
-        await agenda.schedule(process.env.CHECK_TX_INTERVAL, 'verify-create-fund', { fundModelId })
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId })
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')
@@ -112,9 +112,9 @@ async function createFund (ethTx, fund, agenda, done) {
       fund.ethTxId = ethTx.id
       fund.createTxHash = transactionHash
       fund.status = 'CREATING'
-      fund.save()
+      await fund.save()
       console.log(`${fund.principal} FUND CREATING`)
-      await agenda.now('verify-create-fund', { fundModelId: fund.id })
+      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
       done()
     })
     .on('error', (error) => {

@@ -1,13 +1,13 @@
 const BN = require('bignumber.js')
 const web3 = require('web3')
 const { remove0x } = require('@liquality/ethereum-utils')
-const { loadObject } = require('../../../utils/contracts')
+const { getObject } = require('../../../utils/contracts')
 const { currencies } = require('../../../../src/utils/fx')
 
 const { fromWei } = web3.utils
 
 async function getLockArgs (loanId, principal, collateral) {
-  const loans = await loadObject('loans', process.env[`${principal}_LOAN_LOANS_ADDRESS`])
+  const loans = getObject('loans', principal)
 
   const { borrowerPubKey, lenderPubKey, arbiterPubKey } = await loans.methods.pubKeys(loanId).call()
   const { secretHashA1, secretHashB1, secretHashC1 } = await loans.methods.secretHashes(loanId).call()
@@ -24,7 +24,7 @@ async function getLockArgs (loanId, principal, collateral) {
 
 async function getCollateralAmounts (loanId, loan, rate) {
   const { principal, collateral, collateralAmount } = loan
-  const loans = await loadObject('loans', process.env[`${principal}_LOAN_LOANS_ADDRESS`])
+  const loans = getObject('loans', principal)
 
   const unit = currencies[principal].unit
   const colDecimals = currencies[collateral].decimals

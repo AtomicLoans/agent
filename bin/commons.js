@@ -8,7 +8,10 @@ const CONFIG_ENV_MAP = {
   btcPass: 'BTC_USER',
   ethRpc: 'ETH_RPC',
   ethUser: 'ETH_USER',
-  ethPass: 'ETH_PASS'
+  ethPass: 'ETH_PASS',
+  metamaskAddress: 'METAMASK_ETH_ADDRESS',
+  mnemonic: 'MNEMONIC',
+  network: 'NETWORK'
 }
 
 module.exports.loadVariables = (config = {}) => {
@@ -21,6 +24,9 @@ module.exports.loadVariables = (config = {}) => {
     .option('--eth-rpc <url>', 'Ethereum RPC endpoint', 'http://localhost:8545')
     .option('--eth-user <user>', 'Ethereum RPC user')
     .option('--eth-pass <pass>', 'Ethereum RPC pass')
+    .option('--metamask <addr>', 'Metamask Ethereum Address')
+    .option('--mnemonic <string>', '12 word seed phrase')
+    .option('--network <string>', 'Ethereum Network', 'test')
 
   program
     .parse(process.argv)

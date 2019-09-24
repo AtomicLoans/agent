@@ -3,6 +3,8 @@ const Agenda = require('agenda')
 
 const agenda = new Agenda({ mongo: mongoose.connection })
 
+const { getInterval } = require('../utils/intervals')
+
 const { defineSwapJobs } = require('./swap/index')
 const { defineLoanJobs } = require('./loan/index')
 
@@ -14,7 +16,7 @@ async function start () {
   await agenda.every('30 seconds', 'update-market-data')
 
   if (process.env.PARTY === 'arbiter') {
-    await agenda.every(process.env.ARBITER_STATUS_INTERVAL, 'check-arbiter-status')
+    await agenda.every(getInterval('ARBITER_STATUS_INTERVAL'), 'check-arbiter-status')
   }
 }
 

@@ -4,7 +4,8 @@ const date = require('date.js')
 const EthTx = require('../../../models/EthTx')
 const LoanMarket = require('../../../models/LoanMarket')
 const PubKey = require('../../../models/PubKey')
-const { getObject } = require('../../../utils/contracts')
+const { getObject, getContract } = require('../../../utils/contracts')
+const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
 const web3 = require('../../../utils/web3')
 
@@ -19,15 +20,14 @@ function defineArbiterPubKeyJobs (agenda) {
     const { principal } = loanMarket
     const { collateralPublicKey: lenderPublicKey, principalAddress: lenderAddress } = await loanMarket.getAgentAddresses()
 
-    const funds = await getObject('funds', principal)
-    const fundContractAddress = process.env[`${principal}_LOAN_FUNDS_ADDRESS`]
+    const funds = getObject('funds', principal)
 
     const txData = funds.methods.setPubKey(ensure0x(lenderPublicKey)).encodeABI()
 
     const pubKey = PubKey.fromPubKey(ensure0x(lenderPublicKey))
     await pubKey.save()
 
-    const ethTx = await setTxParams(txData, lenderAddress, fundContractAddress, pubKey)
+    const ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), pubKey)
 
     pubKey.ethTxId = ethTx.id
     await pubKey.save()
@@ -53,13 +53,13 @@ function defineArbiterPubKeyJobs (agenda) {
       const ethTx = await EthTx.findOne({ _id: pubKey.ethTxId }).exec()
       if (!ethTx) return console.log('Error: EthTx not found')
 
-      if (date(process.env.BUMP_TX_INTERVAL) > ethTx.updatedAt && pubKey.status !== 'FAILED') {
+      if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && pubKey.status !== 'FAILED') {
         console.log('BUMPING TX FEE')
 
         await bumpTxFee(ethTx)
         await setPubKey(ethTx, pubKey, agenda, done)
       } else {
-        await agenda.schedule(process.env.CHECK_TX_INTERVAL, 'verify-set-pubkey', { pubKeyId })
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-set-pubkey', { pubKeyId })
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')

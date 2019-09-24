@@ -3,10 +3,10 @@ const HDWalletProvider = require('@truffle/hdwallet-provider')
 const { updateEnvValue } = require('./test')
 const { isArbiter } = require('./env')
 
-const { MNEMONIC, ARBITER_MNEMONIC, ETH_RPC } = process.env
+const { MNEMONIC, MNEMONIC_ARBITER, ETH_RPC } = process.env
 
 const httpProvider = new Web3.providers.HttpProvider(ETH_RPC)
-const provider = new HDWalletProvider(isArbiter() ? ARBITER_MNEMONIC : MNEMONIC, httpProvider, 0, 1, false)
+const provider = new HDWalletProvider(isArbiter() ? MNEMONIC_ARBITER : MNEMONIC, httpProvider, 0, 1, false)
 const web3 = new Web3(provider)
 
 function getWeb3 () {
@@ -19,12 +19,12 @@ function getWeb3 () {
 }
 
 function resetWeb3 () {
-  updateEnvValue('ETH_SIGNER')
+  updateEnvValue('METAMASK_ETH_ADDRESS')
   updateEnvValue('TEST_TX_OVERWRITE')
   const MNEMONIC = updateEnvValue('MNEMONIC')
-  const ARBITER_MNEMONIC = updateEnvValue('ARBITER_MNEMONIC')
+  const MNEMONIC_ARBITER = updateEnvValue('MNEMONIC_ARBITER')
 
-  const provider = new HDWalletProvider(isArbiter() ? ARBITER_MNEMONIC : MNEMONIC, httpProvider, 0, 1, false)
+  const provider = new HDWalletProvider(isArbiter() ? MNEMONIC_ARBITER : MNEMONIC, httpProvider, 0, 1, false)
   const web3 = new Web3(provider)
 
   return web3

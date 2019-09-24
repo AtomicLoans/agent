@@ -47,7 +47,7 @@ function testLoans (web3Chain, btcChain) {
 async function testSetup (web3Chain, btcChain) {
   await chains.ethereumWithNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
-  rewriteEnv('.env', 'ETH_SIGNER', address)
+  rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
   await cancelLoans(web3Chain)
   rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
   await cancelJobs(server)

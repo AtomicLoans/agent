@@ -40,7 +40,7 @@ function testFunds (web3Chain, ethNode) {
 async function testSetup (web3Chain, ethNode) {
   await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain) // TODO: move to loanCommon
-  rewriteEnv('.env', 'ETH_SIGNER', address)
+  rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
   // await cancelJobs(server) // TODO: move to common for both lender and arbiter
   rewriteEnv('test/env/.env.test', 'LENDER_MNEMONIC', `"${generateMnemonic(128)}"`)
   // await removeFunds() // TODO: create functions for example lender mnemonic deploying funds when necessary

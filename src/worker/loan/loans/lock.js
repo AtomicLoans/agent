@@ -34,7 +34,7 @@ function defineLoanLockJobs (agenda) {
       console.log('COLLATERAL NOT LOCKED')
       // TODO: add reason for canceling (for example, cancelled because collateral wasn't sufficient)
       const { loanId, principal } = loan
-      const loans = await getObject('loans', principal)
+      const loans = getObject('loans', principal)
 
       const [approved, approveExpiration, currentTime] = await Promise.all([
         loans.methods.approved(numToBytes32(loanId)).call(), // Sanity check

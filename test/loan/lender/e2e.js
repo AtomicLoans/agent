@@ -11,7 +11,7 @@ const { sha256 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
 
 const { chains, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
-const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, removeFunds } = require('../loanCommon')
+const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, removeFunds } = require('../loanCommon')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
 const { numToBytes32 } = require('../../../src/utils/finance')
@@ -150,11 +150,11 @@ function testE2E (web3Chain, btcChain) {
       const web3Address = await getWeb3Address(web3Chain)
       const { address: ethereumWithNodeAddress } = await chains.ethereumWithNode.client.wallet.getUnusedAddress()
 
-      const token = await testLoadObject('erc20', process.env[`${principal}_ADDRESS`], chains.web3WithNode, ensure0x(ethereumWithNodeAddress))
+      const token = await testLoadObject('erc20', getTestContract('erc20', principal), chains.web3WithNode, ensure0x(ethereumWithNodeAddress))
       await token.methods.transfer(web3Address, toWei(owedForLoan, 'wei')).send({ gas: 100000 })
 
       const testToken = await getTestObject(web3Chain, 'erc20', principal)
-      await testToken.methods.approve(process.env[`${principal}_LOAN_LOANS_ADDRESS`], toWei(owedForLoan, 'wei')).send({ gas: 100000 })
+      await testToken.methods.approve(getTestContract('loans', principal), toWei(owedForLoan, 'wei')).send({ gas: 100000 })
 
       await loans.methods.repay(numToBytes32(loanId), owedForLoan).send({ gas: 100000 })
 
@@ -162,7 +162,7 @@ function testE2E (web3Chain, btcChain) {
       expect(paid).to.equal(true)
 
       console.log('REPAY LOAN')
-      await secondsCountDown(10)
+      await secondsCountDown(15)
 
       const off = await loans.methods.off(numToBytes32(loanId)).call()
       expect(off).to.equal(true)
@@ -185,7 +185,7 @@ async function getLoanStatus (loanId) {
 async function testSetup (web3Chain, btcChain) {
   await chains.ethereumWithNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
-  rewriteEnv('.env', 'ETH_SIGNER', address)
+  rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
   await cancelLoans(web3Chain)
   rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
   await cancelJobs(server)

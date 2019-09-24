@@ -1,7 +1,8 @@
 const Loan = require('../../../models/Loan')
 const EthTx = require('../../../models/EthTx')
 const { numToBytes32 } = require('../../../utils/finance')
-const { getObject } = require('../../../utils/contracts')
+const { getObject, getContract } = require('../../../utils/contracts')
+const { getInterval } = require('../../../utils/intervals')
 const { ensure0x } = require('@liquality/ethereum-utils')
 const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
 const web3 = require('../../../utils/web3')
@@ -16,7 +17,7 @@ function defineLoanApproveJobs (agenda) {
     if (!loan) return console.log('Error: Loan not found')
 
     const { loanId, principal, lenderPrincipalAddress } = loan
-    const loans = await getObject('loans', principal)
+    const loans = getObject('loans', principal)
     const approved = await loans.methods.approved(numToBytes32(loanId)).call()
 
     if (approved) {
@@ -24,7 +25,7 @@ function defineLoanApproveJobs (agenda) {
       done()
     } else {
       const txData = loans.methods.approve(numToBytes32(loanId)).encodeABI()
-      const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), process.env[`${principal}_LOAN_LOANS_ADDRESS`], loan)
+      const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), getContract('loans', principal), loan)
       await approveLoan(ethTx, loan, agenda, done)
     }
   })
@@ -47,13 +48,13 @@ function defineLoanApproveJobs (agenda) {
       const ethTx = await EthTx.findOne({ _id: loan.ethTxId }).exec()
       if (!ethTx) return console.log('Error: EthTx not found')
 
-      if (date(process.env.BUMP_TX_INTERVAL) > ethTx.updatedAt && loan.status !== 'FAILED') {
+      if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && loan.status !== 'FAILED') {
         console.log('BUMPING TX FEE')
 
         await bumpTxFee(ethTx)
         await approveLoan(ethTx, loan, agenda, done)
       } else {
-        await agenda.schedule(process.env.CHECK_TX_INTERVAL, 'verify-approve-loan', { loanModelId })
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-loan', { loanModelId })
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')
@@ -62,14 +63,14 @@ function defineLoanApproveJobs (agenda) {
       console.log('RECEIPT IS NOT NULL')
 
       const { principal, loanId } = loan
-      const loans = await getObject('loans', principal)
+      const loans = getObject('loans', principal)
       const approved = await loans.methods.approved(numToBytes32(loanId)).call()
 
       if (approved) {
         console.log('APPROVED')
         loan.status = 'APPROVED'
         await loan.save()
-        await agenda.schedule(process.env.REPAID_TX_INTERVAL, 'check-loan-status', { loanModelId })
+        await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status', { loanModelId })
         done()
       } else {
         console.log('TX WAS NOT APPROVED')
@@ -86,7 +87,7 @@ async function approveLoan (ethTx, loan, agenda, done) {
       loan.status = 'APPROVING'
       loan.save()
       console.log('APPROVING')
-      await agenda.schedule(process.env.CHECK_TX_INTERVAL, 'verify-approve-loan', { loanModelId: loan.id })
+      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-loan', { loanModelId: loan.id })
       done()
     })
     .on('error', (error) => {
