@@ -5,6 +5,9 @@
   "logo": "https://labs.consensys.net/static/f2d9ac9d2c48ef3f13e8f43497ce7907/3318a/atomic-loans.png",
   "keywords": ["atomic loans", "loans", "ethereum", "bitcoin", "cryptocurrency"],
   "addons": ["mongolab:sandbox"],
+  "engines": {
+    "node": "8.12.0"
+  },
   "env": {
     "METAMASK_ETH_ADDRESS": {
       "description": "Please enter the Etheruem address associated with your Metamask Wallet",
