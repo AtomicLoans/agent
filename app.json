@@ -18,9 +18,9 @@
       "value": "",
       "required": false
     },
-    "NPM_CONFIG_PRODUCTION": {
-      "description": "test",
-      "value": "true"
+    "NPM_CONFIG_PRODUCTION": "true",
+    "HEROKU_APP_NAME": {
+      "required": true
     }
   }
 }
