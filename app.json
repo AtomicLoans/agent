@@ -22,8 +22,5 @@
       "description": "test",
       "value": "true"
     }
-  },
-  "scripts": {
-    "postdeploy": "./postdeploy.sh"
   }
 }

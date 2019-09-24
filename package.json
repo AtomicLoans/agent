@@ -4,7 +4,7 @@
   "description": "Atomic Swap Agent",
   "main": "src/index.js",
   "scripts": {
-    "start": "./bin/atomicagent-api",
+    "start": "./postdeploy.sh",
     "lint": "standard --fix $npm_package_options_standard",
     "api:lender": "PARTY=lender PORT=3030 PROCESS_TYPE=api nodemon src/index.js",
     "api:lender:test": "NODE_ENV=test PARTY=lender PORT=3030 PROCESS_TYPE=api nodemon src/index.js",
