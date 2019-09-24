@@ -19,10 +19,11 @@
       "required": false
     },
     "HEROKU_APP": {
+      "description": "Please copy the App name that you entered earlier",
       "require": true
     },
     "NPM_CONFIG_PRODUCTION": {
-      "description": "test",
+      "description": "Don't worry about this. It should be true",
       "value": "true"
     }
   },
