@@ -12,17 +12,17 @@ function defineAgentsRouter (router) {
     const { ethSigner, principalAddress, collateralPublicKey } = body
     const endpoint = requestIp.getClientIp(req)
 
+    const agentExists = await Agent.findOne({ ethSigner, principalAddress, collateralPublicKey }).exec()
+    if (!agentExists) {
+      const params = { ethSigner, principalAddress, collateralPublicKey, endpoint }
+      const agent = Agent.fromAgentParams(params)
+      await agent.save()
+      res.json(agent.json())
+    } else {
+      res.json(agentExists.json())
+    }
     // TODO: implement verify signature
-
-    const params = { ethSigner, principalAddress, collateralPublicKey, endpoint }
-
-    const agent = Agent.fromAgentParams(params)
-
-    await agent.save()
-
     console.log('end /agents/new')
-
-    res.json(agent.json())
   }))
 
   router.get('/agents/:agentModelId', asyncHandler(async (req, res, next) => {
@@ -32,6 +32,12 @@ function defineAgentsRouter (router) {
     if (!agent) return next(res.createError(401, 'Agent not found'))
 
     res.json(agent.json())
+  }))
+
+  router.get('/agents', asyncHandler(async (req, res) => {
+    const result = await Agent.find().exec()
+
+    res.json(result.map(r => r.json()))
   }))
 }
 
