@@ -11,10 +11,12 @@ function defineAgentsRouter (router) {
     const { body } = req
     const { ethSigner, principalAddress, collateralPublicKey } = body
     const endpoint = requestIp.getClientIp(req)
+    const host = req.get('host')
+    const origin = req.get('origin')
 
     const agentExists = await Agent.findOne({ ethSigner, principalAddress, collateralPublicKey }).exec()
     if (!agentExists) {
-      const params = { ethSigner, principalAddress, collateralPublicKey, endpoint }
+      const params = { ethSigner, principalAddress, collateralPublicKey, endpoint, host, origin }
       const agent = Agent.fromAgentParams(params)
       await agent.save()
       res.json(agent.json())
