@@ -31,5 +31,6 @@ function intervals (network) {
 
 module.exports = {
   contractAddresses,
+  endpoints,
   intervals
 }
