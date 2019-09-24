@@ -17,6 +17,10 @@
       "description": "(OPTIONAL) Enter a 12 word mnemonic if you are importing an existing agent",
       "value": "",
       "required": false
+    },
+    "NPM_CONFIG_PRODUCTION": {
+      "description": "test",
+      "value": "true"
     }
   },
   "postdeploy": ""
