@@ -3,9 +3,10 @@ const chai = require('chai')
 const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
 const BN = require('bignumber.js')
+const { generateMnemonic } = require('bip39')
 
-const { chains, connectMetaMask } = require('../../../common')
-const { fundArbiter, fundAgent, generateSecretHashesArbiter, fundWeb3Address, getAgentAddress, getTestContract, getTestObjects } = require('../../loanCommon')
+const { chains, connectMetaMask, rewriteEnv } = require('../../../common')
+const { fundArbiter, fundAgent, generateSecretHashesArbiter, fundWeb3Address, getAgentAddress, getTestContract, getTestObjects, removeFunds } = require('../../loanCommon')
 const { createCustomFund } = require('../setup/fundSetup')
 const { currencies } = require('../../../../src/utils/fx')
 const { numToBytes32 } = require('../../../../src/utils/finance')
@@ -45,6 +46,8 @@ function deployFund (web3Chain) {
 }
 
 async function testSetup (web3Chain) {
+  rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
+  await removeFunds()
   await fundAgent(server)
   await fundArbiter()
   await generateSecretHashesArbiter(principal)
@@ -52,9 +55,8 @@ async function testSetup (web3Chain) {
 }
 
 describe('Lender Agent - Deploy - Fund', () => {
-  describe('MetaMask', () => {
-    connectMetaMask()
-    before(async function () { await testSetup(chains.web3WithMetaMask) })
-    deployFund(chains.web3WithMetaMask)
+  describe('Web3HDWallet / BitcoinJs', () => {
+    beforeEach(async function () { await testSetup(chains.web3WithHDWallet) })
+    deployFund(chains.web3WithHDWallet)
   })
 })
