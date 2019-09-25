@@ -9,12 +9,12 @@ function defineAgentsRouter (router) {
   router.post('/agents/new', asyncHandler(async (req, res, next) => {
     console.log('start /agents/new')
     const { body } = req
-    const { ethSigner, principalAddress, collateralPublicKey, url, testUrl } = body
+    const { ethSigner, principalAddress, collateralPublicKey, url } = body
     const endpoint = requestIp.getClientIp(req)
 
     const agentExists = await Agent.findOne({ ethSigner, principalAddress, collateralPublicKey }).exec()
     if (!agentExists) {
-      const params = { ethSigner, principalAddress, collateralPublicKey, url, testUrl, endpoint }
+      const params = { ethSigner, principalAddress, collateralPublicKey, url, endpoint }
       const agent = Agent.fromAgentParams(params)
       await agent.save()
       res.json(agent.json())
