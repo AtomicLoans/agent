@@ -17,6 +17,7 @@ async function start () {
 
   if (process.env.PARTY === 'arbiter') {
     await agenda.every(getInterval('ARBITER_STATUS_INTERVAL'), 'check-arbiter-status')
+    await agenda.every(getInterval('LENDER_CHECK_INTERVAL'), 'check-lender-status')
   } else {
     await agenda.now('notify-arbiter')
   }

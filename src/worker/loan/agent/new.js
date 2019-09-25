@@ -24,6 +24,8 @@ function defineNewAgentJobs (agenda) {
     const { data } = await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/agents/new`, { collateralPublicKey, principalAddress, ethSigner, url })
 
     console.log('data', data)
+
+    done()
   })
 }
 
