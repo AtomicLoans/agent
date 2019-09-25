@@ -20,6 +20,11 @@ const AgentSchema = new mongoose.Schema({
   collateralPublicKey: {
     type: String,
     index: true
+  },
+  status: {
+    type: String,
+    enum: ['ACTIVE', 'INACTIVE'],
+    index: true
   }
 })
 
@@ -39,7 +44,8 @@ AgentSchema.static('fromAgentParams', function (params) {
     endpoint: params.endpoint,
     url: params.url,
     principalAddress: params.principalAddress,
-    collateralPublicKey: params.collateralPublicKey
+    collateralPublicKey: params.collateralPublicKey,
+    status: 'ACTIVE'
   })
 })
 
