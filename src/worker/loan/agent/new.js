@@ -10,9 +10,13 @@ function defineNewAgentJobs (agenda) {
 
     const { collateralPublicKey, principalAddress } = await loanMarket.getAgentAddresses()
 
+    const url = process.env.URL
+
+    const testUrl = process.env.HEROKU_APP
+
     const ethSigner = process.env.METAMASK_ETH_ADDRESS
 
-    const { data } = await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/agents/new`, { collateralPublicKey, principalAddress, ethSigner })
+    const { data } = await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/agents/new`, { collateralPublicKey, principalAddress, ethSigner, url, testUrl })
 
     console.log('data', data)
   })

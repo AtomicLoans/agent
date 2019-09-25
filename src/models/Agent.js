@@ -9,6 +9,14 @@ const AgentSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  url: {
+    type: String,
+    index: true
+  },
+  testUrl: {
+    type: String,
+    index: true
+  },
   principalAddress: {
     type: String,
     index: true
@@ -33,8 +41,8 @@ AgentSchema.static('fromAgentParams', function (params) {
   return new Agent({
     ethSigner: params.ethSigner,
     endpoint: params.endpoint,
-    host: params.host,
-    origin: params.origin,
+    url: params.url,
+    testUrl: params.testUrl,
     principalAddress: params.principalAddress,
     collateralPublicKey: params.collateralPublicKey
   })
