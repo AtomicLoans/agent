@@ -17,10 +17,12 @@ function defineLoanStatusJobs (agenda) {
 
     if (!withdrawn && !paid && !sale && !off) {
       await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status-ish', { loanModelId })
+      done()
     } else if (withdrawn && !paid && !sale && !off) {
       loan.status = 'WITHDRAWN'
       await loan.save()
       await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status-ish', { loanModelId })
+      done()
     } else if (withdrawn && paid && !sale && !off) {
       loan.status = 'REPAID'
       await loan.save()

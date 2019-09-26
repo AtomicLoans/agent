@@ -1,15 +1,6 @@
 const mongoose = require('mongoose')
 const Agenda = require('agenda')
 
-// let mongoConnectionString, collection
-// if (process.env.PARTY === 'arbiter') {
-//   mongoConnectionString = 'mongodb://127.0.0.1/agenda_arbiter'
-//   collection = 'arbiterCollection'
-// } else {
-//   mongoConnectionString = 'mongodb://127.0.0.1/agenda_lender'
-//   collection = 'lenderCollection'
-// }
-
 const agenda = new Agenda({ mongo: mongoose.connection, maxConcurrency: 1000, defaultConcurrency: 1000, defaultLockLifetime: 500 })
 
 const { getInterval } = require('../utils/intervals')
@@ -20,6 +11,7 @@ const { defineLoanJobs } = require('./loan/index')
 async function start () {
   await agenda.purge()
   await agenda.start()
+
   await agenda.every('2 minutes', 'update-market-data')
 
   if (process.env.PARTY === 'arbiter') {
