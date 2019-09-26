@@ -14,7 +14,8 @@ const { toWei, hexToNumber } = web3().utils
 const date = require('date.js')
 
 function defineFundCreateJobs (agenda) {
-  agenda.define('create-fund', async (job, done) => {
+  agenda.define('create-fund-ish', async (job, done) => {
+    console.log('create-fund')
     const { data } = job.attrs
     const { fundModelId } = data
 
@@ -31,6 +32,8 @@ function defineFundCreateJobs (agenda) {
     } else {
       txData = funds.methods.create(...fundParams).encodeABI()
     }
+
+    console.log('test')
 
     const ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
 
@@ -104,17 +107,26 @@ function defineFundCreateJobs (agenda) {
 
     done()
   })
+
+  agenda.on('fail:create-fund', (err, job) => {
+    console.log(`Job failed with error: ${err.message}`);
+  });
 }
 
 async function createFund (ethTx, fund, agenda, done) {
-  web3().eth.sendTransaction(ethTx.json())
+  console.log('createFund')
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
+  try {
+    web3().eth.sendTransaction(ethTx.json())
     .on('transactionHash', async (transactionHash) => {
+      console.log('transactionHash', transactionHash)
       fund.ethTxId = ethTx.id
       fund.createTxHash = transactionHash
       fund.status = 'CREATING'
       await fund.save()
       console.log(`${fund.principal} FUND CREATING`)
-      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
+      console.log('CHECK_TX_INTERVAL', getInterval('CHECK_TX_INTERVAL'))
+      // await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
       done()
     })
     .on('error', (error) => {
@@ -124,6 +136,10 @@ async function createFund (ethTx, fund, agenda, done) {
       fund.save()
       done(error)
     })
+  } catch(e) {
+    console.log(e)
+    console.log('ERROR')
+  }
 }
 
 module.exports = {

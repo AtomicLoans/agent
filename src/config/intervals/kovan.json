@@ -1,5 +1,6 @@
 {
   "CHECK_TX_INTERVAL": "in 15 seconds",
+  "ACTION_INTERVAL": "in 3 seconds",
   "BUMP_TX_INTERVAL": "1 minute ago",
   "REPAID_TX_INTERVAL": "in 15 seconds",
   "ARBITER_STATUS_INTERVAL": "30 seconds",

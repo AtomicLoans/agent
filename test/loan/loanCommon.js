@@ -41,7 +41,9 @@ async function fundAgent (server) {
   const { body: addresses } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
   const { principalAddress } = addresses
 
-  await chains.ethereumWithNode.client.chain.sendTransaction(principalAddress, toWei('0.1', 'ether'))
+  console.log('principalAddress', principalAddress)
+
+  await chains.ethereumWithNode.client.chain.sendTransaction(principalAddress, toWei('0.2', 'ether'))
 }
 
 async function fundTokens (recipient, amount, principal) {

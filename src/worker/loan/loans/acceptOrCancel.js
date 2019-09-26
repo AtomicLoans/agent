@@ -68,10 +68,13 @@ function defineLoanAcceptOrCancelJobs (agenda) {
         await loan.save()
       }
     }
+
+    done()
   })
 }
 
 async function acceptOrCancelLoan (ethTx, loan, agenda, done) {
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan', { loanModelId: loan.id })
   web3().eth.sendTransaction(ethTx.json())
     .on('transactionHash', async (transactionHash) => {
       const { principal, loanId } = loan
@@ -87,7 +90,7 @@ async function acceptOrCancelLoan (ethTx, loan, agenda, done) {
         console.log('CANCELLING')
       }
       await loan.save()
-      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan', { loanModelId: loan.id })
+      // await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan', { loanModelId: loan.id })
       done()
     })
     .on('error', (error) => {

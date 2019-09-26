@@ -2,9 +2,11 @@ const Loan = require('../../../models/Loan')
 const { getCurrentTime } = require('../../../utils/time')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject } = require('../../../utils/contracts')
+const { getInterval } = require('../../../utils/intervals')
 
 function defineLoanLockJobs (agenda) {
   agenda.define('verify-lock-collateral', async (job, done) => {
+    console.log('verify lock collateral')
     const { data } = job.attrs
     const { loanModelId } = data
 
@@ -29,7 +31,7 @@ function defineLoanLockJobs (agenda) {
     if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet) {
       console.log('COLLATERAL LOCKED')
 
-      await agenda.now('approve-loan', { loanModelId: loan.id })
+      await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-loan', { loanModelId: loan.id })
     } else {
       console.log('COLLATERAL NOT LOCKED')
       // TODO: add reason for canceling (for example, cancelled because collateral wasn't sufficient)
@@ -43,11 +45,13 @@ function defineLoanLockJobs (agenda) {
       ])
 
       if (currentTime > approveExpiration && !approved) {
-        await agenda.now('accept-or-cancel-loan', { loanModelId })
+        await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId })
       } else {
-        agenda.schedule('in 5 seconds', 'verify-lock-collateral', { loanModelId })
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-lock-collateral', { loanModelId })
       }
     }
+
+    console.log('test5')
 
     done()
   })

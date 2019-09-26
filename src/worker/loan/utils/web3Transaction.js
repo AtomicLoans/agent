@@ -8,10 +8,11 @@ async function setTxParams (data, from, to, instance) {
 
   let nonce, gasPrice, gasLimit
   try {
-    [nonce, gasPrice, gasLimit] = await Promise.all([
+    [nonce, gasPrice, gasLimit, lastBlock] = await Promise.all([
       web3().eth.getTransactionCount(from),
       web3().eth.getGasPrice(),
-      web3().eth.estimateGas(txParams)
+      web3().eth.estimateGas(txParams),
+      web3().eth.getBlock('latest')
     ])
   } catch (e) {
     console.log('FAILED AT GAS STEP')
@@ -20,9 +21,11 @@ async function setTxParams (data, from, to, instance) {
     throw Error(e)
   }
 
+  console.log('lastBlock', lastBlock)
+
   txParams.nonce = nonce
   txParams.gasPrice = gasPrice
-  txParams.gasLimit = gasLimit + 500000
+  txParams.gasLimit = setGasLimit(gasLimit, lastBlock)
 
   const ethTx = EthTx.fromTxParams(txParams)
   await ethTx.save()
@@ -49,6 +52,14 @@ async function bumpTxFee (ethTx) {
   }
 
   await ethTx.save()
+}
+
+function setGasLimit (gasLimit, lastBlock) {
+  if ((gasLimit + 500000) > lastBlock.gasLimit) {
+    return lastBlock.gasLimit
+  } else {
+    return gasLimit + 500000
+  }
 }
 
 module.exports = {

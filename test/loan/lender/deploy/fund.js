@@ -7,7 +7,7 @@ const { generateMnemonic } = require('bip39')
 
 const { chains, connectMetaMask, rewriteEnv } = require('../../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, fundWeb3Address, getAgentAddress, getTestContract, getTestObjects, removeFunds } = require('../../loanCommon')
-const { createCustomFund } = require('../setup/fundSetup')
+const { createCustomFund } = require('../../setup/fundSetup')
 const { currencies } = require('../../../../src/utils/fx')
 const { numToBytes32 } = require('../../../../src/utils/finance')
 const web3 = require('web3')

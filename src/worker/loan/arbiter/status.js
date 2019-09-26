@@ -15,10 +15,13 @@ function defineArbiterStatusJobs (agenda) {
       const { principalAddress } = await loanMarket.getAgentAddresses()
 
       const funds = getObject('funds', principal)
+      const loans = getObject('loans', principal)
 
-      const [secretHashesCount, secretHashIndex] = await Promise.all([
+      const [secretHashesCount, secretHashIndex, pubKey, loanIndex] = await Promise.all([
         funds.methods.secretHashesCount(principalAddress).call(),
-        funds.methods.secretHashIndex(principalAddress).call()
+        funds.methods.secretHashIndex(principalAddress).call(),
+        funds.methods.pubKeys(principalAddress).call(),
+        loans.methods.loanIndex().call()
       ])
 
       const secretHashesRemaining = secretHashesCount - secretHashIndex
@@ -33,11 +36,14 @@ function defineArbiterStatusJobs (agenda) {
         }
       }
 
-      const pubKey = await funds.methods.pubKeys(principalAddress).call()
       console.log('pubKey', pubKey)
       if (pubKey === null) {
         console.log('setting pubkey')
         agenda.now('set-pubkey', { loanMarketId: loanMarket.id })
+      }
+
+      if (loanMarket.loanIndex < loanIndex) {
+        agenda.now('update-loan-records', { loanMarketId: loanMarket.id })
       }
     }
 

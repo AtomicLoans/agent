@@ -44,6 +44,10 @@ const LoanMarketSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  loanIndex: {
+    type: Number,
+    default: 0
+  },
   status: {
     type: String,
     enum: ['ACTIVE', 'INACTIVE'],
@@ -60,6 +64,7 @@ LoanMarketSchema.methods.json = function () {
   delete json._id
   delete json.__v
   delete json.secretIndex
+  delete json.loanIndex
 
   return json
 }

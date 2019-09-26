@@ -6,7 +6,7 @@ const BN = require('bignumber.js')
 
 const { chains, connectMetaMask } = require('../../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, fundWeb3Address, getAgentAddress, getTestContract, getTestObjects } = require('../../loanCommon')
-const { depositToFund } = require('../setup/fundSetup')
+const { depositToFund } = require('../../setup/fundSetup')
 const { currencies } = require('../../../../src/utils/fx')
 const { numToBytes32 } = require('../../../../src/utils/finance')
 const web3 = require('web3')

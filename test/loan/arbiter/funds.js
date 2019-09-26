@@ -24,6 +24,8 @@ function testFunds (web3Chain, ethNode) {
       const address = await getWeb3Address(web3Chain)
       const [funds] = await getTestObjects(web3Chain, principal, ['funds'])
 
+      console.log('yep working')
+
       const secretHashesCount = await funds.methods.secretHashesCount(address).call()
 
       console.log('secretHashesCount', secretHashesCount)

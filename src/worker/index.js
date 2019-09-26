@@ -1,19 +1,26 @@
 const mongoose = require('mongoose')
 const Agenda = require('agenda')
 
-const agenda = new Agenda({ mongo: mongoose.connection })
+// let mongoConnectionString, collection
+// if (process.env.PARTY === 'arbiter') {
+//   mongoConnectionString = 'mongodb://127.0.0.1/agenda_arbiter'
+//   collection = 'arbiterCollection'
+// } else {
+//   mongoConnectionString = 'mongodb://127.0.0.1/agenda_lender'
+//   collection = 'lenderCollection'
+// }
+
+const agenda = new Agenda({ mongo: mongoose.connection, maxConcurrency: 1000, defaultConcurrency: 1000, defaultLockLifetime: 500 })
 
 const { getInterval } = require('../utils/intervals')
 
 const { defineSwapJobs } = require('./swap/index')
 const { defineLoanJobs } = require('./loan/index')
 
-agenda.maxConcurrency(1000)
-agenda.defaultConcurrency(1000)
-
 async function start () {
+  await agenda.purge()
   await agenda.start()
-  await agenda.every('30 seconds', 'update-market-data')
+  await agenda.every('2 minutes', 'update-market-data')
 
   if (process.env.PARTY === 'arbiter') {
     await agenda.every(getInterval('ARBITER_STATUS_INTERVAL'), 'check-arbiter-status')
