@@ -46,8 +46,8 @@ function defineAgentRoutes (router) {
 
   if (process.env.NODE_ENV === 'test') {
     router.post('/bitcoin/generate_block', asyncHandler(async (req, res) => {
-      const { params } = req
-      const { nblocks } = params
+      const { body } = req
+      const { nblocks } = body
 
       const loanMarkets = await LoanMarket.find().exec()
       const loanMarket = loanMarkets[0]
@@ -58,10 +58,10 @@ function defineAgentRoutes (router) {
     }))
 
     router.post('/bitcoin/import_addresses', asyncHandler(async (req, res) => {
-      const { params } = req
-      const { addresses } = params
+      const { body } = req
+      const { addresses } = body
 
-      const { importBitcoinAddressesByAddress } = require('../../../../../test/common')
+      const { importBitcoinAddressesByAddress } = require('../../../../test/common')
 
       await importBitcoinAddressesByAddress(addresses)
 
