@@ -34,11 +34,6 @@ const arbiterChain = chains.web3WithArbiter
 
 function testE2E (web3Chain, ethNode, btcChain) {
   describe('E2E Tests', () => {
-    // before(async function () {
-    //   await fundArbiter()
-    //   await generateSecretHashesArbiter('DAI')
-    // })
-
     it('should POST loanMarket details and return loan details', async () => {
       await createCustomFund(web3Chain, arbiterChain, 200, 'DAI') // Create Custom Loan Fund with 200 DAI
 
@@ -202,21 +197,42 @@ async function testSetup (web3Chain, ethNode, btcChain) {
   await fundUnusedBitcoinAddress(btcChain)
 }
 
+function testSetupArbiter () {
+  rewriteEnv('.env', 'API_OFFLINE', 'false')
+  rewriteEnv('.env', 'ACCEPT_CANCEL_JOBS_OFFLINE', 'true')
+}
+
+function testAfterArbiter() {
+  rewriteEnv('.env', 'API_OFFLINE', 'false')
+  rewriteEnv('.env', 'ACCEPT_CANCEL_JOBS_OFFLINE', 'false')
+}
+
 describe('Lender Agent - Funds', () => {
+  // describe('Web3HDWallet / BitcoinJs', () => {
+  //   before(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs) })
+  //   testE2E(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
+  // })
+
   describe.only('Web3HDWallet / BitcoinJs', () => {
-    before(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs) })
+    before(async function () {
+      await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
+      testSetupArbiter()
+    })
+    after(function() {
+      testAfterArbiter()
+    })
     testE2E(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
 
-  describe('MetaMask / BitcoinJs', () => {
-    connectMetaMask()
-    before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
-    testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
-  })
+  // describe('MetaMask / BitcoinJs', () => {
+  //   connectMetaMask()
+  //   before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
+  //   testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
+  // })
 
-  describe('MetaMask / Ledger', () => {
-    connectMetaMask()
-    before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
-    testE2E(chains.web3WithMetaMask, chains.bitcoinWithLedger)
-  })
+  // describe('MetaMask / Ledger', () => {
+  //   connectMetaMask()
+  //   before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
+  //   testE2E(chains.web3WithMetaMask, chains.bitcoinWithLedger)
+  // })
 })
