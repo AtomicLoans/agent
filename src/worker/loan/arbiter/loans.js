@@ -1,8 +1,9 @@
-const { ensure0x } = require('@liquality/ethereum-utils')
+const { ensure0x, checksumEncode } = require('@liquality/ethereum-utils')
 const date = require('date.js')
 const BN = require('bignumber.js')
 
 const EthTx = require('../../../models/EthTx')
+const Loan = require('../../../models/Loan')
 const LoanMarket = require('../../../models/LoanMarket')
 const Market = require('../../../models/Market')
 const PubKey = require('../../../models/PubKey')
@@ -47,7 +48,10 @@ function defineArbiterLoanJobs (agenda) {
 
     let currentIndex = loanMarket.loanIndex + 1
 
+    console.log('test-update-loans')
+
     while (currentIndex <= loanIndex) {
+      console.log('test-update-loans-inside')
       const [loans, bools, approveExpiration, acceptExpiration] = await Promise.all([
         loansContract.methods.loans(numToBytes32(currentIndex)).call(),
         loansContract.methods.bools(numToBytes32(currentIndex)).call(),
@@ -58,7 +62,11 @@ function defineArbiterLoanJobs (agenda) {
       const { funded, approved, withdrawn, sale, paid, off } = bools
       const { loanExpiration, arbiter } = loans
 
-      if (arbiterAddress === arbiter) {
+      console.log('arbiterAddress', arbiterAddress)
+      console.log('arbiter       ', arbiter)
+      console.log('equal?', checksumEncode(arbiterAddress) === arbiter)
+
+      if (checksumEncode(arbiterAddress) === arbiter) {
         const currentTime = await getCurrentTime()
 
         let status
@@ -95,7 +103,7 @@ function defineArbiterLoanJobs (agenda) {
 
         const unit = currencies[principal].unit
         const { principal: principalAmountInWei, requestTimestamp: requestCreatedAt, createdAt, liquidationRatio } = loans
-        const principalAmount = fromWei(principalAmount, unit)
+        const principalAmount = fromWei(principalAmountInWei, unit)
         const loanDuration = loanExpiration - createdAt
         const params = { principal, collateral, principalAmount, loanDuration }
         const minimumCollateralAmount = BN(principalAmount).dividedBy(rate).times(fromWei(liquidationRatio, 'gether')).toFixed(8)
@@ -103,11 +111,16 @@ function defineArbiterLoanJobs (agenda) {
         const loan = Loan.fromLoanMarket(loanMarket, params, minimumCollateralAmount)
         loan.status = status
 
+        console.log('loan', loan)
+
         await loan.save()
       }
 
       currentIndex++
     }
+
+    loanMarket.loanIndex = loanIndex
+    await loanMarket.save()
 
     done()
   })

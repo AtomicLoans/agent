@@ -45,6 +45,8 @@ function defineArbiterStatusJobs (agenda) {
       if (loanMarket.loanIndex < loanIndex) {
         agenda.now('update-loan-records', { loanMarketId: loanMarket.id })
       }
+
+      agenda.now('check-accept-or-cancel-loans', { loanMarketId: loanMarket.id })
     }
 
     done()

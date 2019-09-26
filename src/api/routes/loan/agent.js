@@ -43,6 +43,31 @@ function defineAgentRoutes (router) {
 
     res.json(agentAddresses)
   }))
+
+  if (process.env.NODE_ENV === 'test') {
+    router.post('/bitcoin/generate_block', asyncHandler(async (req, res) => {
+      const { params } = req
+      const { nblocks } = params
+
+      const loanMarkets = await LoanMarket.find().exec()
+      const loanMarket = loanMarkets[0]
+
+      const blocks = await loanMarket.collateralClient().getMethod('jsonrpc')('generate', parseInt(nblocks))
+
+      res.json({ blocks })
+    }))
+
+    router.post('/bitcoin/import_addresses', asyncHandler(async (req, res) => {
+      const { params } = req
+      const { addresses } = params
+
+      const { importBitcoinAddressesByAddress } = require('../../../../../test/common')
+
+      await importBitcoinAddressesByAddress(addresses)
+
+      res.json({ message: 'success' })
+    }))
+  }
 }
 
 module.exports = defineAgentRoutes

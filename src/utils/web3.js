@@ -21,6 +21,8 @@ function getWeb3 () {
 function resetWeb3 () {
   updateEnvValue('METAMASK_ETH_ADDRESS')
   updateEnvValue('TEST_TX_OVERWRITE')
+  updateEnvValue('API_OFFLINE')
+  updateEnvValue('ACCEPT_CANCEL_JOBS_OFFLINE')
   const MNEMONIC = updateEnvValue('MNEMONIC')
   const MNEMONIC_ARBITER = updateEnvValue('MNEMONIC_ARBITER')
 
