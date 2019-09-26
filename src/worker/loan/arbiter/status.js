@@ -46,7 +46,7 @@ function defineArbiterStatusJobs (agenda) {
         agenda.now('update-loan-records', { loanMarketId: loanMarket.id })
       }
 
-      agenda.now('check-accept-or-cancel-loans', { loanMarketId: loanMarket.id })
+      // agenda.now('check-accept-or-cancel-loans', { loanMarketId: loanMarket.id })
     }
 
     done()
