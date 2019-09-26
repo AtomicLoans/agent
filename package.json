@@ -29,6 +29,7 @@
     "test:arbiter:agents": "mocha test/loan/arbiter/agents $npm_package_options_mocha",
     "deploy:fund": "mocha test/loan/lender/deploy/fund $npm_package_options_mocha",
     "deploy:deposit": "mocha test/loan/lender/deploy/deposit $npm_package_options_mocha",
+    "deploy:kill_jobs": "mocha test/loan/lender/deploy/jobs $npm_package_options_mocha",
     "reset:jobs": "mocha test/loan/lender/reset/jobs $npm_package_options_mocha",
     "reset:mnemonic": "mocha test/loan/lender/reset/mnemonic $npm_package_options_mocha"
   },
