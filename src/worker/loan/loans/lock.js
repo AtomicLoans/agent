@@ -51,8 +51,6 @@ function defineLoanLockJobs (agenda) {
       }
     }
 
-    console.log('test5')
-
     done()
   })
 }

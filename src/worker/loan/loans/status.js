@@ -4,7 +4,7 @@ const { getObject } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 
 function defineLoanStatusJobs (agenda) {
-  agenda.define('check-loan-status', async (job, done) => {
+  agenda.define('check-loan-status-ish', async (job, done) => {
     const { data } = job.attrs
     const { loanModelId } = data
 
@@ -16,11 +16,11 @@ function defineLoanStatusJobs (agenda) {
     const { withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
 
     if (!withdrawn && !paid && !sale && !off) {
-      await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status', { loanModelId })
+      await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status-ish', { loanModelId })
     } else if (withdrawn && !paid && !sale && !off) {
       loan.status = 'WITHDRAWN'
       await loan.save()
-      await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status', { loanModelId })
+      await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status-ish', { loanModelId })
     } else if (withdrawn && paid && !sale && !off) {
       loan.status = 'REPAID'
       await loan.save()

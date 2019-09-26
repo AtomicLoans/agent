@@ -53,7 +53,7 @@ function defineLoanRequestJobs (agenda) {
     await requestLoan(ethTx, loan, agenda, done)
   })
 
-  agenda.define('verify-request-loan', async (job, done) => {
+  agenda.define('verify-request-loan-ish', async (job, done) => {
     const { data } = job.attrs
     const { loanModelId } = data
 
@@ -76,7 +76,8 @@ function defineLoanRequestJobs (agenda) {
         await bumpTxFee(ethTx)
         await requestLoan(ethTx, loan, agenda, done)
       } else {
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan', { loanModelId })
+        console.log('verify-request-loan 3')
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan-ish', { loanModelId })
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')
@@ -105,6 +106,7 @@ function defineLoanRequestJobs (agenda) {
         console.log('AWAITING_COLLATERAL')
         loan.save()
 
+        console.log('verify-request-loan 2')
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-lock-collateral', { loanModelId })
       } else {
         console.error('Error: Loan Id could not be found in transaction logs')
@@ -115,7 +117,7 @@ function defineLoanRequestJobs (agenda) {
 }
 
 async function requestLoan (ethTx, loan, agenda, done) {
-  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan', { loanModelId: loan.id })
+  console.log('requestLoan fn')
   web3().eth.sendTransaction(ethTx.json())
     .on('transactionHash', async (transactionHash) => {
       loan.ethTxId = ethTx.id
@@ -123,7 +125,8 @@ async function requestLoan (ethTx, loan, agenda, done) {
       loan.status = 'REQUESTING'
       loan.save()
       console.log('LOAN REQUESTING')
-      // await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan', { loanModelId: loan.id })
+      console.log('verify-request-loan 1')
+      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan-ish', { loanModelId: loan.id })
       done()
     })
     .on('error', (error) => {

@@ -21,8 +21,6 @@ async function setTxParams (data, from, to, instance) {
     throw Error(e)
   }
 
-  console.log('lastBlock', lastBlock)
-
   txParams.nonce = nonce
   txParams.gasPrice = gasPrice
   txParams.gasLimit = setGasLimit(gasLimit, lastBlock)

@@ -18,13 +18,19 @@ function defineLoanAcceptOrCancelJobs (agenda) {
 
     const { loanId, principal, lenderPrincipalAddress, lenderSecrets } = loan
     const loans = getObject('loans', principal)
+    const { off } = await loans.methods.bools(numToBytes32(loanId)).call()
 
-    const txData = loans.methods.accept(numToBytes32(loanId), ensure0x(lenderSecrets[0])).encodeABI()
-    const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), getContract('loans', principal), loan)
-    await acceptOrCancelLoan(ethTx, loan, agenda, done)
+    if (off) {
+      console.log('Loan already accepted')
+      done()
+    } else {
+      const txData = loans.methods.accept(numToBytes32(loanId), ensure0x(lenderSecrets[0])).encodeABI()
+      const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), getContract('loans', principal), loan)
+      await acceptOrCancelLoan(ethTx, loan, agenda, done)
+    }
   })
 
-  agenda.define('verify-accept-or-cancel-loan', async (job, done) => {
+  agenda.define('verify-accept-or-cancel-loan-ish', async (job, done) => {
     const { data } = job.attrs
     const { loanModelId } = data
 
@@ -46,7 +52,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
         await bumpTxFee(ethTx)
         await acceptOrCancelLoan(ethTx, loan, agenda, done)
       } else {
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan', { loanModelId })
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan-ish', { loanModelId })
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')
@@ -74,7 +80,6 @@ function defineLoanAcceptOrCancelJobs (agenda) {
 }
 
 async function acceptOrCancelLoan (ethTx, loan, agenda, done) {
-  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan', { loanModelId: loan.id })
   web3().eth.sendTransaction(ethTx.json())
     .on('transactionHash', async (transactionHash) => {
       const { principal, loanId } = loan
@@ -90,7 +95,7 @@ async function acceptOrCancelLoan (ethTx, loan, agenda, done) {
         console.log('CANCELLING')
       }
       await loan.save()
-      // await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan', { loanModelId: loan.id })
+      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan-ish', { loanModelId: loan.id })
       done()
     })
     .on('error', (error) => {
