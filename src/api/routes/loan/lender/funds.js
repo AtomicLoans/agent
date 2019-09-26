@@ -3,6 +3,8 @@ const asyncHandler = require('express-async-handler')
 
 const LoanMarket = require('../../../../models/LoanMarket')
 const Fund = require('../../../../models/Fund')
+const { getInterval } = require('../../../../utils/intervals')
+const { getObject } = require('../../../../utils/contracts')
 
 function defineFundsRouter (router) {
   router.get('/funds/:fundModelId', asyncHandler(async (req, res, next) => {
@@ -46,7 +48,18 @@ function defineFundsRouter (router) {
     } else {
       fund = Fund.fromFundParams(body)
     }
-    await agenda.now('create-fund', { fundModelId: fund.id })
+    console.log('create-fund event')
+
+    const { principalAddress } = await loanMarket.getAgentAddresses()
+
+    const funds = getObject('funds', principal)
+    const tx = await funds.methods.setPubKey('0x0000').send({ gas: 200000, from: principalAddress })
+
+    console.log('tx', tx)
+
+
+    console.log('fundModelId', fund.id)
+    await agenda.schedule(getInterval('ACTION_INTERVAL'), 'create-fund-ish', { fundModelId: fund.id })
 
     await fund.save()
 

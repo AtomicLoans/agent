@@ -1,7 +1,9 @@
 const web3 = require('web3')
+const axios = require('axios')
 const { ensure0x } = require('@liquality/ethereum-utils')
 const { currencies } = require('../../../utils/fx')
 const { rateToSec } = require('../../../utils/finance')
+const { getEndpoint } = require('../../../utils/endpoints')
 const { getMarketModels } = require('./models')
 const { toWei } = web3.utils
 
@@ -16,29 +18,32 @@ async function getFundParams (fund) {
 
   const unit = currencies[principal].unit
 
+  const { data: agentAddresses } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/agentinfo/ticker/${principal}/${collateral}`)
+  const { principalAddress: arbiterAddress } = agentAddresses
+
   let fundParams
   if (custom) {
-    fundParams = getCustomFundParams(fund, lenderAddress, unit, loanMarket)
+    fundParams = getCustomFundParams(fund, lenderAddress, unit, arbiterAddress, loanMarket)
   } else {
-    fundParams = getRegularFundParams(fund, lenderAddress, unit)
+    fundParams = getRegularFundParams(fund, lenderAddress, unit, arbiterAddress)
   }
 
   return { fundParams, lenderAddress }
 }
 
-function getRegularFundParams (fund, lenderAddress, unit) {
+function getRegularFundParams (fund, lenderAddress, unit, arbiterAddress) {
   const { maxLoanDuration, fundExpiry, compoundEnabled, amountToDepositOnCreate } = fund
 
   return [
     maxLoanDuration,
     fundExpiry,
-    process.env.ETH_ARBITER,
+    arbiterAddress,
     compoundEnabled,
     toWei(amountToDepositOnCreate.toString(), unit)
   ]
 }
 
-function getCustomFundParams (fund, lenderAddress, unit, loanMarket) {
+function getCustomFundParams (fund, lenderAddress, unit, arbiterAddress, loanMarket) {
   const {
     maxLoanDuration, fundExpiry, compoundEnabled, liquidationRatio, interest, penalty, fee, amountToDepositOnCreate
   } = fund
@@ -54,7 +59,7 @@ function getCustomFundParams (fund, lenderAddress, unit, loanMarket) {
     toWei(rateToSec(interest.toString()), 'gether'), // 16.50%
     toWei(rateToSec(penalty.toString()), 'gether'), //  3.00%
     toWei(rateToSec(fee.toString()), 'gether'), //  0.75%
-    process.env.ETH_ARBITER,
+    arbiterAddress,
     compoundEnabled,
     toWei(amountToDepositOnCreate.toString(), unit)
   ]

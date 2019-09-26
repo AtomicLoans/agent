@@ -13,7 +13,7 @@ const fundFixtures = require('../fixtures/fundFixtures')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
 const { numToBytes32, rateToSec } = require('../../../src/utils/finance')
-const { createCustomFund, checkFundCreated } = require('./setup/fundSetup')
+const { createCustomFund, checkFundCreated } = require('../setup/fundSetup')
 const web3 = require('web3')
 const { toWei, fromWei } = web3.utils
 

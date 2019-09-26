@@ -20,6 +20,8 @@ function defineLoanRequestJobs (agenda) {
     const { data } = job.attrs
     const { loanModelId } = data
 
+    console.log('requesting loan')
+
     const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
     const {
@@ -46,6 +48,7 @@ function defineLoanRequestJobs (agenda) {
     const txData = funds.methods.request(...loanParams).encodeABI()
 
     const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), getContract('funds', principal), loan)
+    await ethTx.save()
 
     await requestLoan(ethTx, loan, agenda, done)
   })
@@ -78,6 +81,7 @@ function defineLoanRequestJobs (agenda) {
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')
       console.log('TX WAS MINED BUT TX FAILED')
+      done()
     } else {
       console.log('RECEIPT IS NOT NULL')
 
@@ -101,17 +105,17 @@ function defineLoanRequestJobs (agenda) {
         console.log('AWAITING_COLLATERAL')
         loan.save()
 
-        await agenda.now('verify-lock-collateral', { loanModelId: loan.id })
-
-        done()
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-lock-collateral', { loanModelId })
       } else {
         console.error('Error: Loan Id could not be found in transaction logs')
       }
     }
+    done()
   })
 }
 
 async function requestLoan (ethTx, loan, agenda, done) {
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan', { loanModelId: loan.id })
   web3().eth.sendTransaction(ethTx.json())
     .on('transactionHash', async (transactionHash) => {
       loan.ethTxId = ethTx.id
@@ -119,7 +123,7 @@ async function requestLoan (ethTx, loan, agenda, done) {
       loan.status = 'REQUESTING'
       loan.save()
       console.log('LOAN REQUESTING')
-      await agenda.now('verify-request-loan', { loanModelId: loan.id })
+      // await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan', { loanModelId: loan.id })
       done()
     })
     .on('error', (error) => {

@@ -32,6 +32,17 @@ function defineAgentRoutes (router) {
 
     res.json(agentAddresses)
   }))
+
+  router.get('/agentinfo/ticker/:principal/:collateral', asyncHandler(async (req, res) => {
+    const { params } = req
+    const { principal, collateral } = params
+
+    const loanMarket = await LoanMarket.findOne({ principal, collateral }).exec()
+
+    const agentAddresses = await loanMarket.getAgentAddresses()
+
+    res.json(agentAddresses)
+  }))
 }
 
 module.exports = defineAgentRoutes

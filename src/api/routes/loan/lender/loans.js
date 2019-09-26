@@ -5,6 +5,7 @@ const { verifySignature } = require('../../../../utils/signatures')
 const clients = require('../../../../utils/clients')
 const { getObject } = require('../../../../utils/contracts')
 const { getEthSigner } = require('../../../../utils/address')
+const { getInterval } = require('../../../../utils/intervals')
 const { numToBytes32 } = require('../../../../utils/finance')
 const web3 = require('web3')
 const { fromWei, hexToAscii } = web3.utils
@@ -44,6 +45,12 @@ function defineLoansRouter (router) {
     if (!loan) return next(res.createError(401, 'Loan not found'))
 
     res.json(loan.json())
+  }))
+
+  router.get('/loans', asyncHandler(async (req, res) => {
+    const result = await Loan.find().exec()
+
+    res.json(result.map(r => r.json()))
   }))
 
   router.get('/loans/contract/:principal/:loanId', asyncHandler(async (req, res, next) => {
@@ -97,7 +104,7 @@ function defineLoansRouter (router) {
 
     await loan.save()
 
-    await agenda.now('request-loan', { loanModelId: loan.id })
+    await agenda.schedule(getInterval('ACTION_INTERVAL'), 'request-loan', { loanModelId: loan.id })
 
     console.log('end /loans/:loanModelId/proof_of_funds')
 

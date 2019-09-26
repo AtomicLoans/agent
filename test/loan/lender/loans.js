@@ -9,7 +9,7 @@ const { fundArbiter, fundAgent, generateSecretHashesArbiter, getTestObject, canc
 const { providePofAndRequest } = require('./common')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { numToBytes32 } = require('../../../src/utils/finance')
-const { createCustomFund } = require('./setup/fundSetup')
+const { createCustomFund } = require('../setup/fundSetup')
 
 chai.should()
 const expect = chai.expect

@@ -9,14 +9,15 @@ const { ensure0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
 const { sha256 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
+const HDWalletProvider = require('@truffle/hdwallet-provider')
 
-const { chains, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
+const { chains, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv, getWeb3Chain } = require('../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, removeFunds } = require('../loanCommon')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
 const { numToBytes32 } = require('../../../src/utils/finance')
 const { testLoadObject } = require('../util/contracts')
-const { createCustomFund } = require('./setup/fundSetup')
+const { createCustomFund } = require('../setup/fundSetup')
 const web3 = require('web3')
 
 const { toWei } = web3.utils
@@ -31,14 +32,32 @@ const server = 'http://localhost:3030/api/loan'
 
 const arbiterChain = chains.web3WithArbiter
 
-function testE2E (web3Chain, btcChain) {
+function testE2E (web3Chain, ethNode, btcChain) {
   describe('E2E Tests', () => {
-    before(async function () {
-      await fundArbiter()
-      await generateSecretHashesArbiter('DAI')
-    })
+    // before(async function () {
+    //   await fundArbiter()
+    //   await generateSecretHashesArbiter('DAI')
+    // })
 
     it('should POST loanMarket details and return loan details', async () => {
+      await ethNode.client.getMethod('jsonrpc')('miner_start')
+      const addressOther = await getWeb3Address(web3Chain)
+      rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', addressOther)
+      await cancelLoans(web3Chain)
+      await cancelJobs(server)
+      rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
+      console.log('reset worker')
+      await secondsCountDown(10)
+      await removeFunds()
+      await fundAgent(server)
+      await fundArbiter()
+      await generateSecretHashesArbiter('DAI')
+      await fundWeb3Address(web3Chain)
+      await importBitcoinAddresses(btcChain)
+      await fundUnusedBitcoinAddress(btcChain)
+
+      await createCustomFund(web3Chain, arbiterChain, 200, 'DAI') // Create Custom Loan Fund with 200 DAI
+
       const principal = 'DAI'
       const collateral = 'BTC'
       const principalAmount = 25
@@ -136,7 +155,7 @@ function testE2E (web3Chain, btcChain) {
       console.log('Mine BTC Block')
       await chains.bitcoinWithNode.client.chain.generateBlock(1)
 
-      await secondsCountDown(10)
+      await secondsCountDown(15)
 
       const approvedAfter = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedAfter).to.equal(true)
@@ -162,7 +181,7 @@ function testE2E (web3Chain, btcChain) {
       expect(paid).to.equal(true)
 
       console.log('REPAY LOAN')
-      await secondsCountDown(15)
+      await secondsCountDown(25)
 
       const off = await loans.methods.off(numToBytes32(loanId)).call()
       expect(off).to.equal(true)
@@ -182,32 +201,33 @@ async function getLoanStatus (loanId) {
   return body.status
 }
 
-async function testSetup (web3Chain, btcChain) {
-  await chains.ethereumWithNode.client.getMethod('jsonrpc')('miner_start')
-  const address = await getWeb3Address(web3Chain)
-  rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
-  await cancelLoans(web3Chain)
-  rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
-  await cancelJobs(server)
-  await removeFunds()
-  await fundAgent(server)
-  await fundArbiter()
-  await generateSecretHashesArbiter('DAI')
-  await importBitcoinAddresses(btcChain)
-  await fundUnusedBitcoinAddress(btcChain)
-  await fundWeb3Address(web3Chain)
-  await createCustomFund(web3Chain, arbiterChain, 200, 'DAI') // Create Custom Loan Fund with 200 DAI
-}
+// async function testSetup (web3Chain, ethNode, btcChain) {
+//   await ethNode.client.getMethod('jsonrpc')('miner_start')
+//   const address = await getWeb3Address(web3Chain)
+//   rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
+//   await cancelLoans(web3Chain)
+//   await cancelJobs(server)
+//   rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
+//   console.log('reset worker')
+//   secondsCountDown(5)
+//   await removeFunds()
+//   await fundAgent(server)
+//   await fundArbiter()
+//   await generateSecretHashesArbiter('DAI')
+//   await fundWeb3Address(web3Chain)
+//   await importBitcoinAddresses(btcChain)
+//   await fundUnusedBitcoinAddress(btcChain)
+// }
 
 describe('Lender Agent - Funds', () => {
   describe.only('Web3HDWallet / BitcoinJs', () => {
-    before(async function () { await testSetup(chains.web3WithHDWallet, chains.bitcoinWithJs) })
-    testE2E(chains.web3WithHDWallet, chains.bitcoinWithJs)
+    // before(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs) })
+    testE2E(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
 
   describe('MetaMask / BitcoinJs', () => {
     connectMetaMask()
-    before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithJs) })
+    before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
     testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
   })
 

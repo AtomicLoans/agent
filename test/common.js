@@ -167,6 +167,12 @@ function rewriteEnv (envFile, key, value) {
   fs.writeFileSync(path.resolve(process.cwd(), envFile), newEnv, 'utf-8')
 }
 
+function getWeb3Chain (mnemonic) {
+  const hdWalletProvider = new HDWalletProvider(mnemonic, httpProvider)
+  const hdWallet = new Web3(hdWalletProvider)
+  return { client: hdWallet }
+}
+
 function connectMetaMask () {
   before(async () => {
     console.log('\x1b[36m', 'Starting MetaMask connector on http://localhost:3333 - Open in browser to continue', '\x1b[0m')
@@ -181,5 +187,6 @@ module.exports = {
   importBitcoinAddresses,
   importBitcoinAddressesByAddress,
   fundUnusedBitcoinAddress,
-  rewriteEnv
+  rewriteEnv,
+  getWeb3Chain
 }
