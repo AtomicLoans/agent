@@ -48,20 +48,9 @@ function defineFundsRouter (router) {
     } else {
       fund = Fund.fromFundParams(body)
     }
-    console.log('create-fund event')
-
-    const { principalAddress } = await loanMarket.getAgentAddresses()
-
-    const funds = getObject('funds', principal)
-    const tx = await funds.methods.setPubKey('0x0000').send({ gas: 200000, from: principalAddress })
-
-    console.log('tx', tx)
-
-
-    console.log('fundModelId', fund.id)
-    await agenda.schedule(getInterval('ACTION_INTERVAL'), 'create-fund-ish', { fundModelId: fund.id })
 
     await fund.save()
+    await agenda.schedule(getInterval('ACTION_INTERVAL'), 'create-fund-ish', { fundModelId: fund.id })
 
     console.log('end /funds/new')
 
