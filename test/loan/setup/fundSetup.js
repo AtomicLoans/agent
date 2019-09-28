@@ -25,8 +25,6 @@ async function createCustomFund (web3Chain, arbiterChain, amount, principal) {
   const { body: addresses } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
   const { principalAddress } = addresses
 
-  console.log('principalAddress2', principalAddress)
-
   await chains.ethereumWithNode.client.chain.sendTransaction(principalAddress, toWei('0.2', 'ether'))
 
   const currentTime = Math.floor(new Date().getTime() / 1000)

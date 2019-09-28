@@ -41,8 +41,6 @@ async function fundAgent (server) {
   const { body: addresses } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
   const { principalAddress } = addresses
 
-  console.log('principalAddress', principalAddress)
-
   await chains.ethereumWithNode.client.chain.sendTransaction(principalAddress, toWei('0.2', 'ether'))
 }
 
@@ -139,6 +137,10 @@ async function removeFunds () {
   await chai.request(lenderServer).post('/remove_funds').send()
 }
 
+async function removeLoans () {
+  await chai.request(lenderServer).post('/remove_loans').send()
+}
+
 async function increaseTime (seconds) {
   await chains.ethereumWithNode.client.getMethod('jsonrpc')('evm_increaseTime', seconds)
   await chains.ethereumWithNode.client.getMethod('jsonrpc')('evm_mine')
@@ -172,6 +174,7 @@ module.exports = {
   cancelLoans,
   cancelJobs,
   removeFunds,
+  removeLoans,
   fundWeb3Address,
   increaseTime,
   secondsCountDown
