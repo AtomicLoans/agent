@@ -19,7 +19,7 @@ async function start () {
     await agenda.every(getInterval('LENDER_CHECK_INTERVAL'), 'check-lender-status')
   } else {
     // TODO: check every 30 seconds to changes to open loans and react
-    await agenda.every(getInterval('CHECK_ALL_RECORDS_INTERVAL'), 'check-loan-statuses')
+    await agenda.every(getInterval('CHECK_ALL_RECORDS_INTERVAL'), 'check-loan-statuses-ish')
     await agenda.now('notify-arbiter')
   }
 }

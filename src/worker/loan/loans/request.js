@@ -107,7 +107,6 @@ function defineLoanRequestJobs (agenda) {
         loan.save()
 
         console.log('verify-request-loan 2')
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-lock-collateral', { loanModelId })
       } else {
         console.error('Error: Loan Id could not be found in transaction logs')
       }
