@@ -1,11 +1,14 @@
-const { ensure0x } = require('@liquality/ethereum-utils')
+const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
 const date = require('date.js')
 const Loan = require('../../../models/Loan')
+const LoanMarket = require('../../../models/LoanMarket')
 const EthTx = require('../../../models/EthTx')
+const Secret = require('../../../models/Secret')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
+const { isArbiter } = require('../../../utils/env')
 const web3 = require('../../../utils/web3')
 
 function defineLoanAcceptOrCancelJobs (agenda) {
@@ -20,12 +23,24 @@ function defineLoanAcceptOrCancelJobs (agenda) {
     const loans = getObject('loans', principal)
     const { off } = await loans.methods.bools(numToBytes32(loanId)).call()
 
+    const loanMarket = await LoanMarket.findOne({ principal }).exec()
+    const { principalAddress } = await loanMarket.getAgentAddresses()
+
     if (off) {
       console.log('Loan already accepted')
       done()
     } else {
-      const txData = loans.methods.accept(numToBytes32(loanId), ensure0x(lenderSecrets[0])).encodeABI()
-      const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), getContract('loans', principal), loan)
+      let txData
+      if (isArbiter()) {
+        const { secretHashC1 } = await loans.methods.secretHashes(numToBytes32(loanId)).call()
+
+        const secretModel = await Secret.findOne({ secretHash: remove0x(secretHashC1) })
+
+        txData = loans.methods.accept(numToBytes32(loanId), ensure0x(secretModel.secret)).encodeABI()
+      } else {
+        txData = loans.methods.accept(numToBytes32(loanId), ensure0x(lenderSecrets[0])).encodeABI()
+      }
+      const ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('loans', principal), loan)
       await acceptOrCancelLoan(ethTx, loan, agenda, done)
     }
   })

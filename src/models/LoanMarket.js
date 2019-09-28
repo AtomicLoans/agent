@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const { checksumEncode } = require('@liquality/ethereum-utils')
 
 const clients = require('../utils/clients')
 const web3 = require('../utils/web3')
@@ -82,7 +83,7 @@ LoanMarketSchema.methods.getAgentAddresses = async function () {
   const collateralAddresses = await this.collateralClient().wallet.getAddresses()
 
   return {
-    principalAddress: principalAddresses[0],
+    principalAddress: checksumEncode(principalAddresses[0]),
     collateralAddress: collateralAddresses[0].address,
     collateralPublicKey: collateralAddresses[0].publicKey.toString('hex')
   }
