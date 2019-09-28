@@ -86,13 +86,14 @@ function defineArbiterLoanJobs (agenda) {
               status = 'WITHDRAWN'
             } else {
               // DEFAULTED
+              // STATUS is going to be LIQUIDATING
             }
           } else {
             status = 'LIQUIDATING'
           }
         } else if (!sale && !off) {
           if (currentTime < acceptExpiration) {
-            status = 'ACCEPTING'
+            status = 'REPAID'
             // TODO: ARBITER SHOULD CREATE JOB TO ACCEPT LOAN
           } else {
             // BAD FUCK UP
@@ -110,6 +111,7 @@ function defineArbiterLoanJobs (agenda) {
 
         const loan = Loan.fromLoanMarket(loanMarket, params, minimumCollateralAmount)
         loan.status = status
+        loan.loanId = currentIndex
 
         console.log('loan', loan)
 

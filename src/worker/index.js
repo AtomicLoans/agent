@@ -14,12 +14,12 @@ async function start () {
 
   await agenda.every('2 minutes', 'update-market-data')
 
+  await agenda.every(getInterval('CHECK_ALL_RECORDS_INTERVAL'), 'check-loan-statuses-ish')
   if (process.env.PARTY === 'arbiter') {
     await agenda.every(getInterval('ARBITER_STATUS_INTERVAL'), 'check-arbiter-status')
     await agenda.every(getInterval('LENDER_CHECK_INTERVAL'), 'check-lender-status')
   } else {
     // TODO: check every 30 seconds to changes to open loans and react
-    await agenda.every(getInterval('CHECK_ALL_RECORDS_INTERVAL'), 'check-loan-statuses-ish')
     await agenda.now('notify-arbiter')
   }
 }

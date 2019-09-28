@@ -76,8 +76,7 @@ function defineLoanRequestJobs (agenda) {
         await bumpTxFee(ethTx)
         await requestLoan(ethTx, loan, agenda, done)
       } else {
-        console.log('verify-request-loan 3')
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan-ish', { loanModelId })
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), '<verify-request-loan></verify-request-loan>-ish', { loanModelId })
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')
@@ -105,8 +104,6 @@ function defineLoanRequestJobs (agenda) {
         console.log(`${loan.principal} LOAN #${loan.loanId} CREATED/REQUESTED`)
         console.log('AWAITING_COLLATERAL')
         loan.save()
-
-        console.log('verify-request-loan 2')
       } else {
         console.error('Error: Loan Id could not be found in transaction logs')
       }
@@ -124,7 +121,6 @@ async function requestLoan (ethTx, loan, agenda, done) {
       loan.status = 'REQUESTING'
       loan.save()
       console.log('LOAN REQUESTING')
-      console.log('verify-request-loan 1')
       await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan-ish', { loanModelId: loan.id })
       done()
     })
