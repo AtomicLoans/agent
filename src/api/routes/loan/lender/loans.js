@@ -189,6 +189,14 @@ function defineLoansRouter (router) {
 
     res.json({ message: 'Cancelling loans', status: 0 })
   }))
+
+  if (process.env.NODE_ENV === 'test') {
+    router.post('/remove_loans', asyncHandler(async (req, res, next) => {
+      await Loan.deleteMany()
+
+      res.json({ message: 'Removed all loans' })
+    }))
+  }
 }
 
 async function findModels (res, next, principal, collateral) {

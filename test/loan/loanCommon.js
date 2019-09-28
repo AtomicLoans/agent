@@ -139,6 +139,10 @@ async function removeFunds () {
   await chai.request(lenderServer).post('/remove_funds').send()
 }
 
+async function removeLoans () {
+  await chai.request(lenderServer).post('/remove_loans').send()
+}
+
 async function increaseTime (seconds) {
   await chains.ethereumWithNode.client.getMethod('jsonrpc')('evm_increaseTime', seconds)
   await chains.ethereumWithNode.client.getMethod('jsonrpc')('evm_mine')
@@ -172,6 +176,7 @@ module.exports = {
   cancelLoans,
   cancelJobs,
   removeFunds,
+  removeLoans,
   fundWeb3Address,
   increaseTime,
   secondsCountDown

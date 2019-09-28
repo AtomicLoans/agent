@@ -125,8 +125,8 @@ const chains = {
 }
 
 async function importBitcoinAddresses (chain) {
-  const nonChangeAddresses = await chain.client.getMethod('getAddresses')(0, 10)
-  const changeAddresses = await chain.client.getMethod('getAddresses')(0, 10, true)
+  const nonChangeAddresses = await chain.client.getMethod('getAddresses')(0, 100)
+  const changeAddresses = await chain.client.getMethod('getAddresses')(0, 100, true)
 
   const addresses = [...nonChangeAddresses, ...changeAddresses]
 
