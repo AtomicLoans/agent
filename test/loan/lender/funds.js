@@ -225,7 +225,7 @@ function testFunds (web3Chain, ethNode) {
 
     it.only('should allow lender to withdraw excess funds in loan fund', async () => {
       const currentTime = Math.floor(new Date().getTime() / 1000)
-      const principal = 'DAI'
+      const principal = 'USDC'
       const amount = 200
       const fixture = fundFixtures.fundWithFundExpiryIn100DaysAndCompoundEnabled
       const [funds, ctoken] = await getTestObjects(web3Chain, principal, ['funds', 'ctoken'])
@@ -246,12 +246,10 @@ function testFunds (web3Chain, ethNode) {
 
       const signature = await web3Chain.client.eth.personal.sign(message, address)
 
-      const { fundId, fundParams, amountDeposited, agentAddress } = await createFundFromFixture(web3Chain, fixture, principal, amount, message, signature)
+      const { fundId, fundModelId, fundParams, amountDeposited, agentAddress } = await createFundFromFixture(web3Chain, fixture, principal, amount, message, signature)
       const { fundExpiry } = fundParams
 
-      const {
-        lender, maxLoanDur, fundExpiry: actualFundExpiry, cBalance
-      } = await funds.methods.funds(numToBytes32(fundId)).call()
+      const { lender, maxLoanDur, fundExpiry: actualFundExpiry, cBalance } = await funds.methods.funds(numToBytes32(fundId)).call()
 
       const exchangeRateCurrent = await ctoken.methods.exchangeRateCurrent().call()
       const expectedCBalance = BN(amountDeposited).times(WAD).dividedBy(exchangeRateCurrent).toString()
@@ -260,6 +258,27 @@ function testFunds (web3Chain, ethNode) {
       expect(lender).to.equal(checksumEncode(agentAddress))
       expect(maxLoanDur).to.equal(BN(2).pow(256).minus(1).toFixed())
       expect(actualFundExpiry).to.equal(fundExpiry.toString())
+
+      const amountToWithdraw = 100
+      const currentTimeWithdraw = Math.floor(new Date().getTime() / 1000)
+
+      const withdrawMessage = `Withdraw ${amountToWithdraw} ${principal} at ${currentTimeWithdraw}`
+      const withdrawSignature = await web3Chain.client.eth.personal.sign(withdrawMessage, address)
+
+      const curBalance = await funds.methods.balance(numToBytes32(fundId)).call()
+
+      const curLender = await funds.methods.lender(numToBytes32(fundId)).call()
+
+      const { body } = await chai.request(server).post(`/funds/${fundModelId}/withdraw`).send({
+        timestamp: currentTimeWithdraw, amountToWithdraw, signature: withdrawSignature, message: withdrawMessage
+      })
+
+      console.log('sleep 10000')
+      await sleep(10000)
+
+      const { cBalance: newCBalance } = await funds.methods.funds(numToBytes32(fundId)).call()
+
+      expect(parseInt(newCBalance)).to.equal(cBalance / 2)
     })
   })
 
@@ -305,7 +324,7 @@ async function createFundFromFixture (web3Chain, fixture, principal_, amount, me
   await token.methods.approve(getTestContract('funds', principal), amountToDeposit).send({ gas: 500000 })
   await funds.methods.deposit(numToBytes32(fundId), amountToDeposit).send({ gas: 2000000 })
 
-  return { fundId, fundParams, agentAddress: agentPrincipalAddress, amountDeposited: amountToDeposit }
+  return { fundId, fundParams, agentAddress: agentPrincipalAddress, amountDeposited: amountToDeposit, fundModelId }
 }
 
 async function testSetup (web3Chain, ethNode) {

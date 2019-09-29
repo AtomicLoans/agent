@@ -80,11 +80,12 @@ function defineFundsRouter (router) {
   router.post('/funds/:fundModelId/withdraw', asyncHandler(async (req, res, next) => {
     console.log('start /funds/:fundModelId/withdraw')
 
+    const currentTime = Math.floor(new Date().getTime() / 1000)
     const agenda = req.app.get('agenda')
     const address = getEthSigner()
     const { params } = req
     const { body } = req
-    const { amountToWithdraw, signature, message } = body
+    const { amountToWithdraw, signature, message, timestamp } = body
 
     const fund = await Fund.findOne({ _id: params.fundModelId }).exec()
     if (!fund) return next(res.createError(401, 'Fund not found'))
@@ -92,6 +93,10 @@ function defineFundsRouter (router) {
     const { principal } = fund
 
     if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
+
+    console.log('message', message)
+    console.log(`Withdraw ${amountToWithdraw} ${principal} at ${timestamp}`)
+
     if (!(message === `Withdraw ${amountToWithdraw} ${principal} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
     if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
 
