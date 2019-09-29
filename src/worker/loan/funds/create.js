@@ -107,10 +107,6 @@ function defineFundCreateJobs (agenda) {
 
     done()
   })
-
-  agenda.on('fail:create-fund', (err, job) => {
-    console.log(`Job failed with error: ${err.message}`);
-  });
 }
 
 async function createFund (ethTx, fund, agenda, done) {
