@@ -76,6 +76,11 @@ const FundSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
+  nonce: {
+    type: Number,
+    index: true,
+    default: 0
+  },
   fundId: {
     type: Number,
     index: true

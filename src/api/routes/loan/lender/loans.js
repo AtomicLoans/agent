@@ -181,7 +181,7 @@ function defineLoansRouter (router) {
     if (!(message === `Cancel all loans for ${address} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
     if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
 
-    const requestedLoans = await Loan.find({ status: 'AWAITING_COLLATERAL' })
+    const requestedLoans = await Loan.find({ status: 'AWAITING_COLLATERAL' }).exec()
 
     for (const loan of requestedLoans) {
       await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })

@@ -222,6 +222,45 @@ function testFunds (web3Chain, ethNode) {
 
       expect(statusSuccess).to.equal('CREATED')
     })
+
+    it.only('should allow lender to withdraw excess funds in loan fund', async () => {
+      const currentTime = Math.floor(new Date().getTime() / 1000)
+      const principal = 'DAI'
+      const amount = 200
+      const fixture = fundFixtures.fundWithFundExpiryIn100DaysAndCompoundEnabled
+      const [funds, ctoken] = await getTestObjects(web3Chain, principal, ['funds', 'ctoken'])
+
+      const params = fixture(currentTime, principal)
+
+      const messageParams = [
+        params.principal,
+        params.collateral,
+        params.custom,
+        params.maxLoanDuration,
+        params.fundExpiry,
+        params.compoundEnabled,
+        params.amount
+      ]
+      const message = messageParams.join('')
+      const address = await getWeb3Address(web3Chain)
+
+      const signature = await web3Chain.client.eth.personal.sign(message, address)
+
+      const { fundId, fundParams, amountDeposited, agentAddress } = await createFundFromFixture(web3Chain, fixture, principal, amount, message, signature)
+      const { fundExpiry } = fundParams
+
+      const {
+        lender, maxLoanDur, fundExpiry: actualFundExpiry, cBalance
+      } = await funds.methods.funds(numToBytes32(fundId)).call()
+
+      const exchangeRateCurrent = await ctoken.methods.exchangeRateCurrent().call()
+      const expectedCBalance = BN(amountDeposited).times(WAD).dividedBy(exchangeRateCurrent).toString()
+
+      expect(fromWei(cBalance, 'wei')).to.equal(expectedCBalance)
+      expect(lender).to.equal(checksumEncode(agentAddress))
+      expect(maxLoanDur).to.equal(BN(2).pow(256).minus(1).toFixed())
+      expect(actualFundExpiry).to.equal(fundExpiry.toString())
+    })
   })
 
   // Only run this test after commenting out `await createFund(txParams, fund, done)`. Ganache does not currently support a mempool
@@ -244,7 +283,7 @@ function testFunds (web3Chain, ethNode) {
   // })
 }
 
-async function createFundFromFixture (web3Chain, fixture, principal_, amount) {
+async function createFundFromFixture (web3Chain, fixture, principal_, amount, message, signature) {
   const currentTime = Math.floor(new Date().getTime() / 1000)
   const agentPrincipalAddress = await getAgentAddress(server)
   const address = await getWeb3Address(web3Chain)
@@ -254,6 +293,9 @@ async function createFundFromFixture (web3Chain, fixture, principal_, amount) {
   const unit = currencies[principal].unit
   const amountToDeposit = toWei(amount.toString(), unit)
   await fundTokens(address, amountToDeposit, principal)
+
+  fundParams.message = message
+  fundParams.signature = signature
 
   const { body } = await chai.request(server).post('/funds/new').send(fundParams)
   const { id: fundModelId } = body
@@ -281,20 +323,20 @@ async function testSetup (web3Chain, ethNode) {
 }
 
 describe('Lender Agent - Funds', () => {
-  describe.only('Web3HDWallet / BitcoinJs', () => {
+  describe('Web3HDWallet / BitcoinJs', () => {
     beforeEach(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode) })
     testFunds(chains.web3WithHDWallet, chains.ethereumWithNode)
   })
 
-  describe('MetaMask / Ledger', () => {
-    connectMetaMask()
-    beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
-    testFunds(chains.web3WithMetaMask, chains.bitcoinWithLedger)
-  })
+  // describe('MetaMask / Ledger', () => {
+  //   connectMetaMask()
+  //   beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
+  //   testFunds(chains.web3WithMetaMask, chains.bitcoinWithLedger)
+  // })
 
-  describe('MetaMask / BitcoinJs', () => {
-    connectMetaMask()
-    beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode) })
-    testFunds(chains.web3WithMetaMask, chains.ethereumWithNode)
-  })
+  // describe('MetaMask / BitcoinJs', () => {
+  //   connectMetaMask()
+  //   beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode) })
+  //   testFunds(chains.web3WithMetaMask, chains.ethereumWithNode)
+  // })
 })
