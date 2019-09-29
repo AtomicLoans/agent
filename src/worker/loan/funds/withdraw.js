@@ -3,6 +3,7 @@ const keccak256 = require('keccak256')
 const { ensure0x } = require('@liquality/ethereum-utils')
 
 const Fund = require('../../../models/Fund')
+const LoanMarket = require('../../../models/LoanMarket')
 const EthTx = require('../../../models/EthTx')
 const Withdraw = require('../../../models/Withdraw')
 const { getObject, getContract } = require('../../../utils/contracts')
@@ -31,6 +32,9 @@ function defineFundWithdrawJobs (agenda) {
     const funds = getObject('funds', principal)
     const { fundParams, lenderAddress } = await getFundParams(fund)
     const address = getEthSigner()
+
+    const loanMarket = await LoanMarket.findOne({ principal }).exec()
+    const { principalAddress } = await loanMarket.getAgentAddresses()
 
     const txData = funds.methods.withdrawTo(numToBytes32(fundId), toWei(amountToWithdraw.toString(), unit), address).encodeABI()
 
