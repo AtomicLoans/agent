@@ -1,3 +1,4 @@
+const axios = require('axios')
 const asyncHandler = require('express-async-handler')
 const requestIp = require('request-ip')
 
@@ -12,7 +13,14 @@ function defineAgentsRouter (router) {
     const { ethSigner, principalAddress, collateralPublicKey, url } = body
     const endpoint = requestIp.getClientIp(req)
 
-    const agentExists = await Agent.findOne({ ethSigner, principalAddress, collateralPublicKey }).exec()
+    // TODO: check loanmarketinfo on agent, and check if url works
+    // check if ethSigner, principalAddress, collateralPublicKey are correct 
+    // if existing record exists, update it with new info
+
+    const { status } = await axios.get(`${url}/loanmarketinfo`)
+    console.log('status', status)
+
+    const agentExists = await Agent.findOne({ url }).exec()
     if (!agentExists) {
       const params = { ethSigner, principalAddress, collateralPublicKey, url, endpoint }
       const agent = Agent.fromAgentParams(params)

@@ -7,12 +7,12 @@ const toSecs = require('@mblackmblack/to-seconds')
 const bitcoin = require('bitcoinjs-lib')
 const { ensure0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
-const { sha256 } = require('@liquality/crypto')
+const { sha256, hash160 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
 const HDWalletProvider = require('@truffle/hdwallet-provider')
 
 const { chains, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv, getWeb3Chain } = require('../../common')
-const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, removeFunds, removeLoans } = require('../loanCommon')
+const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans, fundTokens } = require('../loanCommon')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
 const { numToBytes32 } = require('../../../src/utils/finance')
@@ -29,14 +29,13 @@ chai.use(chaiHttp)
 chai.use(chaiAsPromised)
 
 const server = 'http://localhost:3030/api/loan'
+const swapServer = 'http://localhost:3030/api/swap'
 
 const arbiterChain = chains.web3WithArbiter
 
-function testE2E (web3Chain, ethNode, btcChain) {
-  describe('E2E Tests', () => {
+function testSales (web3Chain, ethNode, btcChain) {
+  describe('Sales', () => {
     it('should POST loanMarket details and return loan details', async () => {
-      await secondsCountDown(10)
-
       await createCustomFund(web3Chain, arbiterChain, 200, 'DAI') // Create Custom Loan Fund with 200 DAI
 
       const principal = 'DAI'
@@ -137,7 +136,7 @@ function testE2E (web3Chain, ethNode, btcChain) {
       console.log('Mine BTC Block')
       await chains.bitcoinWithNode.client.chain.generateBlock(1)
 
-      await secondsCountDown(15)
+      await secondsCountDown(25)
 
       const approvedAfter = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedAfter).to.equal(true)
@@ -146,27 +145,71 @@ function testE2E (web3Chain, ethNode, btcChain) {
       const withdrawn = await loans.methods.withdrawn(numToBytes32(loanId)).call()
       expect(withdrawn).to.equal(true)
 
-      const owedForLoan = await loans.methods.owedForLoan(numToBytes32(loanId)).call()
-
-      const web3Address = await getWeb3Address(web3Chain)
       const { address: ethereumWithNodeAddress } = await chains.ethereumWithNode.client.wallet.getUnusedAddress()
 
-      const token = await testLoadObject('erc20', getTestContract('erc20', principal), chains.web3WithNode, ensure0x(ethereumWithNodeAddress))
-      await token.methods.transfer(web3Address, toWei(owedForLoan, 'wei')).send({ gas: 100000 })
+      const medianizer = await testLoadObject('medianizer', getTestContract('medianizer', principal), chains.web3WithNode, ensure0x(ethereumWithNodeAddress))
 
-      const testToken = await getTestObject(web3Chain, 'erc20', principal)
-      await testToken.methods.approve(getTestContract('loans', principal), toWei(owedForLoan, 'wei')).send({ gas: 100000 })
+      const { body: markets } = await chai.request(swapServer).get('/marketinfo')
+      const market = markets.find((market) => market.to === principal)
+      const { rate } = market
 
-      await loans.methods.repay(numToBytes32(loanId), owedForLoan).send({ gas: 100000 })
+      await medianizer.methods.poke(numToBytes32(toWei((rate * 0.7).toString() , 'ether'))).send({ gas: 200000 })
 
-      const paid = await loans.methods.paid(numToBytes32(loanId)).call()
-      expect(paid).to.equal(true)
 
-      console.log('REPAY LOAN')
-      await secondsCountDown(25)
+      const liquidatorSecrets = await chains.bitcoinLiquidator.client.loan.secrets.generateSecrets('test', 1)
+      const liquidatorSecret = liquidatorSecrets[0]
+      console.log('liquidatorSecret', liquidatorSecret)
+      const liquidatorSecretHash = sha256(liquidatorSecret)
 
-      const off = await loans.methods.off(numToBytes32(loanId)).call()
-      expect(off).to.equal(true)
+
+      const liquidatorBtcAddresses = await chains.bitcoinLiquidator.client.wallet.getAddresses()
+      const liquidatorBtcAddress = liquidatorBtcAddresses[0]
+      const { publicKey: liquidatorPublicKey } = liquidatorBtcAddress
+      const liquidatorPubKeyHash = hash160(liquidatorPublicKey.toString('hex'))
+
+      const liquidatorAddress = await getWeb3Address(chains.web3WithLiquidator)
+      const liquidatorLoans = await testLoadObject('loans', getTestContract('loans', principal), chains.web3WithLiquidator, liquidatorAddress)
+      const liquidatorToken = await testLoadObject('erc20', getTestContract('erc20', principal), chains.web3WithLiquidator, liquidatorAddress)
+
+      const discountCollateralValue = await liquidatorLoans.methods.discountCollateralValue(numToBytes32(loanId)).call()
+      const ddivDiscountCollateralValue = await liquidatorLoans.methods.ddiv(toWei(discountCollateralValue.toString(), 'wei')).call()
+
+      console.log('discountCollateralValue', discountCollateralValue)
+      console.log('ddivDiscountCollateralValue', ddivDiscountCollateralValue)
+
+      await fundWeb3Address(chains.web3WithLiquidator)
+      await fundTokens(liquidatorAddress, toWei(discountCollateralValue, 'wei'), principal)
+      await liquidatorToken.methods.approve(getTestContract('loans', principal), toWei(discountCollateralValue, 'wei')).send({ gas: 100000 })
+
+
+      const safe = await liquidatorLoans.methods.safe(numToBytes32(loanId)).call()
+      console.log('safe', safe)
+
+      const sale = await liquidatorLoans.methods.liquidate(numToBytes32(loanId), ensure0x(liquidatorSecretHash), ensure0x(liquidatorPubKeyHash)).call()
+      await liquidatorLoans.methods.liquidate(numToBytes32(loanId), ensure0x(liquidatorSecretHash), ensure0x(liquidatorPubKeyHash)).send({ gas: 1000000 })
+
+
+
+      // const sales = await getTestObject(web3Chain, 'sales', principal)
+
+
+
+      // const token = await testLoadObject('erc20', getTestContract('erc20', principal), chains.web3WithNode, ensure0x(ethereumWithNodeAddress))
+      // await token.methods.transfer(web3Address, toWei(owedForLoan, 'wei')).send({ gas: 100000 })
+
+      // const testToken = await getTestObject(web3Chain, 'erc20', principal)
+      // await testToken.methods.approve(getTestContract('loans', principal), toWei(owedForLoan, 'wei')).send({ gas: 100000 })
+
+      // await loans.methods.repay(numToBytes32(loanId), owedForLoan).send({ gas: 100000 })
+
+      // const paid = await loans.methods.paid(numToBytes32(loanId)).call()
+      // expect(paid).to.equal(true)
+
+      // console.log('REPAY LOAN')
+      // await secondsCountDown(25)
+
+      // const off = await loans.methods.off(numToBytes32(loanId)).call()
+      // expect(off).to.equal(true)
     })
   })
 }
@@ -190,7 +233,6 @@ async function testSetup (web3Chain, ethNode, btcChain) {
   await cancelLoans(web3Chain)
   await cancelJobs(server)
   rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
-  console.log('reset worker')
   await removeFunds()
   await removeLoans()
   await fundAgent(server)
@@ -199,6 +241,7 @@ async function testSetup (web3Chain, ethNode, btcChain) {
   await fundWeb3Address(web3Chain)
   await importBitcoinAddresses(btcChain)
   await fundUnusedBitcoinAddress(btcChain)
+  await restartJobs(server)
 }
 
 function testSetupArbiter () {
@@ -212,21 +255,21 @@ function testAfterArbiter() {
 }
 
 describe('Lender Agent - Funds', () => {
-  // describe('Web3HDWallet / BitcoinJs', () => {
-  //   before(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs) })
-  //   testE2E(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
-  // })
-
-  describe.only('Web3HDWallet / BitcoinJs', () => {
-    before(async function () {
-      await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
-      testSetupArbiter()
-    })
-    after(function() {
-      testAfterArbiter()
-    })
-    testE2E(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
+  describe('Web3HDWallet / BitcoinJs', () => {
+    before(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs) })
+    testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
+
+  // describe.only('Web3HDWallet / BitcoinJs', () => {
+  //   before(async function () {
+  //     await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
+  //     testSetupArbiter()
+  //   })
+  //   after(function() {
+  //     testAfterArbiter()
+  //   })
+  //   testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
+  // })
 
   // describe('MetaMask / BitcoinJs', () => {
   //   connectMetaMask()

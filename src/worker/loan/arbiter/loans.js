@@ -9,6 +9,8 @@ const Market = require('../../../models/Market')
 const PubKey = require('../../../models/PubKey')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
+const { getMarketModels } = require('../utils/models')
+const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
 const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
 const { numToBytes32 } = require('../../../utils/finance')
 const { currencies } = require('../../../utils/fx')
@@ -62,10 +64,6 @@ function defineArbiterLoanJobs (agenda) {
       const { funded, approved, withdrawn, sale, paid, off } = bools
       const { loanExpiration, arbiter } = loans
 
-      console.log('arbiterAddress', arbiterAddress)
-      console.log('arbiter       ', arbiter)
-      console.log('equal?', checksumEncode(arbiterAddress) === arbiter)
-
       if (checksumEncode(arbiterAddress) === arbiter) {
         const currentTime = await getCurrentTime()
 
@@ -110,8 +108,18 @@ function defineArbiterLoanJobs (agenda) {
         const minimumCollateralAmount = BN(principalAmount).dividedBy(rate).times(fromWei(liquidationRatio, 'gether')).toFixed(8)
 
         const loan = Loan.fromLoanMarket(loanMarket, params, minimumCollateralAmount)
+
         loan.status = status
         loan.loanId = currentIndex
+
+        const { market } = await getMarketModels(principal, collateral)
+        const { rate } = market
+
+        const lockArgs = await getLockArgs(numToBytes32(currentIndex), principal, collateral)
+        const addresses = await clients[collateral].loan.collateral.getLockAddresses(...lockArgs)
+        const amounts = await getCollateralAmounts(numToBytes32(currentIndex), loan, rate)
+
+        loan.setCollateralAddressValues(addresses, amounts)
 
         console.log('loan', loan)
 

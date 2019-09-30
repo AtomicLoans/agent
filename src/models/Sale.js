@@ -14,20 +14,41 @@ const SaleSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  collateralSwapRefundableP2SHAddress: {
+    type: String,
+    index: true
+  },
+  collateralSwapSeizableP2SHAddress: {
+    type: String,
+    index: true
+  },
+  collateralSwapRefundableAmount: {
+    type: Number
+  },
+  collateralSwapSeizableAmount: {
+    type: Number
+  },
+  secretB: {
+    type: String
+  },
+  secretHashB: {
+    type: String
+  },
+  secretC: {
+    type: String
+  },
+  secretHashC: {
+    type: String
+  },
+  saleToLoanIndex: {
+    type: Number
+  },
   status: {
     type: String,
-    enum: ['QUOTE', 'REQUESTING', 'AWAITING_COLLATERAL', 'APPROVING', 'APPROVED', 'CANCELLING', 'CANCELLED', 'WITHDRAWN', 'REPAID', 'ACCEPTING', 'ACCEPTED', 'FAILED'],
+    enum: ['INITIATED', 'COLLATERAL_SENDING', 'COLLATERAL_SENT', 'SECRETS_PROVIDED', 'COLLATERAL_CLAIMED', 'ACCEPTING', 'ACCEPTED', 'CANCELLING', 'CANCELLED', 'FAILED'],
     index: true
   }
 })
-
-SaleSchema.methods.principalClient = function () {
-  return clients[currencies[this.principal].chain]
-}
-
-SaleSchema.methods.collateralClient = function () {
-  return clients[this.collateral]
-}
 
 SaleSchema.methods.json = function () {
   const json = this.toJSON()

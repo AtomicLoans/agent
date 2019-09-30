@@ -26,6 +26,10 @@ async function cancelJobs (server) {
   await chai.request(server).post('/cancel_jobs').send()
 }
 
+async function restartJobs (server) {
+  await chai.request(server).post('/restart_jobs').send()
+}
+
 async function fundArbiter () {
   const unusedAddress = (await chains.web3WithArbiter.client.currentProvider.getAddresses())[0]
   await chains.ethereumWithNode.client.chain.sendTransaction(unusedAddress, toWei('0.3', 'ether'))
@@ -88,7 +92,7 @@ async function getLockParams (web3Chain, principal, values, loanId) {
   const liquidationExpiration = await testLoans.methods.liquidationExpiration(numToBytes32(loanId)).call()
   const seizureExpiration = await testLoans.methods.seizureExpiration(numToBytes32(loanId)).call()
 
-  const pubKeys = { borrowerPubKey: remove0x(borrowerPubKey), lenderPubKey: remove0x(lenderPubKey), agentPubKey: remove0x(arbiterPubKey) }
+  const pubKeys = { borrowerPubKey: remove0x(borrowerPubKey), lenderPubKey: remove0x(lenderPubKey), arbiterPubKey: remove0x(arbiterPubKey) }
   const secretHashes = { secretHashA1: remove0x(secretHashA1), secretHashB1: remove0x(secretHashB1), secretHashC1: remove0x(secretHashC1) }
   const expirations = { approveExpiration, liquidationExpiration, seizureExpiration }
 
@@ -99,6 +103,8 @@ function getTestContract (contract, principal) {
   if (contract === 'erc20' || contract === 'ctoken') {
     const cPrefix = contract === 'ctoken' ? 'C' : ''
     return addresses[`${cPrefix}${principal}`]
+  } else if (contract === 'medianizer') {
+    return addresses[`${contract.toUpperCase()}`]
   } else {
     return addresses[`${principal}_${contract.toUpperCase()}`]
   }
@@ -173,6 +179,7 @@ module.exports = {
   getTestObjects,
   cancelLoans,
   cancelJobs,
+  restartJobs,
   removeFunds,
   removeLoans,
   fundWeb3Address,

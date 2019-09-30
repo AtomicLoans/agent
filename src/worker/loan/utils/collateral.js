@@ -15,7 +15,7 @@ async function getLockArgs (loanId, principal, collateral) {
   const liquidationExpiration = await loans.methods.liquidationExpiration(loanId).call()
   const seizureExpiration = await loans.methods.seizureExpiration(loanId).call()
 
-  const pubKeys = { borrowerPubKey: remove0x(borrowerPubKey), lenderPubKey: remove0x(lenderPubKey), agentPubKey: remove0x(arbiterPubKey) }
+  const pubKeys = { borrowerPubKey: remove0x(borrowerPubKey), lenderPubKey: remove0x(lenderPubKey), arbiterPubKey: remove0x(arbiterPubKey) }
   const secretHashes = { secretHashA1: remove0x(secretHashA1), secretHashB1: remove0x(secretHashB1), secretHashC1: remove0x(secretHashC1) }
   const expirations = { approveExpiration, liquidationExpiration, seizureExpiration }
 

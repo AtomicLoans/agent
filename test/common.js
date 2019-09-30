@@ -76,6 +76,14 @@ bitcoinBorrower.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, config.b
 bitcoinBorrower.loan.addProvider(new BitcoinCollateralProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 bitcoinBorrower.loan.addProvider(new BitcoinCollateralSwapProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 
+const bitcoinLiquidator = new Client()
+const bitcoinLoanLiquidator = new LoanClient(bitcoinLiquidator)
+bitcoinLiquidator.loan = bitcoinLoanLiquidator
+bitcoinLiquidator.addProvider(new BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
+bitcoinLiquidator.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('LIQUIDATOR_MNEMONIC').toString(), 'bech32'))
+bitcoinLiquidator.loan.addProvider(new BitcoinCollateralProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
+bitcoinLiquidator.loan.addProvider(new BitcoinCollateralSwapProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
+
 const ethereumNetwork = EthereumNetworks[config.ethereum.network]
 
 const ethereumWithNode = new Client()
@@ -101,6 +109,9 @@ const web3WithLender = new Web3(lenderProvider)
 const borrowerProvider = new HDWalletProvider(getEnvTestValue('BORROWER_MNEMONIC').toString(), httpProvider)
 const web3WithBorrower = new Web3(borrowerProvider)
 
+const liquidatorProvider = new HDWalletProvider(getEnvTestValue('LIQUIDATOR_MNEMONIC').toString(), httpProvider)
+const web3WithLiquidator = new Web3(liquidatorProvider)
+
 const web3WithNode = new Web3(new Web3.providers.HttpProvider(config.ethereum.rpc.host))
 
 const hdWalletProvider = new HDWalletProvider(getEnvTestValue('ETH_SIGNER_MNEMONIC').toString(), httpProvider)
@@ -113,6 +124,7 @@ const chains = {
   bitcoinArbiter: { id: 'Bitcoin Arbiter', name: 'bitcoin', client: bitcoinArbiter, network: bitcoinNetwork },
   bitcoinLender: { id: 'Bitcoin Lender', name: 'bitcoin', client: bitcoinLender, network: bitcoinNetwork },
   bitcoinBorrower: { id: 'Bitcoin Borrower', name: 'bitcoin', client: bitcoinBorrower, network: bitcoinNetwork },
+  bitcoinLiquidator: { id: 'Bitcoin Liquidator', name: 'bitcoin', client: bitcoinLiquidator, network: bitcoinNetwork },
   ethereumWithNode: { id: 'Ethereum Node', name: 'ethereum', client: ethereumWithNode },
   ethereumWithMetaMask: { id: 'Ethereum MetaMask', name: 'ethereum', client: ethereumWithMetaMask },
   ethereumArbiter: { id: 'Ethereum Arbiter', name: 'ethereum', client: ethereumArbiter },
@@ -121,6 +133,7 @@ const chains = {
   web3WithArbiter: { id: 'Web3 Arbiter', name: 'ethereum', client: web3WithArbiter },
   web3WithLender: { id: 'Web3 Lender', name: 'ethereum', client: web3WithLender },
   web3WithBorrower: { id: 'Web3 Borrower', name: 'ethereum', client: web3WithBorrower },
+  web3WithLiquidator: { id: 'Web3 Liquidator', name: 'ethereum', client: web3WithLiquidator },
   web3WithHDWallet: { id: 'Web3 HDWallet', name: 'ethereum', client: web3WithHDWallet }
 }
 

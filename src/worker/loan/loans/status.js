@@ -9,38 +9,6 @@ const { getInterval } = require('../../../utils/intervals')
 const { isArbiter } = require('../../../utils/env')
 
 function defineLoanStatusJobs (agenda) {
-  agenda.define('check-loan-status-ish', async (job, done) => {
-    const { data } = job.attrs
-    const { loanModelId } = data
-
-    const loan = await Loan.findOne({ _id: loanModelId }).exec()
-    if (!loan) return console.log('Error: Loan not found')
-
-    const { loanId, principal } = loan
-    const loans = getObject('loans', principal)
-    const { withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
-
-    if (!withdrawn && !paid && !sale && !off) {
-      await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status-ish', { loanModelId })
-      done()
-    } else if (withdrawn && !paid && !sale && !off) {
-      loan.status = 'WITHDRAWN'
-      await loan.save()
-      await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status-ish', { loanModelId })
-      done()
-    } else if (withdrawn && paid && !sale && !off) {
-      loan.status = 'REPAID'
-      await loan.save()
-      await agenda.now('accept-or-cancel-loan', { loanModelId })
-    } else if (sale) {
-      // TODO: start liquidation process
-      console.log('LIQUIDATION HAS STARTED')
-    } else if (off) {
-      console.log('LOAN IS ACCEPTED, CANCELLED, OR REFUNDED')
-    }
-    done()
-  })
-
   agenda.define('check-loan-statuses-ish', async (job, done) => {
     const loanMarkets = await LoanMarket.find().exec()
 
@@ -56,6 +24,8 @@ function defineLoanStatusJobs (agenda) {
         const { loanId } = loan
 
         const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
+
+        console.log('approved, withdrawn, sale, paid, off', approved, withdrawn, sale, paid, off)
 
         if (!approved && !withdrawn && !paid && !sale && !off) {
           // CHECK LOCK COLLATERAL    
@@ -128,6 +98,10 @@ function defineLoanStatusJobs (agenda) {
         } else if (sale) {
           // TODO: start liquidation process
           console.log('LIQUIDATION HAS STARTED')
+
+          if (!isArbiter()) {
+            await agenda.now('init-liquidation', { loanModelId: loan.id })
+          }
         } else if (off) {
           loan.status = 'ACCEPTED'
           await loan.save()
