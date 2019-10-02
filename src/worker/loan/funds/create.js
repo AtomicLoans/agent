@@ -2,6 +2,7 @@ const axios = require('axios')
 const keccak256 = require('keccak256')
 const { ensure0x } = require('@liquality/ethereum-utils')
 
+const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
 const EthTx = require('../../../models/EthTx')
 const { getObject, getContract } = require('../../../utils/contracts')
@@ -23,24 +24,30 @@ function defineFundCreateJobs (agenda) {
     if (!fund) return console.log('Error: Fund not found')
 
     const { principal, custom } = fund
-    const funds = getObject('funds', principal)
-    const { fundParams, lenderAddress } = await getFundParams(fund)
 
-    let txData
-    if (custom) {
-      txData = funds.methods.createCustom(...fundParams).encodeABI()
+    const approves = await Approve.find({ principal, status: { $nin: [ 'FAILED' ] } }).exec()
+
+    if (approves.length > 0) {
+      const funds = getObject('funds', principal)
+      const { fundParams, lenderAddress } = await getFundParams(fund)
+
+      let txData
+      if (custom) {
+        txData = funds.methods.createCustom(...fundParams).encodeABI()
+      } else {
+        txData = funds.methods.create(...fundParams).encodeABI()
+      }
+
+      const ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
+
+      fund.ethTxId = ethTx.id
+      await fund.save()
+
+      await createFund(ethTx, fund, agenda, done)
     } else {
-      txData = funds.methods.create(...fundParams).encodeABI()
+      console.log('Rescheduling fund create because erc20 approve hasn\'t finished')
+      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'create-fund-ish', { fundModelId })
     }
-
-    console.log('test')
-
-    const ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
-
-    fund.ethTxId = ethTx.id
-    await fund.save()
-
-    await createFund(ethTx, fund, agenda, done)
   })
 
   agenda.define('verify-create-fund', async (job, done) => {
