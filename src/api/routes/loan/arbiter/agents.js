@@ -33,7 +33,7 @@ function defineAgentsRouter (router) {
             agentExists.principalAddress = principalAddress
             agentExists.collateralPublicKey = collateralPublicKey
             agentExists.ethSigner = ethSigner
-            await agentExists.save(0)
+            await agentExists.save()
           }
 
           res.json(agentExists.json())
