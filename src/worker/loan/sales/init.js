@@ -22,9 +22,6 @@ const { toWei, hexToNumber } = web3.utils
 
 function defineSalesInitJobs (agenda) {
   agenda.define('init-liquidation', async (job, done) => {
-
-    // THIS JOB IS ONLY DONE BY THE LENDER AGENT
-
     console.log('init-liquidation')
 
     const { data } = job.attrs
@@ -139,17 +136,13 @@ function defineSalesInitJobs (agenda) {
       await sale.save()
 
       await agenda.schedule(getInterval('CHECK_BTC_TX_INTERVAL'), 'verify-init-liquidation', { saleModelId: sale.id })
+    } else {
+      console.log('CANNOT START LIQUIDATION BECAUSE COLLATERAL DOESN\'T EXIST')
     }
     done()
   })
 
   agenda.define('verify-init-liquidation', async (job, done) => {
-
-    // IF LENDER AGENT, CHECK IF ARBITER AGENT HAS SENT THE TX, AND UPDATE DETAILS ACCORDINGLY
-
-
-    // BOTH => check init tx hash to see if it's mined 
-
     const { data } = job.attrs
     const { saleModelId } = data
 

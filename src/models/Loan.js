@@ -144,7 +144,7 @@ const LoanSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['QUOTE', 'REQUESTING', 'AWAITING_COLLATERAL', 'APPROVING', 'APPROVED', 'CANCELLING', 'CANCELLED', 'WITHDRAWN', 'REPAID', 'ACCEPTING', 'ACCEPTED', 'FAILED'],
+    enum: ['QUOTE', 'REQUESTING', 'AWAITING_COLLATERAL', 'APPROVING', 'APPROVED', 'CANCELLING', 'CANCELLED', 'WITHDRAWN', 'REPAID', 'ACCEPTING', 'ACCEPTED', 'LIQUIDATED', 'FAILED'],
     index: true
   }
 })

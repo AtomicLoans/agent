@@ -244,6 +244,16 @@ function testSales (web3Chain, ethNode, btcChain) {
 
       console.log('claimTxHash', claimTxHash)
 
+      await secondsCountDown(5)
+
+      await chains.bitcoinWithNode.client.chain.generateBlock(1)
+
+      await checkSaleAccepted(saleId, principal)
+
+      const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
+
+      expect(accepted).to.equal(true)
+
 
       // const { body: salesIdBody } = await chai.request(server).get(`/sales/contract/${principal}/${saleId}`)
 
@@ -296,6 +306,21 @@ async function checkSaleInitiated (saleId, principal) {
   }
 
   return secretB
+}
+
+async function checkSaleAccepted (saleId, principal) {
+  let accepted = false
+  while (!accepted) {
+    await sleep(1000)
+    const { body, status } = await chai.request(arbiterServer).get(`/sales/contract/${principal}/${saleId}`)
+    if (status === 200) {
+      const { status: saleStatus } = body
+      console.log(saleStatus)
+      if (saleStatus === 'ACCEPTED') {
+        accepted = true
+      }
+    }
+  }
 }
 
 async function getSecret (serverEndpoint, principal, saleId, secret) {
