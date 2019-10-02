@@ -1,6 +1,7 @@
 const axios = require('axios')
 const Agent = require('../../../models/Agent')
 const Loan = require('../../../models/Loan')
+const Sale = require('../../../models/Sale')
 const LoanMarket = require('../../../models/LoanMarket')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getCurrentTime } = require('../../../utils/time')
@@ -9,38 +10,6 @@ const { getInterval } = require('../../../utils/intervals')
 const { isArbiter } = require('../../../utils/env')
 
 function defineLoanStatusJobs (agenda) {
-  agenda.define('check-loan-status-ish', async (job, done) => {
-    const { data } = job.attrs
-    const { loanModelId } = data
-
-    const loan = await Loan.findOne({ _id: loanModelId }).exec()
-    if (!loan) return console.log('Error: Loan not found')
-
-    const { loanId, principal } = loan
-    const loans = getObject('loans', principal)
-    const { withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
-
-    if (!withdrawn && !paid && !sale && !off) {
-      await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status-ish', { loanModelId })
-      done()
-    } else if (withdrawn && !paid && !sale && !off) {
-      loan.status = 'WITHDRAWN'
-      await loan.save()
-      await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status-ish', { loanModelId })
-      done()
-    } else if (withdrawn && paid && !sale && !off) {
-      loan.status = 'REPAID'
-      await loan.save()
-      await agenda.now('accept-or-cancel-loan', { loanModelId })
-    } else if (sale) {
-      // TODO: start liquidation process
-      console.log('LIQUIDATION HAS STARTED')
-    } else if (off) {
-      console.log('LOAN IS ACCEPTED, CANCELLED, OR REFUNDED')
-    }
-    done()
-  })
-
   agenda.define('check-loan-statuses-ish', async (job, done) => {
     const loanMarkets = await LoanMarket.find().exec()
 
@@ -128,6 +97,21 @@ function defineLoanStatusJobs (agenda) {
         } else if (sale) {
           // TODO: start liquidation process
           console.log('LIQUIDATION HAS STARTED')
+
+          const saleModel = await Sale.findOne({ loanModelId: loan.id }).exec()
+          console.log('finding sale')
+          console.log('saleModel', saleModel)
+
+          if (isArbiter() && saleModel) {
+            const collateralBlockHeight = await saleModel.collateralClient().getMethod('getBlockHeight')()
+            const { latestCollateralBlock } = saleModel
+
+            if (saleModel && collateralBlockHeight > latestCollateralBlock) {
+              agenda.now('verify-collateral-claim', { saleModelId: saleModel.id })
+            }
+          } else if (!saleModel) {
+            await agenda.now('init-liquidation', { loanModelId: loan.id })
+          }
         } else if (off) {
           loan.status = 'ACCEPTED'
           await loan.save()

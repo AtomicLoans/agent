@@ -9,7 +9,6 @@ const { defineSwapJobs } = require('./swap/index')
 const { defineLoanJobs } = require('./loan/index')
 
 async function start () {
-  await agenda.purge()
   await agenda.start()
 
   await agenda.every('2 minutes', 'update-market-data')
@@ -22,6 +21,11 @@ async function start () {
     // TODO: check every 30 seconds to changes to open loans and react
     await agenda.now('notify-arbiter')
   }
+
+  agenda.define('restart', async (job, done) => {
+    await start()
+    done()
+  })
 }
 
 async function stop () {

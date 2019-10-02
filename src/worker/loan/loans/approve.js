@@ -70,7 +70,6 @@ function defineLoanApproveJobs (agenda) {
         console.log('APPROVED')
         loan.status = 'APPROVED'
         await loan.save()
-        // await agenda.schedule(getInterval('REPAID_TX_INTERVAL'), 'check-loan-status-ish', { loanModelId })
         done()
       } else {
         console.log('TX WAS NOT APPROVED')
