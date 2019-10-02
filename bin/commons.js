@@ -41,8 +41,8 @@ module.exports.loadVariables = (config = {}) => {
   program
     .option('-p, --port <port>', 'Application port', config.defaultPort ? config.defaultPort : 3000)
     .option('--mongo <uri>', 'mongoDB uri', 'mongodb://localhost/agent')
-    .option('--btc-rpc <url>', 'Bitcoin RPC endpoint', 'https://atomicloans.io/bitcointestnetrpc/')
-    .option('--btc-user <user>', 'Bitcoin RPC user', 'bitcoin')
+    .option('--btc-rpc <url>', 'Bitcoin RPC endpoint', 'https://btc.atomicloans.io/testnet/')
+    .option('--btc-user <user>', 'Bitcoin RPC user', 'atomicloans')
     .option('--btc-pass <pass>', 'Bitcoin RPC pass,', 'local321')
     .option('--btc-api <api>', 'Bitcoin API Endpoint,', 'https://blockstream.info/testnet/api')
     .option('--eth-rpc <url>', 'Ethereum RPC endpoint', 'https://kovan.infura.io/v3/53bcde36e0404a6da87b71e780783f79')

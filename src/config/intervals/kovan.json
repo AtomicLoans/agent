@@ -1,5 +1,6 @@
 {
   "CHECK_TX_INTERVAL": "in 15 seconds",
+  "CHECK_BTC_TX_INTERVAL": "in 20 seconds",
   "CHECK_ALL_RECORDS_INTERVAL": "45 seconds",
   "ACTION_INTERVAL": "in 3 seconds",
   "BUMP_TX_INTERVAL": "1 minute ago",
