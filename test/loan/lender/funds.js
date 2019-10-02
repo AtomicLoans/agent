@@ -232,22 +232,18 @@ function testFunds (web3Chain, ethNode) {
 
       const params = fixture(currentTime, principal)
 
-      const messageParams = [
-        params.principal,
-        params.collateral,
-        params.custom,
-        params.maxLoanDuration,
-        params.fundExpiry,
-        params.compoundEnabled,
-        params.amount
-      ]
-      const message = messageParams.join('')
+      const { collateral, custom, maxLoanDuration, fundExpiry, compoundEnabled } = params
+
+      console.log('custom', custom)
+
+      const message = `Create ${custom ? 'Custom' : 'Non-Custom'} ${principal} Loan Fund backed by ${collateral} with ${compoundEnabled ? 'Compound Enabled' : 'Compound Disabled'} and Maximum Loan Duration of ${maxLoanDuration} seconds which expires at timestamp ${fundExpiry} and deposit ${0} ${principal}`
+      console.log('message', message)
+
       const address = await getWeb3Address(web3Chain)
 
       const signature = await web3Chain.client.eth.personal.sign(message, address)
 
       const { fundId, fundModelId, fundParams, amountDeposited, agentAddress } = await createFundFromFixture(web3Chain, fixture, principal, amount, message, signature)
-      const { fundExpiry } = fundParams
 
       const { lender, maxLoanDur, fundExpiry: actualFundExpiry, cBalance } = await funds.methods.funds(numToBytes32(fundId)).call()
 
