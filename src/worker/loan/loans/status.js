@@ -1,6 +1,7 @@
 const axios = require('axios')
 const Agent = require('../../../models/Agent')
 const Loan = require('../../../models/Loan')
+const Sale = require('../../../models/Sale')
 const LoanMarket = require('../../../models/LoanMarket')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getCurrentTime } = require('../../../utils/time')
@@ -24,8 +25,6 @@ function defineLoanStatusJobs (agenda) {
         const { loanId } = loan
 
         const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
-
-        console.log('approved, withdrawn, sale, paid, off', approved, withdrawn, sale, paid, off)
 
         if (!approved && !withdrawn && !paid && !sale && !off) {
           // CHECK LOCK COLLATERAL    
@@ -99,7 +98,18 @@ function defineLoanStatusJobs (agenda) {
           // TODO: start liquidation process
           console.log('LIQUIDATION HAS STARTED')
 
-          if (!isArbiter()) {
+          const saleModel = await Sale.findOne({ loanModelId: loan.id }).exec()
+          console.log('finding sale')
+          console.log('saleModel', saleModel)
+
+          if (isArbiter() && saleModel) {
+            const collateralBlockHeight = await saleModel.collateralClient().getMethod('getBlockHeight')()
+            const { latestCollateralBlock } = saleModel
+
+            if (saleModel && collateralBlockHeight > latestCollateralBlock) {
+              agenda.now('verify-collateral-claim', { saleModelId: saleModel.id })
+            }
+          } else if (!saleModel) {
             await agenda.now('init-liquidation', { loanModelId: loan.id })
           }
         } else if (off) {

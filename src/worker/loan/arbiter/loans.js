@@ -34,6 +34,8 @@ function defineArbiterLoanJobs (agenda) {
     const { data } = job.attrs
     const { loanMarketId } = data
 
+    console.log('update-loan-records')
+
     const loanMarket = await LoanMarket.findOne({ _id: loanMarketId }).exec()
     if (!loanMarket) return console.log('Error: LoanMarket not found')
 
@@ -61,8 +63,13 @@ function defineArbiterLoanJobs (agenda) {
         loansContract.methods.acceptExpiration(numToBytes32(currentIndex)).call()
       ])
 
+      console.log('loans, bools, approveExpiration, acceptExpiration', loans, bools, approveExpiration, acceptExpiration)
+
       const { funded, approved, withdrawn, sale, paid, off } = bools
       const { loanExpiration, arbiter } = loans
+
+      console.log('checksumEncode(arbiterAddress)', checksumEncode(arbiterAddress))
+      console.log('arbiter', arbiter)
 
       if (checksumEncode(arbiterAddress) === arbiter) {
         const currentTime = await getCurrentTime()
@@ -100,6 +107,9 @@ function defineArbiterLoanJobs (agenda) {
           status = 'ACCEPTED'
         }
 
+        const { market } = await getMarketModels(principal, collateral)
+        const { rate } = market
+
         const unit = currencies[principal].unit
         const { principal: principalAmountInWei, requestTimestamp: requestCreatedAt, createdAt, liquidationRatio } = loans
         const principalAmount = fromWei(principalAmountInWei, unit)
@@ -112,16 +122,14 @@ function defineArbiterLoanJobs (agenda) {
         loan.status = status
         loan.loanId = currentIndex
 
-        const { market } = await getMarketModels(principal, collateral)
-        const { rate } = market
-
         const lockArgs = await getLockArgs(numToBytes32(currentIndex), principal, collateral)
-        const addresses = await clients[collateral].loan.collateral.getLockAddresses(...lockArgs)
+        const addresses = await loan.collateralClient().loan.collateral.getLockAddresses(...lockArgs)
+        const { refundableAddress, seizableAddress } = addresses
+
+        const { collateral: collateralAmountInSats } = await loansContract.methods.loans(numToBytes32(currentIndex)).call()
+        loan.collateralAmount = BN(collateralAmountInSats).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
         const amounts = await getCollateralAmounts(numToBytes32(currentIndex), loan, rate)
-
         loan.setCollateralAddressValues(addresses, amounts)
-
-        console.log('loan', loan)
 
         await loan.save()
       }

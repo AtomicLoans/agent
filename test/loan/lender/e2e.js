@@ -12,7 +12,7 @@ const { sleep } = require('@liquality/utils')
 const HDWalletProvider = require('@truffle/hdwallet-provider')
 
 const { chains, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv, getWeb3Chain } = require('../../common')
-const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, removeFunds, removeLoans } = require('../loanCommon')
+const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans } = require('../loanCommon')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
 const { numToBytes32 } = require('../../../src/utils/finance')
@@ -35,8 +35,6 @@ const arbiterChain = chains.web3WithArbiter
 function testE2E (web3Chain, ethNode, btcChain) {
   describe('E2E Tests', () => {
     it('should POST loanMarket details and return loan details', async () => {
-      await secondsCountDown(10)
-
       await createCustomFund(web3Chain, arbiterChain, 200, 'DAI') // Create Custom Loan Fund with 200 DAI
 
       const principal = 'DAI'
@@ -199,6 +197,7 @@ async function testSetup (web3Chain, ethNode, btcChain) {
   await fundWeb3Address(web3Chain)
   await importBitcoinAddresses(btcChain)
   await fundUnusedBitcoinAddress(btcChain)
+  await restartJobs(server)
 }
 
 function testSetupArbiter () {

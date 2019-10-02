@@ -5,14 +5,14 @@ const chaiAsPromised = require('chai-as-promised')
 const BN = require('bignumber.js')
 const toSecs = require('@mblackmblack/to-seconds')
 const bitcoin = require('bitcoinjs-lib')
-const { ensure0x } = require('@liquality/ethereum-utils')
+const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
 const { sha256, hash160 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
 const HDWalletProvider = require('@truffle/hdwallet-provider')
 
 const { chains, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv, getWeb3Chain } = require('../../common')
-const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans, fundTokens } = require('../loanCommon')
+const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans, fundTokens, increaseTime } = require('../loanCommon')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
 const { numToBytes32 } = require('../../../src/utils/finance')
@@ -20,7 +20,7 @@ const { testLoadObject } = require('../util/contracts')
 const { createCustomFund } = require('../setup/fundSetup')
 const web3 = require('web3')
 
-const { toWei } = web3.utils
+const { toWei, hexToNumber } = web3.utils
 
 chai.should()
 const expect = chai.expect
@@ -30,6 +30,7 @@ chai.use(chaiAsPromised)
 
 const server = 'http://localhost:3030/api/loan'
 const swapServer = 'http://localhost:3030/api/swap'
+const arbiterServer = 'http://localhost:3032/api/loan'
 
 const arbiterChain = chains.web3WithArbiter
 
@@ -112,6 +113,7 @@ function testSales (web3Chain, ethNode, btcChain) {
       await importBitcoinAddressesByAddress([collateralRefundableP2SHAddress, collateralSeizableP2SHAddress])
 
       const loans = await getTestObject(web3Chain, 'loans', principal)
+      const sales = await getTestObject(web3Chain, 'sales', principal)
       const approvedBefore = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedBefore).to.equal(false)
 
@@ -164,8 +166,8 @@ function testSales (web3Chain, ethNode, btcChain) {
 
       const liquidatorBtcAddresses = await chains.bitcoinLiquidator.client.wallet.getAddresses()
       const liquidatorBtcAddress = liquidatorBtcAddresses[0]
-      const { publicKey: liquidatorPublicKey } = liquidatorBtcAddress
-      const liquidatorPubKeyHash = hash160(liquidatorPublicKey.toString('hex'))
+      const { publicKey: liquidatorPubKey } = liquidatorBtcAddress
+      const liquidatorPubKeyHash = hash160(liquidatorPubKey.toString('hex'))
 
       const liquidatorAddress = await getWeb3Address(chains.web3WithLiquidator)
       const liquidatorLoans = await testLoadObject('loans', getTestContract('loans', principal), chains.web3WithLiquidator, liquidatorAddress)
@@ -181,12 +183,69 @@ function testSales (web3Chain, ethNode, btcChain) {
       await fundTokens(liquidatorAddress, toWei(discountCollateralValue, 'wei'), principal)
       await liquidatorToken.methods.approve(getTestContract('loans', principal), toWei(discountCollateralValue, 'wei')).send({ gas: 100000 })
 
+      await increaseTime(3600)
+      await increaseTime(3600)
+      await increaseTime(3600)
 
       const safe = await liquidatorLoans.methods.safe(numToBytes32(loanId)).call()
       console.log('safe', safe)
 
-      const sale = await liquidatorLoans.methods.liquidate(numToBytes32(loanId), ensure0x(liquidatorSecretHash), ensure0x(liquidatorPubKeyHash)).call()
+      const saleIdBytes32 = await liquidatorLoans.methods.liquidate(numToBytes32(loanId), ensure0x(liquidatorSecretHash), ensure0x(liquidatorPubKeyHash)).call()
+      const saleId = hexToNumber(saleIdBytes32)
       await liquidatorLoans.methods.liquidate(numToBytes32(loanId), ensure0x(liquidatorSecretHash), ensure0x(liquidatorPubKeyHash)).send({ gas: 1000000 })
+      console.log('saleId', saleId)
+
+      await secondsCountDown(5)
+
+      await checkSaleInitiated(saleId, principal)
+
+      const secretB = await getSecret(server, principal, saleId, 'B')
+      const secretC = await getSecret(arbiterServer, principal, saleId, 'C')
+      const secretD = liquidatorSecret
+
+      console.log('secretB', secretB)
+      console.log('secretC', secretC)
+      console.log('secretD', secretD)
+
+
+      const multisigSendTxHash = await getMultisigSendTxHash(server, principal, saleId)
+
+
+      // const { borrowerPubKey, lenderPubKey, arbiterPubKey } = pubKeys
+      // const { liquidatorPubKeyHash }                      = pubKeys
+      // const { secretHashA1 }                              = secretHashes
+      // const { secretHashB1 }                              = secretHashes
+      // const { secretHashC1 }                              = secretHashes
+      // const { secretHashD1 }                              = secretHashes
+      // const { swapExpiration, liquidationExpiration }     = expirations
+
+      // const borrowerPubKeyHash = hash160(borrowerPubKey)
+      // const lenderPubKeyHash = hash160(lenderPubKey)
+
+      // const seizablePubKeyHash = seizable ? lenderPubKeyHash : borrowerPubKeyHash
+
+
+      const { borrowerPubKey, lenderPubKey, arbiterPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
+
+      const { secretHashA, secretHashB, secretHashC, secretHashD } = await sales.methods.secretHashes(numToBytes32(saleId)).call()
+
+      const swapExpiration = await sales.methods.swapExpiration(numToBytes32(saleId)).call()
+      const liquidationExpiration = await loans.methods.liquidationExpiration(numToBytes32(loanId)).call()
+
+      const claimPubKeys = { borrowerPubKey: remove0x(borrowerPubKey), lenderPubKey: remove0x(lenderPubKey), arbiterPubKey: remove0x(arbiterPubKey), liquidatorPubKey, liquidatorPubKeyHash }
+      const claimSecretHashes = { secretHashA1: remove0x(secretHashA), secretHashB1: remove0x(secretHashB), secretHashC1: remove0x(secretHashC), secretHashD1: remove0x(secretHashD) }
+      const claimExpirations = { swapExpiration, liquidationExpiration }
+
+      const claimParams = [multisigSendTxHash, claimPubKeys, [secretB, secretC, secretD], claimSecretHashes, claimExpirations]
+
+      console.log('claimParams', claimParams)
+
+      const claimTxHash = await await chains.bitcoinLiquidator.client.loan.collateralSwap.claim(...claimParams)
+
+      console.log('claimTxHash', claimTxHash)
+
+
+      // const { body: salesIdBody } = await chai.request(server).get(`/sales/contract/${principal}/${saleId}`)
 
 
 
@@ -214,6 +273,47 @@ function testSales (web3Chain, ethNode, btcChain) {
   })
 }
 
+async function checkSaleInitiated (saleId, principal) {
+  let collateralSent = false
+  let secretB
+  while (!collateralSent) {
+    await sleep(1000)
+    const { body, status } = await chai.request(server).get(`/sales/contract/${principal}/${saleId}`)
+    if (status === 200) {
+      const { status: saleStatus } = body
+      console.log(saleStatus)
+      if (saleStatus === 'COLLATERAL_SENDING') {
+        await chains.bitcoinWithNode.client.chain.generateBlock(1)
+
+        const { collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress } = body
+        await importBitcoinAddressesByAddress([collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress])
+      }
+      if (saleStatus === 'COLLATERAL_SENT' || saleStatus === 'SECRETS_PROVIDED') {
+        collateralSent = true
+        secretB = body.secretB
+      }
+    }
+  }
+
+  return secretB
+}
+
+async function getSecret (serverEndpoint, principal, saleId, secret) {
+  const { body, status } = await chai.request(serverEndpoint).get(`/sales/contract/${principal}/${saleId}`)
+
+  if (status === 200) {
+    return body[`secret${secret}`]
+  }
+}
+
+async function getMultisigSendTxHash (serverEndpoint, principal, saleId) {
+  const { body, status } = await chai.request(serverEndpoint).get(`/sales/contract/${principal}/${saleId}`)
+
+  if (status === 200) {
+    return body.initTxHash
+  }
+}
+
 async function secondsCountDown (num) {
   for (let i = num; i >= 0; i--) {
     console.log(`${i}s`)
@@ -227,11 +327,13 @@ async function getLoanStatus (loanId) {
 }
 
 async function testSetup (web3Chain, ethNode, btcChain) {
+  await increaseTime(3600)
   await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
   await cancelLoans(web3Chain)
   await cancelJobs(server)
+  await cancelJobs(arbiterServer)
   rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
   await removeFunds()
   await removeLoans()
@@ -242,6 +344,7 @@ async function testSetup (web3Chain, ethNode, btcChain) {
   await importBitcoinAddresses(btcChain)
   await fundUnusedBitcoinAddress(btcChain)
   await restartJobs(server)
+  await restartJobs(arbiterServer)
 }
 
 function testSetupArbiter () {

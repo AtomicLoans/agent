@@ -13,22 +13,34 @@ function defineAgentsRouter (router) {
     const { ethSigner, principalAddress, collateralPublicKey, url } = body
     const endpoint = requestIp.getClientIp(req)
 
-    // TODO: check loanmarketinfo on agent, and check if url works
-    // check if ethSigner, principalAddress, collateralPublicKey are correct 
-    // if existing record exists, update it with new info
-
-    const { status } = await axios.get(`${url}/loanmarketinfo`)
+    const { status, data: loanMarkets } = await axios.get(`${url}/loanmarketinfo`)
     console.log('status', status)
+    console.log('loanMarkets', loanMarkets)
 
-    const agentExists = await Agent.findOne({ url }).exec()
-    if (!agentExists) {
-      const params = { ethSigner, principalAddress, collateralPublicKey, url, endpoint }
-      const agent = Agent.fromAgentParams(params)
-      await agent.save()
-      res.json(agent.json())
-    } else {
-      res.json(agentExists.json())
-    }
+    if (status === 200) {
+      const { data: agent } = await axios.get(`${url}/agentinfo/${loanMarkets[0].id}`)
+      console.log('agent', agent)
+      const { principalAddress: principalAddressResponse, collateralPublicKey: collateralPublicKeyResponse } = agent
+      if (principalAddress === principalAddressResponse && collateralPublicKey === collateralPublicKeyResponse) {
+        const agentExists = await Agent.findOne({ url }).exec()
+        if (!agentExists) {
+          const params = { ethSigner, principalAddress, collateralPublicKey, url, endpoint }
+          const agent = Agent.fromAgentParams(params)
+          await agent.save()
+          res.json(agent.json())
+        } else {
+          if (principalAddress !== agentExists.principalAddress) {
+            agentExists.principalAddress = principalAddress
+            agentExists.collateralPublicKey = collateralPublicKey
+            agentExists.ethSigner = ethSigner
+            await agentExists.save(0)
+          }
+
+          res.json(agentExists.json())
+        }
+      } else { return next(res.createError(401, 'Principal Address doesn\'t match')) }
+    } else { return next(res.createError(401, 'Url Invalid or Lender Agent offline')) }
+
     // TODO: implement verify signature
     console.log('end /agents/new')
   }))
@@ -37,6 +49,16 @@ function defineAgentsRouter (router) {
     const { params } = req
 
     const agent = await Agent.findOne({ _id: params.agentModelId }).exec()
+    if (!agent) return next(res.createError(401, 'Agent not found'))
+
+    res.json(agent.json())
+  }))
+
+  router.get('/agents/ethsigner/:ethSigner', asyncHandler(async (req, res, next) => {
+    const { params } = req
+    const { ethSigner } = params
+
+    const agent = await Agent.findOne({ ethSigner }).exec()
     if (!agent) return next(res.createError(401, 'Agent not found'))
 
     res.json(agent.json())
