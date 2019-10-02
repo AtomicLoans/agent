@@ -18,7 +18,7 @@ function defineLoanStatusJobs (agenda) {
       const { principal } = loanMarket
       const loans = getObject('loans', principal)
 
-      const loanModels = await Loan.find({ principal, status: { $nin: [ 'QUOTE', 'REQUESTING', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'FAILED' ] }})
+      const loanModels = await Loan.find({ principal, status: { $nin: [ 'QUOTE', 'REQUESTING', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'LIQUIDATED', 'FAILED' ] }})
 
       for (let j = 0; j < loanModels.length; j++) {
         const loan = loanModels[j]
@@ -95,19 +95,19 @@ function defineLoanStatusJobs (agenda) {
             await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
           }
         } else if (sale) {
-          // TODO: start liquidation process
           console.log('LIQUIDATION HAS STARTED')
 
           const saleModel = await Sale.findOne({ loanModelId: loan.id }).exec()
-          console.log('finding sale')
-          console.log('saleModel', saleModel)
 
           if (isArbiter() && saleModel) {
             const collateralBlockHeight = await saleModel.collateralClient().getMethod('getBlockHeight')()
-            const { latestCollateralBlock } = saleModel
+            const { latestCollateralBlock, claimTxHash, status } = saleModel
 
-            if (saleModel && collateralBlockHeight > latestCollateralBlock) {
+            if (saleModel && collateralBlockHeight > latestCollateralBlock && !claimTxHash) {
               agenda.now('verify-collateral-claim', { saleModelId: saleModel.id })
+            } else if (saleModel && status === 'COLLATERAL_CLAIMED' && claimTxHash) {
+              console.log('COLLATERAL WAS CLAIMED, SPIN UP JOB TO ACCEPT')
+              agenda.now('accept-sale', { saleModelId: saleModel.id })
             }
           } else if (!saleModel) {
             await agenda.now('init-liquidation', { loanModelId: loan.id })

@@ -26,9 +26,6 @@ function defineSalesRouter (router) {
     const { params } = req
     const { principal, saleId } = params
 
-    console.log('principal', principal)
-    console.log('saleId', saleId)
-
     const sale = await Sale.findOne({ principal, saleId }).exec()
     if (!sale) return next(res.createError(401, 'Sale not found'))
 
