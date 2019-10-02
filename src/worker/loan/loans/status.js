@@ -1,5 +1,6 @@
 const axios = require('axios')
 const Agent = require('../../../models/Agent')
+const Approve = require('../../../models/Approve')
 const Loan = require('../../../models/Loan')
 const Sale = require('../../../models/Sale')
 const LoanMarket = require('../../../models/LoanMarket')
@@ -17,6 +18,14 @@ function defineLoanStatusJobs (agenda) {
       const loanMarket = loanMarkets[i]
       const { principal } = loanMarket
       const loans = getObject('loans', principal)
+
+      if (!isArbiter()) {
+        const approves = await Approve.find({ principal, status: { $nin: [ 'FAILED' ] } }).exec()
+
+        if (approves.length === 0) {
+          await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-tokens', { loanMarketModelId: loanMarket.id })
+        }
+      }
 
       const loanModels = await Loan.find({ principal, status: { $nin: [ 'QUOTE', 'REQUESTING', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'LIQUIDATED', 'FAILED' ] }})
 
@@ -95,8 +104,6 @@ function defineLoanStatusJobs (agenda) {
             await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
           }
         } else if (sale) {
-          console.log('LIQUIDATION HAS STARTED')
-
           const saleModel = await Sale.findOne({ loanModelId: loan.id }).exec()
 
           if (isArbiter() && saleModel) {
