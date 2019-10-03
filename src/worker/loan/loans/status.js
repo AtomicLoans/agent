@@ -13,7 +13,7 @@ const { isArbiter } = require('../../../utils/env')
 const web3 = require('../../../utils/web3')
 
 function defineLoanStatusJobs (agenda) {
-  agenda.define('check-loan-statuses-ish', async (job, done) => {
+  agenda.define('check-loan-statuses-and-update', async (job, done) => {
     const loanMarkets = await LoanMarket.find().exec()
 
     for (let i = 0; i < loanMarkets.length; i++) {
