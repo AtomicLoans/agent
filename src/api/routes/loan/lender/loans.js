@@ -20,6 +20,7 @@ function defineLoansRouter (router) {
     console.log('start /loans/new')
     const { body } = req
     const { principal, collateral, principalAmount } = body
+    console.log('principal, collateral, principalAmount', principal, collateral, principalAmount)
     console.log('test1')
     const { loanMarket, market, fund } = await findModels(res, next, principal, collateral)
     console.log('test2')
