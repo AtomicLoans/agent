@@ -1,6 +1,7 @@
 const kovanAddresses = require('../config/addresses/kovan.json')
 const kovanEndpoints = require('../config/endpoints/kovan.json')
 const kovanIntervals = require('../config/intervals/kovan.json')
+const kovanBitcoin = require('../config/bitcoin/kovan.json')
 
 function contractAddresses (network) {
   if (network === 'kovan') {
@@ -29,8 +30,18 @@ function intervals (network) {
   }
 }
 
+function bitcoinNetworks (network) {
+  if (network === 'kovan') {
+    return kovanBitcoin
+  } else if (network === 'test') {
+    const testBitcoin = require('../config/bitcoin/test.json')
+    return testBitcoin
+  }
+}
+
 module.exports = {
   contractAddresses,
   endpoints,
-  intervals
+  intervals,
+  bitcoinNetworks
 }

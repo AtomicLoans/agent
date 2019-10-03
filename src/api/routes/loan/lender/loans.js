@@ -65,50 +65,55 @@ function defineLoansRouter (router) {
 
   router.post('/loans/:loanModelId/proof_of_funds', asyncHandler(async (req, res, next) => {
     console.log('start /loans/:loanModelId/proof_of_funds')
-    const currentTime = Date.now()
-    const agenda = req.app.get('agenda')
-    const { params, body } = req
-    const { proofOfFundsTxHex } = body
 
-    const loan = await Loan.findOne({ _id: params.loanModelId }).exec()
-    if (!loan) return next(res.createError(401, 'Loan not found'))
-    const {
-      principal, collateral, principalAmount, minimumCollateralAmount, requestExpiresAt, requestCreatedAt, lenderCollateralPublicKey
-    } = loan
+    try {
+      const currentTime = Date.now()
+      const agenda = req.app.get('agenda')
+      const { params, body } = req
+      const { proofOfFundsTxHex } = body
 
-    ;['borrowerSecretHashes', 'borrowerCollateralPublicKey', 'borrowerPrincipalAddress'].forEach(key => {
-      if (!body[key]) return next(res.createError(401, `${key} is missing`))
-      loan[key] = body[key]
-    })
+      const loan = await Loan.findOne({ _id: params.loanModelId }).exec()
+      if (!loan) return next(res.createError(401, 'Loan not found'))
+      const {
+        principal, collateral, principalAmount, minimumCollateralAmount, requestExpiresAt, requestCreatedAt, lenderCollateralPublicKey
+      } = loan
 
-    const proofOfFundsTxValid = (await clients[collateral].getMethod('jsonrpc')('testmempoolaccept', [proofOfFundsTxHex]))[0].allowed
-    if (!proofOfFundsTxValid) return next(res.createError(401, 'Proof of funds tx not valid'))
+      ;['borrowerSecretHashes', 'borrowerCollateralPublicKey', 'borrowerPrincipalAddress'].forEach(key => {
+        if (!body[key]) return next(res.createError(401, `${key} is missing`))
+        loan[key] = body[key]
+      })
 
-    const rawTx = await clients[collateral].getMethod('jsonrpc')('decoderawtransaction', proofOfFundsTxHex)
+      const proofOfFundsTxValid = (await clients[collateral].getMethod('jsonrpc')('testmempoolaccept', [proofOfFundsTxHex]))[0].allowed
+      if (!proofOfFundsTxValid) return next(res.createError(401, 'Proof of funds tx not valid'))
 
-    const { value: collateralAmount } = rawTx.vout[0]
-    if (!(collateralAmount >= minimumCollateralAmount)) return next(res.createError(401, `Proof of funds for ${minimumCollateralAmount} ${collateral} not provided`))
+      const rawTx = await clients[collateral].getMethod('jsonrpc')('decoderawtransaction', proofOfFundsTxHex)
 
-    const [, msgHex] = rawTx.vout[1].scriptPubKey.asm.split(' ')
-    const msg = hexToAscii(ensure0x(msgHex))
+      const { value: collateralAmount } = rawTx.vout[0]
+      if (!(collateralAmount >= minimumCollateralAmount)) return next(res.createError(401, `Proof of funds for ${minimumCollateralAmount} ${collateral} not provided`))
 
-    const [publicKey, amount, stablecoin, timestamp] = msg.split(' ')
+      const [, msgHex] = rawTx.vout[1].scriptPubKey.asm.split(' ')
+      const msg = hexToAscii(ensure0x(msgHex))
 
-    if (!(publicKey === lenderCollateralPublicKey)) return next(res.createError(401, 'Proof of funds public key does not match lender public key'))
-    if (!(parseFloat(amount) === principalAmount)) return next(res.createError(401, 'Amount provided in signature does not match proof of funds'))
-    if (!(principal === stablecoin)) return next(res.createError(401, 'Principal currency does not match principal currency in proof of funds'))
-    if (!(requestExpiresAt >= timestamp && timestamp >= requestCreatedAt)) return next(res.createError(401, 'Proof of funds tx incorrect timestamp'))
-    if (!(requestExpiresAt >= currentTime && currentTime >= requestCreatedAt)) return next(res.createError(401, 'Request details provided too late. Please request again'))
+      const [publicKey, amount, stablecoin, timestamp] = msg.split(' ')
 
-    await loan.setSecretHashes(collateralAmount)
+      if (!(publicKey === lenderCollateralPublicKey)) return next(res.createError(401, 'Proof of funds public key does not match lender public key'))
+      if (!(parseFloat(amount) === principalAmount)) return next(res.createError(401, 'Amount provided in signature does not match proof of funds'))
+      if (!(principal === stablecoin)) return next(res.createError(401, 'Principal currency does not match principal currency in proof of funds'))
+      if (!(requestExpiresAt >= timestamp && timestamp >= requestCreatedAt)) return next(res.createError(401, 'Proof of funds tx incorrect timestamp'))
+      if (!(requestExpiresAt >= currentTime && currentTime >= requestCreatedAt)) return next(res.createError(401, 'Request details provided too late. Please request again'))
 
-    await loan.save()
+      await loan.setSecretHashes(collateralAmount)
 
-    await agenda.schedule(getInterval('ACTION_INTERVAL'), 'request-loan', { loanModelId: loan.id })
+      await loan.save()
 
-    console.log('end /loans/:loanModelId/proof_of_funds')
+      await agenda.schedule(getInterval('ACTION_INTERVAL'), 'request-loan', { loanModelId: loan.id })
 
-    res.json(loan.json())
+      console.log('end /loans/:loanModelId/proof_of_funds')
+
+      res.json(loan.json())
+    } catch(e) {
+      return next(res.createError(401, e))
+    }
   }))
 
   router.post('/loans/:loanModelId/collateral_locked', asyncHandler(async (req, res, next) => {
