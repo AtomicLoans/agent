@@ -20,8 +20,11 @@ function defineLoansRouter (router) {
     console.log('start /loans/new')
     const { body } = req
     const { principal, collateral, principalAmount } = body
+    console.log('test1')
     const { loanMarket, market, fund } = await findModels(res, next, principal, collateral)
+    console.log('test2')
     const { rate } = market
+    console.log('test3')
     const { fundId } = fund
 
     const funds = getObject('funds', principal)
@@ -213,6 +216,8 @@ async function findModels (res, next, principal, collateral) {
 
   const fund = await Fund.findOne({ principal, collateral }).exec()
   if (!fund) return next(res.createError(401, 'Fund not found'))
+
+  console.log('{ loanMarket, market, fund }', { loanMarket, market, fund })
 
   return { loanMarket, market, fund }
 }
