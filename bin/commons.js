@@ -77,15 +77,17 @@ module.exports.loadVariables = (config = {}) => {
     }
   }
 
-  if (process.env.MNEMONIC_ARBITER !== undefined) {
-    rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${process.env.MNEMONIC_ARBITER}"`)
-  } else {
-    if (fs.existsSync(path.resolve(process.cwd(), '.env'))) {
-      process.env.MNEMONIC_ARBITER = getEnvValue('.env', 'MNEMONIC_ARBITER')
+  if (process.env.PARTY === 'arbiter') {
+    if (process.env.MNEMONIC_ARBITER !== undefined) {
+      rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${process.env.MNEMONIC_ARBITER}"`)
     } else {
-      const mnemonic = generateMnemonic(128)
-      rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${mnemonic}"`)
-      process.env.MNEMONIC_ARBITER = mnemonic
+      if (fs.existsSync(path.resolve(process.cwd(), '.env'))) {
+        process.env.MNEMONIC_ARBITER = getEnvValue('.env', 'MNEMONIC_ARBITER')
+      } else {
+        const mnemonic = generateMnemonic(128)
+        rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${mnemonic}"`)
+        process.env.MNEMONIC_ARBITER = mnemonic
+      }
     }
   }
 }
