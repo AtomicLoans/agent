@@ -212,9 +212,11 @@ function defineLoansRouter (router) {
 }
 
 async function findModels (res, next, principal, collateral) {
+  console.log('test10')
   const loanMarket = await LoanMarket.findOne({ principal, collateral }).exec()
   if (!loanMarket) return next(res.createError(401, 'Loan Market not found'))
 
+  console.log('test11')
   const market = await Market.findOne({ from: collateral, to: principal }).exec()
   if (!market) return next(res.createError(401, 'Market not found'))
 
