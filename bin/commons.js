@@ -13,7 +13,7 @@ const CONFIG_ENV_MAP = {
   ethRpc: 'ETH_RPC',
   ethUser: 'ETH_USER',
   ethPass: 'ETH_PASS',
-  metamaskAddress: 'METAMASK_ETH_ADDRESS',
+  metamask: 'METAMASK_ETH_ADDRESS',
   mnemonic: 'MNEMONIC',
   network: 'NETWORK'
 }
