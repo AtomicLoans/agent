@@ -29,7 +29,7 @@ function defineAgentsRouter (router) {
           await agent.save()
           res.json(agent.json())
         } else {
-          if (principalAddress !== agentExists.principalAddress) {
+          if (principalAddress !== agentExists.principalAddress || ethSigner !== agentExists.ethSigner) {
             agentExists.principalAddress = principalAddress
             agentExists.collateralPublicKey = collateralPublicKey
             agentExists.ethSigner = ethSigner
