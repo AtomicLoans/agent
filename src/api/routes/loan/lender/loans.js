@@ -28,9 +28,14 @@ function defineLoansRouter (router) {
     const liquidationRatio = await funds.methods.liquidationRatio(numToBytes32(fundId)).call()
     const minimumCollateralAmount = BN(principalAmount).dividedBy(rate).times(fromWei(liquidationRatio, 'gether')).toFixed(8)
 
+    console.log('loanMarket', loanMarket)
+
     const loan = Loan.fromLoanMarket(loanMarket, body, minimumCollateralAmount)
 
+    console.log('loan', loan)
+
     await loan.setAgentAddresses()
+    console.log('loan', loan)
     await loan.save()
 
     console.log('end /loans/new')
