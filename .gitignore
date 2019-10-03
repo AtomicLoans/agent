@@ -2,3 +2,6 @@
 .env.test
 node_modules/
 test.json
+api.log
+migrate.log
+worker.log
