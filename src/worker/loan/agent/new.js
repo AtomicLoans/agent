@@ -3,7 +3,7 @@ const axios = require('axios')
 const { getEndpoint } = require('../../../utils/endpoints')
 const LoanMarket = require('../../../models/LoanMarket')
 
-const { NETWORK, HEROKU_APP } = process.env
+const { NETWORK, HEROKU_APP, AL_APP } = process.env
 
 function defineNewAgentJobs (agenda) {
   agenda.define('notify-arbiter', async (job, done) => {
@@ -17,6 +17,8 @@ function defineNewAgentJobs (agenda) {
       url = getEndpoint('LENDER_ENDPOINT')
     } else if (HEROKU_APP !== undefined && HEROKU_APP !== 'undefined') {
       url = `https://${HEROKU_APP}.herokuapp.com/api/loan`
+    } else if (AL_APP === 'true') {
+      url = 'https://atomicloans.io/lender-agent/api/loan/'
     }
 
     const ethSigner = process.env.METAMASK_ETH_ADDRESS
