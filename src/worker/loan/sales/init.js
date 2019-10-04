@@ -66,11 +66,6 @@ function defineSalesInitJobs (agenda) {
 
       let outputs
       if (isArbiter()) {
-
-        console.log('IS_ARBITER')
-        console.log('refundableValue', refundableValue)
-        console.log('seizableValue', seizableValue)
-
         outputs = [{ address: initAddresses.refundableAddress }, { address: initAddresses.seizableAddress }]
       } else {
         outputs = [{ address: initAddresses.refundableAddress }, { address: initAddresses.seizableAddress }]
@@ -121,11 +116,29 @@ function defineSalesInitJobs (agenda) {
       sale.collateralSwapSeizableAmount = seizableAmount
 
       if (isArbiter()) {
-        const txHash = await loan.collateralClient().chain.sendRawTransaction(multisigSendTxRaw)
-        console.log('txHash', txHash)
+        try {
+          const txHash = await loan.collateralClient().chain.sendRawTransaction(multisigSendTxRaw)
+          console.log('txHash', txHash)
 
-        sale.initTxHash = txHash
-        sale.status = 'COLLATERAL_SENDING'
+          sale.initTxHash = txHash
+          sale.status = 'COLLATERAL_SENDING'
+        } catch(e) {
+          console.log('ERROR FIRST ATTEPT TO SEND COLLATERAL')
+          console.log(e)
+
+          const sigsReverse = {
+            refundable: [Buffer.from(agentSigs.refundableSig, 'hex'), Buffer.from(lenderSigs.refundableSig, 'hex')],
+            seizable: [Buffer.from(agentSigs.seizableSig, 'hex'), Buffer.from(lenderSigs.seizableSig, 'hex')]
+          }
+
+          const multisigSendReverseTxRaw = await loan.collateralClient().loan.collateral.multisigBuild(lockTxHash, sigsReverse, ...lockArgs, outputs)
+
+          const txHash = await loan.collateralClient().chain.sendRawTransaction(multisigSendReverseTxRaw)
+          console.log('alternate txHash', txHash)
+
+          sale.initTxHash = txHash
+          sale.status = 'COLLATERAL_SENDING'
+        }
       } else {
         await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/sales/new`, { principal, loanId, lenderSigs: agentSigs, refundableAmount, seizableAmount })
       }
@@ -133,88 +146,99 @@ function defineSalesInitJobs (agenda) {
       const latestCollateralBlock = await loan.collateralClient().getMethod('getBlockHeight')()
       sale.latestCollateralBlock = latestCollateralBlock
 
+      console.log('saving sale', sale)
+
       await sale.save()
 
       await agenda.schedule(getInterval('CHECK_BTC_TX_INTERVAL'), 'verify-init-liquidation', { saleModelId: sale.id })
     } else {
+      // TODO: make sure this doesn't keep running
+      const sale = new Sale()
+      sale.loanModelId = loanModelId
+      sale.status = 'FAILED'
+      await sale.save()
+
       console.log('CANNOT START LIQUIDATION BECAUSE COLLATERAL DOESN\'T EXIST')
     }
     done()
   })
 
   agenda.define('verify-init-liquidation', async (job, done) => {
-    const { data } = job.attrs
-    const { saleModelId } = data
+    try {
+      const { data } = job.attrs
+      const { saleModelId } = data
 
-    const sale = await Sale.findOne({ _id: saleModelId }).exec()
-    if (!sale) return console.log('Error: Sale not found')
-    const { saleId, principal } = sale
+      const sale = await Sale.findOne({ _id: saleModelId }).exec()
+      if (!sale) return console.log('Error: Sale not found')
+      const { saleId, principal } = sale
 
-    if (!isArbiter() && !sale.initTxHash) {
-      console.log("`${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${principal}/${saleId}`", `${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${principal}/${saleId}`)
-      const { data: arbiterSale } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${principal}/${saleId}`)
-      sale.initTxHash = arbiterSale.initTxHash
-    }
+      if (!isArbiter() && !sale.initTxHash) {
+        const { data: arbiterSale } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${principal}/${saleId}`)
+        sale.initTxHash = arbiterSale.initTxHash
+      }
 
-    const { initTxHash, collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress, collateralSwapRefundableAmount, collateralSwapSeizableAmount } = sale
+      const { initTxHash, collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress, collateralSwapRefundableAmount, collateralSwapSeizableAmount } = sale
 
-    if (!isArbiter() && initTxHash) {
-      sale.status = 'COLLATERAL_SENDING'
-    }
+      if (!isArbiter() && initTxHash) {
+        sale.status = 'COLLATERAL_SENDING'
+      }
 
-    const [refundableBalance, seizableBalance, refundableUnspent, seizableUnspent] = await Promise.all([
-      sale.collateralClient().chain.getBalance([collateralSwapRefundableP2SHAddress]),
-      sale.collateralClient().chain.getBalance([collateralSwapSeizableP2SHAddress]),
-      sale.collateralClient().getMethod('getUnspentTransactions')([collateralSwapRefundableP2SHAddress]),
-      sale.collateralClient().getMethod('getUnspentTransactions')([collateralSwapSeizableP2SHAddress])
-    ])
+      const [refundableBalance, seizableBalance, refundableUnspent, seizableUnspent] = await Promise.all([
+        sale.collateralClient().chain.getBalance([collateralSwapRefundableP2SHAddress]),
+        sale.collateralClient().chain.getBalance([collateralSwapSeizableP2SHAddress]),
+        sale.collateralClient().getMethod('getUnspentTransactions')([collateralSwapRefundableP2SHAddress]),
+        sale.collateralClient().getMethod('getUnspentTransactions')([collateralSwapSeizableP2SHAddress])
+      ])
 
-    const collateralRequirementsMet = (refundableBalance.toNumber() >= collateralSwapRefundableAmount && seizableBalance.toNumber() >= collateralSwapSeizableAmount)
-    const refundableConfirmationRequirementsMet = refundableUnspent.length === 0 ? false : refundableUnspent[0].confirmations > 0
-    const seizableConfirmationRequirementsMet = seizableUnspent.length === 0 ? false : seizableUnspent[0].confirmations > 0
+      const collateralRequirementsMet = (refundableBalance.toNumber() >= collateralSwapRefundableAmount && seizableBalance.toNumber() >= collateralSwapSeizableAmount)
+      const refundableConfirmationRequirementsMet = refundableUnspent.length === 0 ? false : refundableUnspent[0].confirmations > 0
+      const seizableConfirmationRequirementsMet = seizableUnspent.length === 0 ? false : seizableUnspent[0].confirmations > 0
 
-    if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet) {
-      console.log('COLLATERAL SENT')
-      sale.status = 'COLLATERAL_SENT'
+      if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet) {
+        console.log('COLLATERAL SENT')
+        sale.status = 'COLLATERAL_SENT'
 
-      if (isArbiter()) {
-        const secretModel = await Secret.findOne({ secretHash: sale.secretHashC }).exec()
-        const { secret } = secretModel
+        if (isArbiter()) {
+          const secretModel = await Secret.findOne({ secretHash: sale.secretHashC }).exec()
+          const { secret } = secretModel
 
-        if (sha256(secret) === sale.secretHashC) {
-          console.log('ARBITER SECRET MATCHES')
-          sale.secretC = secret
-          sale.status = 'SECRETS_PROVIDED'
+          if (sha256(secret) === sale.secretHashC) {
+            console.log('ARBITER SECRET MATCHES')
+            sale.secretC = secret
+            sale.status = 'SECRETS_PROVIDED'
+          } else {
+            console.log('ARBITER SECRET DOESN\'T MATCH')
+            console.log('secret', secret)
+            console.log('sale', sale)
+          }
         } else {
-          console.log('ARBITER SECRET DOESN\'T MATCH')
-          console.log('secret', secret)
-          console.log('sale', sale)
+          const { loanModelId } = sale
+
+          const loan = await Loan.findOne({ _id: loanModelId }).exec()
+          const secret = loan.lenderSecrets[1]
+
+          if (sha256(secret) === sale.secretHashB) {
+            console.log('LENDER SECRET MATCHES')
+            sale.secretB = secret
+            sale.status = 'SECRETS_PROVIDED'
+          } else {
+            console.log('LENDER SECRET DOESN\'T MATCH')
+            console.log('secret', secret)
+            console.log('sale', sale)
+          }
         }
       } else {
-        const { loanModelId } = sale
-
-        const loan = await Loan.findOne({ _id: loanModelId }).exec()
-        const secret = loan.lenderSecrets[1]
-
-        if (sha256(secret) === sale.secretHashB) {
-          console.log('LENDER SECRET MATCHES')
-          sale.secretB = secret
-          sale.status = 'SECRETS_PROVIDED'
-        } else {
-          console.log('LENDER SECRET DOESN\'T MATCH')
-          console.log('secret', secret)
-          console.log('sale', sale)
-        }
+        await agenda.schedule(getInterval('CHECK_BTC_TX_INTERVAL'), 'verify-init-liquidation', { saleModelId })
       }
- 
-      // await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-loan', { loanModelId: loan.id })
-    } else {
-      await agenda.schedule(getInterval('CHECK_BTC_TX_INTERVAL'), 'verify-init-liquidation', { saleModelId })
+
+      await sale.save()
+
+      done()
+    } catch(e) {
+      console.log('VERIFY-INIT-ERROR')
+      console.log(e)
+      done()
     }
-
-    await sale.save()
-
-    done()
   })
 }
 

@@ -91,7 +91,7 @@ const FundSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['INITIATED', 'CREATING', 'CREATED', 'FAILED'],
+    enum: ['INITIATED', 'WAITING_FOR_APPROVE', 'CREATING', 'CREATED', 'FAILED'],
     index: true
   }
 })

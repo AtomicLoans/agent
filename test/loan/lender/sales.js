@@ -126,7 +126,6 @@ function testSales (web3Chain, ethNode, btcChain) {
       expect(expectedAwaitingCollateralStatus).to.equal('AWAITING_COLLATERAL')
 
       const lockParams = await getLockParams(web3Chain, principal, values, loanId)
-      console.log('lockParams', lockParams)
       const tx = await btcChain.client.loan.collateral.lock(...lockParams)
       console.log('tx', tx)
 
@@ -207,23 +206,7 @@ function testSales (web3Chain, ethNode, btcChain) {
       console.log('secretC', secretC)
       console.log('secretD', secretD)
 
-
       const multisigSendTxHash = await getMultisigSendTxHash(server, principal, saleId)
-
-
-      // const { borrowerPubKey, lenderPubKey, arbiterPubKey } = pubKeys
-      // const { liquidatorPubKeyHash }                      = pubKeys
-      // const { secretHashA1 }                              = secretHashes
-      // const { secretHashB1 }                              = secretHashes
-      // const { secretHashC1 }                              = secretHashes
-      // const { secretHashD1 }                              = secretHashes
-      // const { swapExpiration, liquidationExpiration }     = expirations
-
-      // const borrowerPubKeyHash = hash160(borrowerPubKey)
-      // const lenderPubKeyHash = hash160(lenderPubKey)
-
-      // const seizablePubKeyHash = seizable ? lenderPubKeyHash : borrowerPubKeyHash
-
 
       const { borrowerPubKey, lenderPubKey, arbiterPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
 
@@ -253,32 +236,6 @@ function testSales (web3Chain, ethNode, btcChain) {
       const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
 
       expect(accepted).to.equal(true)
-
-
-      // const { body: salesIdBody } = await chai.request(server).get(`/sales/contract/${principal}/${saleId}`)
-
-
-
-      // const sales = await getTestObject(web3Chain, 'sales', principal)
-
-
-
-      // const token = await testLoadObject('erc20', getTestContract('erc20', principal), chains.web3WithNode, ensure0x(ethereumWithNodeAddress))
-      // await token.methods.transfer(web3Address, toWei(owedForLoan, 'wei')).send({ gas: 100000 })
-
-      // const testToken = await getTestObject(web3Chain, 'erc20', principal)
-      // await testToken.methods.approve(getTestContract('loans', principal), toWei(owedForLoan, 'wei')).send({ gas: 100000 })
-
-      // await loans.methods.repay(numToBytes32(loanId), owedForLoan).send({ gas: 100000 })
-
-      // const paid = await loans.methods.paid(numToBytes32(loanId)).call()
-      // expect(paid).to.equal(true)
-
-      // console.log('REPAY LOAN')
-      // await secondsCountDown(25)
-
-      // const off = await loans.methods.off(numToBytes32(loanId)).call()
-      // expect(off).to.equal(true)
     })
   })
 }
@@ -298,7 +255,7 @@ async function checkSaleInitiated (saleId, principal) {
         const { collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress } = body
         await importBitcoinAddressesByAddress([collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress])
       }
-      if (saleStatus === 'COLLATERAL_SENT' || saleStatus === 'SECRETS_PROVIDED') {
+      if (saleStatus === 'COLLATERAL_SENT' || saleStatus === 'SECRETS_PROVIDED' || saleStatus === 'COLLATERAL_CLAIMED') {
         collateralSent = true
         secretB = body.secretB
       }

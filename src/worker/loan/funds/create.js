@@ -46,8 +46,11 @@ function defineFundCreateJobs (agenda) {
       await createFund(ethTx, fund, agenda, done)
     } else {
       console.log('Rescheduling fund create because erc20 approve hasn\'t finished')
-      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'create-fund-ish', { fundModelId })
+
+      fund.status = 'WAITING_FOR_APPROVE'
+      await fund.save()
     }
+    done()
   })
 
   agenda.define('verify-create-fund', async (job, done) => {

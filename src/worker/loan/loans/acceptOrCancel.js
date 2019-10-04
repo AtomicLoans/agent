@@ -26,7 +26,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
     const loanMarket = await LoanMarket.findOne({ principal }).exec()
     const { principalAddress } = await loanMarket.getAgentAddresses()
 
-    if (off) {
+    if (off === true) {
       console.log('Loan already accepted')
       done()
     } else {

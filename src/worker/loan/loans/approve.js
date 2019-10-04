@@ -20,7 +20,7 @@ function defineLoanApproveJobs (agenda) {
     const loans = getObject('loans', principal)
     const approved = await loans.methods.approved(numToBytes32(loanId)).call()
 
-    if (approved) {
+    if (approved === true) {
       console.log('Loan already approved')
       done()
     } else {

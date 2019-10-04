@@ -21,27 +21,30 @@ function defineSalesAcceptJobs (agenda) {
     if (!sale) return console.log('Error: Sale not found')
 
     const { claimTxHash, saleId, principal } = sale
-
-    // TODO: after accept, change loan status to "Liquidated"
-
-    console.log('claimTxHash', claimTxHash)
-
-    const claimTx = await sale.collateralClient().getMethod('getTransactionByHash')(claimTxHash)
-    claimArgs = claimTx._raw.vin[0].txinwitness
-
-    const secretB = claimArgs[4]
-    const secretC = claimArgs[3]
-    const secretD = claimArgs[2]
-
     const sales = getObject('sales', principal)
+    const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
 
-    const txData = sales.methods.provideSecretsAndAccept(numToBytes32(saleId), [ ensure0x(secretB), ensure0x(secretC), ensure0x(secretD) ]).encodeABI()
+    if (accepted === false) {
+      const claimTx = await sale.collateralClient().getMethod('getTransactionByHash')(claimTxHash)
+      claimArgs = claimTx._raw.vin[0].txinwitness
 
-    const loanMarket = await LoanMarket.findOne({ principal }).exec()
-    const { principalAddress } = await loanMarket.getAgentAddresses()
+      const secretB = claimArgs[4]
+      const secretC = claimArgs[3]
+      const secretD = claimArgs[2]
 
-    const ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('sales', principal), sale)
-    await provideSecretsAndAccept(ethTx, sale, agenda, done)
+      const txData = sales.methods.provideSecretsAndAccept(numToBytes32(saleId), [ ensure0x(secretB), ensure0x(secretC), ensure0x(secretD) ]).encodeABI()
+
+      const loanMarket = await LoanMarket.findOne({ principal }).exec()
+      const { principalAddress } = await loanMarket.getAgentAddresses()
+
+      const ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('sales', principal), sale)
+      await provideSecretsAndAccept(ethTx, sale, agenda, done)
+    } else {
+      sale.status === 'ACCEPTED'
+      await sale.save()
+      console.log('Sale was already accepted')
+      done()
+    }
   })
 
   agenda.define('verify-accept-sale', async (job, done) => {
