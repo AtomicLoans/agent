@@ -25,6 +25,22 @@
     "NPM_CONFIG_PRODUCTION": {
       "description": "Don't worry about this. It should be true",
       "value": "true"
+    },
+    "BTC_RPC": {
+      "description": "Bitcoin RPC Endpoint",
+      "require": true
+    },
+    "BTC_USER": {
+      "description": "Bitcoin RPC user",
+      "require": true
+    },
+    "BTC_PASS": {
+      "description": "Bitcoin RPC pass",
+      "require": true
+    },
+    "ETH_RPC": {
+      "description": "Ethereum RPC Endpoint",
+      "require": true
     }
   },
   "success_url": "https://atomicloans.io"
