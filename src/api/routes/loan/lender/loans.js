@@ -111,7 +111,7 @@ function defineLoansRouter (router) {
       console.log('end /loans/:loanModelId/proof_of_funds')
 
       res.json(loan.json())
-    } catch(e) {
+    } catch (e) {
       return next(res.createError(401, e))
     }
   }))

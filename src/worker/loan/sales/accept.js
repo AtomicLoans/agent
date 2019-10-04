@@ -1,15 +1,13 @@
-const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
+const { ensure0x } = require('@liquality/ethereum-utils')
 const date = require('date.js')
 const Loan = require('../../../models/Loan')
 const Sale = require('../../../models/Sale')
 const LoanMarket = require('../../../models/LoanMarket')
 const EthTx = require('../../../models/EthTx')
-const Secret = require('../../../models/Secret')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
-const { isArbiter } = require('../../../utils/env')
 const web3 = require('../../../utils/web3')
 
 function defineSalesAcceptJobs (agenda) {
@@ -24,26 +22,26 @@ function defineSalesAcceptJobs (agenda) {
     const sales = getObject('sales', principal)
     const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
 
-    if (accepted === false) {
+    if (accepted === true) {
+      sale.status = 'ACCEPTED'
+      await sale.save()
+      console.log('Sale was already accepted')
+      done()
+    } else {
       const claimTx = await sale.collateralClient().getMethod('getTransactionByHash')(claimTxHash)
-      claimArgs = claimTx._raw.vin[0].txinwitness
+      const claimArgs = claimTx._raw.vin[0].txinwitness
 
       const secretB = claimArgs[4]
       const secretC = claimArgs[3]
       const secretD = claimArgs[2]
 
-      const txData = sales.methods.provideSecretsAndAccept(numToBytes32(saleId), [ ensure0x(secretB), ensure0x(secretC), ensure0x(secretD) ]).encodeABI()
+      const txData = sales.methods.provideSecretsAndAccept(numToBytes32(saleId), [ensure0x(secretB), ensure0x(secretC), ensure0x(secretD)]).encodeABI()
 
       const loanMarket = await LoanMarket.findOne({ principal }).exec()
       const { principalAddress } = await loanMarket.getAgentAddresses()
 
       const ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('sales', principal), sale)
       await provideSecretsAndAccept(ethTx, sale, agenda, done)
-    } else {
-      sale.status === 'ACCEPTED'
-      await sale.save()
-      console.log('Sale was already accepted')
-      done()
     }
   })
 

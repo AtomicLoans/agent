@@ -6,7 +6,6 @@ const chaiAsPromised = require('chai-as-promised')
 const { cancelJobs } = require('../../loanCommon')
 
 chai.should()
-const expect = chai.expect
 
 chai.use(chaiHttp)
 chai.use(chaiAsPromised)

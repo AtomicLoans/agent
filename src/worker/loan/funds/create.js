@@ -1,4 +1,3 @@
-const axios = require('axios')
 const keccak256 = require('keccak256')
 const { ensure0x } = require('@liquality/ethereum-utils')
 
@@ -7,10 +6,10 @@ const Fund = require('../../../models/Fund')
 const EthTx = require('../../../models/EthTx')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { setTxParams } = require('../utils/web3Transaction')
+const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
 const { getFundParams } = require('../utils/fundParams')
 const web3 = require('../../../utils/web3')
-const { toWei, hexToNumber } = web3().utils
+const { hexToNumber } = web3().utils
 
 const date = require('date.js')
 
@@ -25,7 +24,7 @@ function defineFundCreateJobs (agenda) {
 
     const { principal, custom } = fund
 
-    const approves = await Approve.find({ principal, status: { $nin: [ 'FAILED' ] } }).exec()
+    const approves = await Approve.find({ principal, status: { $nin: ['FAILED'] } }).exec()
 
     if (approves.length > 0) {
       const funds = getObject('funds', principal)
@@ -72,25 +71,9 @@ function defineFundCreateJobs (agenda) {
       if (!ethTx) return console.log('Error: EthTx not found')
 
       if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && fund.status !== 'FAILED') {
-        const { gasPrice: currentGasPrice } = ethTx
-        let fastPriceInWei
-        try {
-          const { data: gasPricesFromOracle } = await axios(`https://www.etherchain.org/api/gasPriceOracle`)
-          const { fast } = gasPricesFromOracle
-          fastPriceInWei = parseInt(toWei(fast, 'gwei'))
-        } catch (e) {
-          fastPriceInWei = currentGasPrice
-        }
-
-        if (fastPriceInWei > (currentGasPrice * 1.1)) {
-          ethTx.gasPrice = Math.ceil(fastPriceInWei)
-        } else {
-          ethTx.gasPrice = Math.ceil(currentGasPrice * 1.15)
-        }
-
-        await ethTx.save()
         console.log('BUMPING TX FEE')
 
+        await bumpTxFee(ethTx)
         await createFund(ethTx, fund, agenda, done)
       } else {
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId })
@@ -124,25 +107,25 @@ async function createFund (ethTx, fund, agenda, done) {
   await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
   try {
     web3().eth.sendTransaction(ethTx.json())
-    .on('transactionHash', async (transactionHash) => {
-      console.log('transactionHash', transactionHash)
-      fund.ethTxId = ethTx.id
-      fund.createTxHash = transactionHash
-      fund.status = 'CREATING'
-      await fund.save()
-      console.log(`${fund.principal} FUND CREATING`)
-      console.log('CHECK_TX_INTERVAL', getInterval('CHECK_TX_INTERVAL'))
-      // await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
-      done()
-    })
-    .on('error', (error) => {
-      console.log(`${fund.principal} FUND CREATION FAILED`)
-      console.log(error)
-      fund.status = 'FAILED'
-      fund.save()
-      done(error)
-    })
-  } catch(e) {
+      .on('transactionHash', async (transactionHash) => {
+        console.log('transactionHash', transactionHash)
+        fund.ethTxId = ethTx.id
+        fund.createTxHash = transactionHash
+        fund.status = 'CREATING'
+        await fund.save()
+        console.log(`${fund.principal} FUND CREATING`)
+        console.log('CHECK_TX_INTERVAL', getInterval('CHECK_TX_INTERVAL'))
+        // await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
+        done()
+      })
+      .on('error', (error) => {
+        console.log(`${fund.principal} FUND CREATION FAILED`)
+        console.log(error)
+        fund.status = 'FAILED'
+        fund.save()
+        done(error)
+      })
+  } catch (e) {
     console.log(e)
     console.log('ERROR')
   }

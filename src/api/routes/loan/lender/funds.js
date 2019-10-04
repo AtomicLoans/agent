@@ -5,7 +5,6 @@ const LoanMarket = require('../../../../models/LoanMarket')
 const Fund = require('../../../../models/Fund')
 const { verifySignature } = require('../../../../utils/signatures')
 const { getInterval } = require('../../../../utils/intervals')
-const { getObject } = require('../../../../utils/contracts')
 const { getEthSigner } = require('../../../../utils/address')
 
 function defineFundsRouter (router) {
@@ -47,6 +46,8 @@ function defineFundsRouter (router) {
     if (!loanMarket) return next(res.createError(401, `LoanMarket not found with ${principal} principal and ${collateral} collateral`))
 
     if (custom) {
+      // TODO: verify signature for custom funds
+
       fund = Fund.fromCustomFundParams(body)
     } else {
       const { maxLoanDuration, fundExpiry, compoundEnabled, amount } = body

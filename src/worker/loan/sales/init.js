@@ -1,24 +1,18 @@
 const axios = require('axios')
-const BN = require('bignumber.js')
-const { remove0x } = require('@liquality/ethereum-utils')
 const { sha256 } = require('@liquality/crypto')
 const Sale = require('../../../models/Sale')
 const Loan = require('../../../models/Loan')
 const Secret = require('../../../models/Secret')
-const { getCurrentTime } = require('../../../utils/time')
-const { currencies } = require('../../../utils/fx')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
+const { getLockArgs } = require('../utils/collateral')
 const { getInitArgs } = require('../utils/collateralSwap')
 const { isArbiter } = require('../../../utils/env')
-const { getMarketModels } = require('../utils/models')
 const { getEndpoint } = require('../../../utils/endpoints')
-const clients = require('../../../utils/clients')
 
 const web3 = require('web3')
-const { toWei, hexToNumber } = web3.utils
+const { hexToNumber } = web3.utils
 
 function defineSalesInitJobs (agenda) {
   agenda.define('init-liquidation', async (job, done) => {
@@ -30,17 +24,6 @@ function defineSalesInitJobs (agenda) {
     const loan = await Loan.findOne({ _id: loanModelId }).exec()
     const { loanId, principal, collateral } = loan
 
-    const { market } = await getMarketModels(principal, collateral)
-    const { rate } = market
-
-    let refundableValue, seizableValue
-    if (isArbiter()) {
-      const { refundableAmount, seizableAmount } = data
-      refundableValue = Math.floor(BN(refundableAmount).times(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals))
-      seizableValue = Math.floor(BN(seizableAmount).times(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals))
-    }
-
-    const loans = getObject('loans', principal)
     const sales = getObject('sales', principal)
 
     const next = await sales.methods.next(numToBytes32(loanId)).call()
@@ -54,9 +37,6 @@ function defineSalesInitJobs (agenda) {
 
     const lockArgs = await getLockArgs(numToBytes32(loanId), principal, collateral)
     const lockAddresses = await loan.collateralClient().loan.collateral.getLockAddresses(...lockArgs)
-    const { refundableAddress, seizableAddress } = lockAddresses
-    const newCollateralAmounts = await getCollateralAmounts(numToBytes32(loanId), loan, rate)
-    const { refundableCollateral: collateralSwapRefundableAmount, seizableCollateral: collateralSwapSeizableAmount } = newCollateralAmounts
 
     const refundableUnspent = await loan.collateralClient().getMethod('getUnspentTransactions')([lockAddresses.refundableAddress])
 
@@ -70,7 +50,7 @@ function defineSalesInitJobs (agenda) {
       } else {
         outputs = [{ address: initAddresses.refundableAddress }, { address: initAddresses.seizableAddress }]
       }
-      
+
       const exampleRSSigValue = '0000000000000000000000000000000000000000000000000000000000000000'
       const exampleSig = `30440220${exampleRSSigValue}0220${exampleRSSigValue}01`
 
@@ -101,7 +81,6 @@ function defineSalesInitJobs (agenda) {
 
       const multisigSendTx = await loan.collateralClient().getMethod('decodeRawTransaction')(multisigSendTxRaw)
       const multisigSendVouts = multisigSendTx._raw.data.vout
-      const multisigSendVins = multisigSendTx._raw.data.vin
 
       let refundableAmount, seizableAmount
       if (multisigSendVouts[0].scriptPubKey.addresses[0] === refundableSwapAddress) {
@@ -122,7 +101,7 @@ function defineSalesInitJobs (agenda) {
 
           sale.initTxHash = txHash
           sale.status = 'COLLATERAL_SENDING'
-        } catch(e) {
+        } catch (e) {
           console.log('ERROR FIRST ATTEPT TO SEND COLLATERAL')
           console.log(e)
 
@@ -234,7 +213,7 @@ function defineSalesInitJobs (agenda) {
       await sale.save()
 
       done()
-    } catch(e) {
+    } catch (e) {
       console.log('VERIFY-INIT-ERROR')
       console.log(e)
       done()

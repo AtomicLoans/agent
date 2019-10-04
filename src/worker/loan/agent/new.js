@@ -23,7 +23,8 @@ function defineNewAgentJobs (agenda) {
 
     const ethSigner = process.env.METAMASK_ETH_ADDRESS
 
-    const { data } = await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/agents/new`, { collateralPublicKey, principalAddress, ethSigner, url })
+    await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/agents/new`, { collateralPublicKey, principalAddress, ethSigner, url })
+    // TODO: verify that this was done correctly, and create an endpoint for checking this
 
     done()
   })

@@ -5,7 +5,7 @@ const chaiAsPromised = require('chai-as-promised')
 const BN = require('bignumber.js')
 const { generateMnemonic } = require('bip39')
 
-const { chains, connectMetaMask, rewriteEnv } = require('../../../common')
+const { chains, rewriteEnv } = require('../../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, fundWeb3Address, getAgentAddress, getTestContract, getTestObjects, removeFunds } = require('../../loanCommon')
 const { createCustomFund } = require('../../setup/fundSetup')
 const { currencies } = require('../../../../src/utils/fx')
