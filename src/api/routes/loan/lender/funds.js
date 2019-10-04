@@ -98,6 +98,36 @@ function defineFundsRouter (router) {
     res.json(fund.json())
   }))
 
+  router.post('/funds/contract/:fundId/withdraw', asyncHandler(async (req, res, next) => {
+    console.log('start /funds/contract/:fundId/withdraw')
+
+    const currentTime = Math.floor(new Date().getTime() / 1000)
+    const agenda = req.app.get('agenda')
+    const address = getEthSigner()
+    const { params } = req
+    const { body } = req
+    const { amountToWithdraw, signature, message, timestamp } = body
+
+    const fund = await Fund.findOne({ fundId: params.fundId }).exec()
+    if (!fund) return next(res.createError(401, 'Fund not found'))
+
+    const { principal } = fund
+
+    if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
+
+    console.log('message', message)
+    console.log(`Withdraw ${amountToWithdraw} ${principal} at ${timestamp}`)
+
+    if (!(message === `Withdraw ${amountToWithdraw} ${principal} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
+    if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+
+    await agenda.schedule(getInterval('ACTION_INTERVAL'), 'fund-withdraw', { fundModelId: fund.id, amountToWithdraw })
+
+    console.log('end /funds/contract/:fundId/withdraw')
+
+    res.json(fund.json())
+  }))
+
   if (process.env.NODE_ENV === 'test') {
     router.post('/remove_funds', asyncHandler(async (req, res, next) => {
       await Fund.deleteMany()
