@@ -123,7 +123,6 @@ function testE2E (web3Chain, ethNode, btcChain) {
       expect(expectedAwaitingCollateralStatus).to.equal('AWAITING_COLLATERAL')
 
       const lockParams = await getLockParams(web3Chain, principal, values, loanId)
-      console.log('lockParams', lockParams)
       const tx = await btcChain.client.loan.collateral.lock(...lockParams)
       console.log('tx', tx)
 
@@ -135,7 +134,7 @@ function testE2E (web3Chain, ethNode, btcChain) {
       console.log('Mine BTC Block')
       await chains.bitcoinWithNode.client.chain.generateBlock(1)
 
-      await secondsCountDown(15)
+      await secondsCountDown(25)
 
       const approvedAfter = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedAfter).to.equal(true)

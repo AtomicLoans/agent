@@ -52,8 +52,6 @@ function defineArbiterLoanJobs (agenda) {
 
     let currentIndex = loanMarket.loanIndex + 1
 
-    console.log('test-update-loans')
-
     while (currentIndex <= loanIndex) {
       console.log('test-update-loans-inside')
       const [loans, bools, approveExpiration, acceptExpiration] = await Promise.all([
@@ -63,13 +61,8 @@ function defineArbiterLoanJobs (agenda) {
         loansContract.methods.acceptExpiration(numToBytes32(currentIndex)).call()
       ])
 
-      console.log('loans, bools, approveExpiration, acceptExpiration', loans, bools, approveExpiration, acceptExpiration)
-
       const { funded, approved, withdrawn, sale, paid, off } = bools
       const { loanExpiration, arbiter } = loans
-
-      console.log('checksumEncode(arbiterAddress)', checksumEncode(arbiterAddress))
-      console.log('arbiter', arbiter)
 
       if (checksumEncode(arbiterAddress) === arbiter) {
         const currentTime = await getCurrentTime()
@@ -123,7 +116,6 @@ function defineArbiterLoanJobs (agenda) {
         loan.loanId = currentIndex
 
         const lockArgs = await getLockArgs(numToBytes32(currentIndex), principal, collateral)
-        console.log('lockArgs', lockArgs)
         const addresses = await loan.collateralClient().loan.collateral.getLockAddresses(...lockArgs)
         const { refundableAddress, seizableAddress } = addresses
 

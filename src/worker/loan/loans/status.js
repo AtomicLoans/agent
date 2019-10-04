@@ -1,6 +1,7 @@
 const axios = require('axios')
 const Agent = require('../../../models/Agent')
 const Approve = require('../../../models/Approve')
+const Fund = require('../../../models/Fund')
 const Loan = require('../../../models/Loan')
 const Sale = require('../../../models/Sale')
 const LoanMarket = require('../../../models/LoanMarket')
@@ -34,6 +35,13 @@ function defineLoanStatusJobs (agenda) {
 
             if (approves.length === 0) {
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-tokens', { loanMarketModelId: loanMarket.id })
+            } else {
+              const funds = await Fund.find({ status: 'WAITING_FOR_APPROVE' }).exec()
+
+              for (let j = 0; j < funds.length; j++) {
+                const fund = funds[j]
+                await agenda.schedule(getInterval('ACTION_INTERVAL'), 'create-fund-ish', { fundModelId: fund.id })
+              }
             }
           }
 
@@ -46,7 +54,7 @@ function defineLoanStatusJobs (agenda) {
             const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
 
             if (!approved && !withdrawn && !paid && !sale && !off) {
-              // CHECK LOCK COLLATERAL    
+              // CHECK LOCK COLLATERAL
 
               const [approved, approveExpiration, currentTime] = await Promise.all([
                 loans.methods.approved(numToBytes32(loanId)).call(), // Sanity check
@@ -116,7 +124,7 @@ function defineLoanStatusJobs (agenda) {
             } else if (sale) {
               const saleModel = await Sale.findOne({ loanModelId: loan.id }).exec()
 
-              if (isArbiter() && saleModel) {
+              if (isArbiter() && saleModel && saleModel.status !== 'FAILED') {
                 const collateralBlockHeight = await saleModel.collateralClient().getMethod('getBlockHeight')()
                 const { latestCollateralBlock, claimTxHash, status } = saleModel
 
@@ -126,7 +134,7 @@ function defineLoanStatusJobs (agenda) {
                   console.log('COLLATERAL WAS CLAIMED, SPIN UP JOB TO ACCEPT')
                   agenda.now('accept-sale', { saleModelId: saleModel.id })
                 }
-              } else if (!saleModel) {
+              } else if (!isArbiter() && !saleModel) {
                 await agenda.now('init-liquidation', { loanModelId: loan.id })
               }
             } else if (off) {
