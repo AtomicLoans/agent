@@ -123,6 +123,7 @@ function defineArbiterLoanJobs (agenda) {
         loan.loanId = currentIndex
 
         const lockArgs = await getLockArgs(numToBytes32(currentIndex), principal, collateral)
+        console.log('lockArgs', lockArgs)
         const addresses = await loan.collateralClient().loan.collateral.getLockAddresses(...lockArgs)
         const { refundableAddress, seizableAddress } = addresses
 

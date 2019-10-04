@@ -21,6 +21,7 @@ async function setTxParams (data, from, to, instance) {
     }
   } catch (e) {
     console.log('FAILED AT GAS STEP')
+    console.log(e)
     instance.status = 'FAILED'
     instance.save()
     throw Error(e)

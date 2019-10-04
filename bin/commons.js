@@ -7,8 +7,8 @@ const CONFIG_ENV_MAP = {
   port: 'PORT',
   mongo: 'MONGODB_URI',
   btcRpc: 'BTC_RPC',
-  btcUser: 'BTC_PASS',
-  btcPass: 'BTC_USER',
+  btcUser: 'BTC_USER',
+  btcPass: 'BTC_PASS',
   btcApi: 'BTC_API',
   ethRpc: 'ETH_RPC',
   ethUser: 'ETH_USER',
@@ -45,7 +45,7 @@ module.exports.loadVariables = (config = {}) => {
     .option('--btc-user <user>', 'Bitcoin RPC user', 'atomicloans')
     .option('--btc-pass <pass>', 'Bitcoin RPC pass,', 'local321')
     .option('--btc-api <api>', 'Bitcoin API Endpoint,', 'https://blockstream.info/testnet/api')
-    .option('--eth-rpc <url>', 'Ethereum RPC endpoint', 'https://kovan.infura.io/v3/53bcde36e0404a6da87b71e780783f79')
+    .option('--eth-rpc <url>', 'Ethereum RPC endpoint', 'https://kovan.infura.io/v3/f44304af9af940d2b577637ddbc2b30e')
     .option('--eth-user <user>', 'Ethereum RPC user')
     .option('--eth-pass <pass>', 'Ethereum RPC pass')
     .option('--metamask <addr>', 'Metamask Ethereum Address')
@@ -61,6 +61,8 @@ module.exports.loadVariables = (config = {}) => {
     }
   })
 
+  console.log('process.env', process.env)
+
   process.env.PROCESS_TYPE = config.processType
 
   if (process.env.MNEMONIC !== 'undefined') {
@@ -72,6 +74,20 @@ module.exports.loadVariables = (config = {}) => {
       const mnemonic = generateMnemonic(128)
       rewriteEnv('.env', 'MNEMONIC', `"${mnemonic}"`)
       process.env.MNEMONIC = mnemonic
+    }
+  }
+
+  if (process.env.PARTY === 'arbiter') {
+    if (process.env.MNEMONIC_ARBITER !== undefined) {
+      rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${process.env.MNEMONIC_ARBITER}"`)
+    } else {
+      if (fs.existsSync(path.resolve(process.cwd(), '.env'))) {
+        process.env.MNEMONIC_ARBITER = getEnvValue('.env', 'MNEMONIC_ARBITER')
+      } else {
+        const mnemonic = generateMnemonic(128)
+        rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${mnemonic}"`)
+        process.env.MNEMONIC_ARBITER = mnemonic
+      }
     }
   }
 }
