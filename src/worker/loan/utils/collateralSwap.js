@@ -1,10 +1,5 @@
-const BN = require('bignumber.js')
-const web3 = require('web3')
 const { remove0x } = require('@liquality/ethereum-utils')
 const { getObject } = require('../../../utils/contracts')
-const { currencies } = require('../../../../src/utils/fx')
-
-const { fromWei } = web3.utils
 
 async function getInitArgs (loanId, saleId, principal, collateral) {
   const loans = getObject('loans', principal)

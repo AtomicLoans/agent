@@ -9,9 +9,8 @@ const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
 const { sha256, hash160 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
-const HDWalletProvider = require('@truffle/hdwallet-provider')
 
-const { chains, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv, getWeb3Chain } = require('../../common')
+const { chains, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans, fundTokens, increaseTime } = require('../loanCommon')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
@@ -154,14 +153,12 @@ function testSales (web3Chain, ethNode, btcChain) {
       const market = markets.find((market) => market.to === principal)
       const { rate } = market
 
-      await medianizer.methods.poke(numToBytes32(toWei((rate * 0.7).toString() , 'ether'))).send({ gas: 200000 })
-
+      await medianizer.methods.poke(numToBytes32(toWei((rate * 0.7).toString(), 'ether'))).send({ gas: 200000 })
 
       const liquidatorSecrets = await chains.bitcoinLiquidator.client.loan.secrets.generateSecrets('test', 1)
       const liquidatorSecret = liquidatorSecrets[0]
       console.log('liquidatorSecret', liquidatorSecret)
       const liquidatorSecretHash = sha256(liquidatorSecret)
-
 
       const liquidatorBtcAddresses = await chains.bitcoinLiquidator.client.wallet.getAddresses()
       const liquidatorBtcAddress = liquidatorBtcAddresses[0]
@@ -334,7 +331,7 @@ function testSetupArbiter () {
   rewriteEnv('.env', 'ACCEPT_CANCEL_JOBS_OFFLINE', 'true')
 }
 
-function testAfterArbiter() {
+function testAfterArbiter () {
   rewriteEnv('.env', 'API_OFFLINE', 'false')
   rewriteEnv('.env', 'ACCEPT_CANCEL_JOBS_OFFLINE', 'false')
 }

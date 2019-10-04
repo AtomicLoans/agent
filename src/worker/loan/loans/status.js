@@ -31,7 +31,7 @@ function defineLoanStatusJobs (agenda) {
           const loans = getObject('loans', principal)
 
           if (!isArbiter()) {
-            const approves = await Approve.find({ principal, status: { $nin: [ 'FAILED' ] } }).exec()
+            const approves = await Approve.find({ principal, status: { $nin: ['FAILED'] } }).exec()
 
             if (approves.length === 0) {
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-tokens', { loanMarketModelId: loanMarket.id })
@@ -45,7 +45,7 @@ function defineLoanStatusJobs (agenda) {
             }
           }
 
-          const loanModels = await Loan.find({ principal, status: { $nin: [ 'QUOTE', 'REQUESTING', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'LIQUIDATED', 'FAILED' ] }})
+          const loanModels = await Loan.find({ principal, status: { $nin: ['QUOTE', 'REQUESTING', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] } })
 
           for (let j = 0; j < loanModels.length; j++) {
             const loan = loanModels[j]
@@ -87,15 +87,6 @@ function defineLoanStatusJobs (agenda) {
                   }
                 } else {
                   console.log('COLLATERAL NOT LOCKED')
-                  // TODO: add reason for canceling (for example, cancelled because collateral wasn't sufficient)
-                  const { loanId, principal } = loan
-                  const loans = getObject('loans', principal)
-
-                  const [approved, approveExpiration, currentTime] = await Promise.all([
-                    loans.methods.approved(numToBytes32(loanId)).call(), // Sanity check
-                    loans.methods.approveExpiration(numToBytes32(loanId)).call(),
-                    getCurrentTime()
-                  ])
                 }
               }
             } else if (withdrawn && !paid && !sale && !off) {
@@ -107,7 +98,6 @@ function defineLoanStatusJobs (agenda) {
               console.log('REPAID')
               if (isArbiter()) {
                 const lender = await loans.methods.lender(numToBytes32(loanId)).call()
-                const agents = await Agent.find().exec()
 
                 const agent = await Agent.findOne({ principalAddress: lender }).exec()
 
@@ -147,7 +137,7 @@ function defineLoanStatusJobs (agenda) {
       }
 
       done()
-    } catch(e) {
+    } catch (e) {
       console.log('ERROR')
       console.log(e)
       done()

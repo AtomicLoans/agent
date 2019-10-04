@@ -19,7 +19,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
     const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return console.log('Error: Loan not found')
 
-    const { loanId, principal, lenderPrincipalAddress, lenderSecrets } = loan
+    const { loanId, principal, lenderSecrets } = loan
     const loans = getObject('loans', principal)
     const { off } = await loans.methods.bools(numToBytes32(loanId)).call()
 

@@ -1,22 +1,12 @@
-const axios = require('axios')
-const keccak256 = require('keccak256')
-const { ensure0x } = require('@liquality/ethereum-utils')
 const BN = require('bignumber.js')
 
-const Fund = require('../../../models/Fund')
 const LoanMarket = require('../../../models/LoanMarket')
 const EthTx = require('../../../models/EthTx')
-const Withdraw = require('../../../models/Withdraw')
 const Approve = require('../../../models/Approve')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { getEthSigner } = require('../../../utils/address')
-const { numToBytes32 } = require('../../../utils/finance')
-const { currencies } = require('../../../utils/fx')
-const { setTxParams } = require('../utils/web3Transaction')
-const { getFundParams } = require('../utils/fundParams')
+const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
 const web3 = require('../../../utils/web3')
-const { toWei, hexToNumber } = web3().utils
 
 const date = require('date.js')
 
@@ -99,23 +89,23 @@ async function approveTokens (ethTx, approve, agenda, done) {
   console.log('approveTokens')
   try {
     web3().eth.sendTransaction(ethTx.json())
-    .on('transactionHash', async (transactionHash) => {
-      console.log('transactionHash', transactionHash)
-      approve.approveTxHash = transactionHash
-      approve.status = 'APPROVING'
-      await approve.save()
-      console.log(`APPROVING ${approve.principal}`)
-      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-tokens', { approveModelId: approve.id })
-      done()
-    })
-    .on('error', (error) => {
-      console.log('APPROVE FAILED')
-      console.log(error)
-      approve.status = 'FAILED'
-      approve.save()
-      done(error)
-    })
-  } catch(e) {
+      .on('transactionHash', async (transactionHash) => {
+        console.log('transactionHash', transactionHash)
+        approve.approveTxHash = transactionHash
+        approve.status = 'APPROVING'
+        await approve.save()
+        console.log(`APPROVING ${approve.principal}`)
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-tokens', { approveModelId: approve.id })
+        done()
+      })
+      .on('error', (error) => {
+        console.log('APPROVE FAILED')
+        console.log(error)
+        approve.status = 'FAILED'
+        approve.save()
+        done(error)
+      })
+  } catch (e) {
     console.log(e)
     console.log('ERROR')
   }

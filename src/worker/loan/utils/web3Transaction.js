@@ -6,7 +6,7 @@ const { toWei } = web3().utils
 async function setTxParams (data, from, to, instance) {
   const txParams = { data, from, to }
 
-  let nonce, gasPrice, gasLimit
+  let nonce, gasPrice, gasLimit, lastBlock
   try {
     [nonce, gasPrice, lastBlock] = await Promise.all([
       web3().eth.getTransactionCount(from),
@@ -56,14 +56,6 @@ async function bumpTxFee (ethTx) {
   }
 
   await ethTx.save()
-}
-
-function setGasLimit (gasLimit, lastBlock) {
-  if ((gasLimit + 500000) > lastBlock.gasLimit) {
-    return lastBlock.gasLimit
-  } else {
-    return gasLimit + 500000
-  }
 }
 
 module.exports = {

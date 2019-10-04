@@ -9,9 +9,8 @@ const { ensure0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
 const { sha256 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
-const HDWalletProvider = require('@truffle/hdwallet-provider')
 
-const { chains, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv, getWeb3Chain } = require('../../common')
+const { chains, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans } = require('../loanCommon')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
@@ -204,7 +203,7 @@ function testSetupArbiter () {
   rewriteEnv('.env', 'ACCEPT_CANCEL_JOBS_OFFLINE', 'true')
 }
 
-function testAfterArbiter() {
+function testAfterArbiter () {
   rewriteEnv('.env', 'API_OFFLINE', 'false')
   rewriteEnv('.env', 'ACCEPT_CANCEL_JOBS_OFFLINE', 'false')
 }
@@ -220,7 +219,7 @@ describe('Lender Agent - Funds', () => {
       await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
       testSetupArbiter()
     })
-    after(function() {
+    after(function () {
       testAfterArbiter()
     })
     testE2E(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)

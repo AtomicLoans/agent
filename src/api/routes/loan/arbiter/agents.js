@@ -13,6 +13,8 @@ function defineAgentsRouter (router) {
     const { ethSigner, principalAddress, collateralPublicKey, url } = body
     const endpoint = requestIp.getClientIp(req)
 
+    // TODO verify signature when creating new agent
+
     const { status, data: loanMarkets } = await axios.get(`${url}/loanmarketinfo`)
     console.log('status', status)
     console.log('loanMarkets', loanMarkets)

@@ -1,9 +1,4 @@
-const axios = require('axios')
-const keccak256 = require('keccak256')
-const { ensure0x } = require('@liquality/ethereum-utils')
-
 const Fund = require('../../../models/Fund')
-const LoanMarket = require('../../../models/LoanMarket')
 const EthTx = require('../../../models/EthTx')
 const Withdraw = require('../../../models/Withdraw')
 const { getObject, getContract } = require('../../../utils/contracts')
@@ -11,10 +6,10 @@ const { getInterval } = require('../../../utils/intervals')
 const { getEthSigner } = require('../../../utils/address')
 const { numToBytes32 } = require('../../../utils/finance')
 const { currencies } = require('../../../utils/fx')
-const { setTxParams } = require('../utils/web3Transaction')
+const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
 const { getFundParams } = require('../utils/fundParams')
 const web3 = require('../../../utils/web3')
-const { toWei, hexToNumber } = web3().utils
+const { toWei } = web3().utils
 
 const date = require('date.js')
 
@@ -27,14 +22,11 @@ function defineFundWithdrawJobs (agenda) {
     const fund = await Fund.findOne({ _id: fundModelId }).exec()
     if (!fund) return console.log('Error: Fund not found')
 
-    const { principal, custom, fundId } = fund
+    const { principal, fundId } = fund
     const unit = currencies[principal].unit
     const funds = getObject('funds', principal)
-    const { fundParams, lenderAddress } = await getFundParams(fund)
+    const { lenderAddress } = await getFundParams(fund)
     const address = getEthSigner()
-
-    const loanMarket = await LoanMarket.findOne({ principal }).exec()
-    const { principalAddress } = await loanMarket.getAgentAddresses()
 
     const txData = funds.methods.withdrawTo(numToBytes32(fundId), toWei(amountToWithdraw.toString(), unit), address).encodeABI()
 
@@ -92,23 +84,23 @@ async function withdrawFromFund (ethTx, withdraw, agenda, done) {
   console.log('withdrawFromFund')
   try {
     web3().eth.sendTransaction(ethTx.json())
-    .on('transactionHash', async (transactionHash) => {
-      console.log('transactionHash', transactionHash)
-      withdraw.withdrawTxHash = transactionHash
-      withdraw.status = 'WITHDRAWING'
-      await withdraw.save()
-      console.log('WITHDRAWING FROM FUND')
-      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-withdraw', { withdrawModelId: withdraw.id })
-      done()
-    })
-    .on('error', (error) => {
-      console.log('WITHDRAW FAILED')
-      console.log(error)
-      withdraw.status = 'FAILED'
-      withdraw.save()
-      done(error)
-    })
-  } catch(e) {
+      .on('transactionHash', async (transactionHash) => {
+        console.log('transactionHash', transactionHash)
+        withdraw.withdrawTxHash = transactionHash
+        withdraw.status = 'WITHDRAWING'
+        await withdraw.save()
+        console.log('WITHDRAWING FROM FUND')
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-withdraw', { withdrawModelId: withdraw.id })
+        done()
+      })
+      .on('error', (error) => {
+        console.log('WITHDRAW FAILED')
+        console.log(error)
+        withdraw.status = 'FAILED'
+        withdraw.save()
+        done(error)
+      })
+  } catch (e) {
     console.log(e)
     console.log('ERROR')
   }

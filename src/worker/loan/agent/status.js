@@ -1,10 +1,5 @@
 const axios = require('axios')
-
-const { getEndpoint } = require('../../../utils/endpoints')
-const LoanMarket = require('../../../models/LoanMarket')
 const Agent = require('../../../models/Agent')
-
-const { NETWORK, HEROKU_APP } = process.env
 
 function defineAgentStatusJobs (agenda) {
   agenda.define('check-lender-status', async (job, done) => {
