@@ -41,6 +41,10 @@
     "ETH_RPC": {
       "description": "Ethereum RPC Endpoint",
       "require": true
+    },
+    "NETWORK": {
+      "description": "Ethereum Network",
+      "required": true
     }
   },
   "success_url": "https://atomicloans.io"
