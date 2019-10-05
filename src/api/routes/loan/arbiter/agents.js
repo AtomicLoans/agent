@@ -5,6 +5,7 @@ const requestIp = require('request-ip')
 const { verifySignature } = require('../../../../utils/signatures')
 
 const Agent = require('../../../../models/Agent')
+const AgentFund = require('../../../../models/AgentFund')
 
 function defineAgentsRouter (router) {
   router.post('/agents/new', asyncHandler(async (req, res, next) => {
@@ -32,6 +33,12 @@ function defineAgentsRouter (router) {
           res.json(agent.json())
         } else {
           if (principalAddress !== agentExists.principalAddress || ethSigner !== agentExists.ethSigner) {
+            const agentFunds = await AgentFund.find({ principalAddress: agentExists.principalAddress }).exec()
+            for (let i = 0; i < agentFunds.length; i++) {
+              const agentFund = agentFunds[i]
+              await AgentFund.deleteOne({ _id: agentFund.id })
+            }
+
             agentExists.principalAddress = principalAddress
             agentExists.collateralPublicKey = collateralPublicKey
             agentExists.ethSigner = ethSigner
@@ -68,6 +75,19 @@ function defineAgentsRouter (router) {
 
   router.get('/agents', asyncHandler(async (req, res) => {
     const result = await Agent.find().exec()
+
+    res.json(result.map(r => r.json()))
+  }))
+
+  router.get('/agents/matchfunds/:principal/:collateral', asyncHandler(async (req, res) => {
+    const { params, query } = req
+    const { principal, collateral } = params
+    const { amount } = query
+
+    const agentFundQuery = { principal, collateral, status: { $ne: 'INACTIVE' } }
+    if (amount) agentFundQuery.marketLiquidity = { $gte: amount }
+
+    const result = await AgentFund.find(agentFundQuery).exec()
 
     res.json(result.map(r => r.json()))
   }))

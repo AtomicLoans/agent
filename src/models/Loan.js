@@ -163,7 +163,7 @@ LoanSchema.methods.json = function () {
 
   delete json._id
   delete json.__v
-  // delete json.lenderSecrets // TODO Uncomment
+  delete json.lenderSecrets
 
   return json
 }
