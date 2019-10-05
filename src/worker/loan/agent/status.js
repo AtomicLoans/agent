@@ -5,6 +5,8 @@ const AgentFund = require('../../../models/AgentFund')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { numToBytes32 } = require('../../../utils/finance')
 const { currencies } = require('../../../utils/fx')
+const web3 = require('web3')
+const { hexToNumber } = web3.utils
 
 function defineAgentStatusJobs (agenda) {
   agenda.define('check-lender-status', async (job, done) => {
@@ -77,11 +79,12 @@ function defineAgentStatusJobs (agenda) {
             agentFund.marketLiquidity = marketLiquidityFormatted
             agentFund.borrowed = borrowedFormatted
             agentFund.supplied = suppliedFormatted
+            agentFund.fundId = hexToNumber(fundId)
             agentFund.status = 'ACTIVE'
             await agentFund.save()
           } else {
             const params = {
-              principal, collateral, principalAddress, utilizationRatio,
+              principal, collateral, principalAddress, utilizationRatio, fundId: hexToNumber(fundId),
               marketLiquidity: marketLiquidityFormatted, borrowed: borrowedFormatted, supplied: suppliedFormatted
             }
             const newAgentFund = AgentFund.fromAgentFundParams(params)
