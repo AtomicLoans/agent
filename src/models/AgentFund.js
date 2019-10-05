@@ -33,6 +33,10 @@ const AgentFundSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
+  url: {
+    type: String,
+    index: true
+  },
   status: {
     type: String,
     enum: ['ACTIVE', 'INACTIVE'],
@@ -60,6 +64,7 @@ AgentFundSchema.static('fromAgentFundParams', function (params) {
     borrowed: params.borrowed,
     supplied: params.supplied,
     fundId: params.fundId,
+    url: params.url,
     status: 'ACTIVE'
   })
 })

@@ -80,11 +80,12 @@ function defineAgentStatusJobs (agenda) {
             agentFund.borrowed = borrowedFormatted
             agentFund.supplied = suppliedFormatted
             agentFund.fundId = hexToNumber(fundId)
+            agentFund.url = agent.url
             agentFund.status = 'ACTIVE'
             await agentFund.save()
           } else {
             const params = {
-              principal, collateral, principalAddress, utilizationRatio, fundId: hexToNumber(fundId),
+              principal, collateral, principalAddress, utilizationRatio, fundId: hexToNumber(fundId), url: agent.url,
               marketLiquidity: marketLiquidityFormatted, borrowed: borrowedFormatted, supplied: suppliedFormatted
             }
             const newAgentFund = AgentFund.fromAgentFundParams(params)
