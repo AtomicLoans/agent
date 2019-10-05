@@ -1,2 +1,2 @@
-web: PROCESS_TYPE=api PORT=3000 node src/index.js
-worker: PROCESS_TYPE=worker node src/index.js
+web: NODE_ENV=production ./bin/atomiclender-api --port 3000
+worker: NODE_ENV=production ./bin/atomiclender-worker --port 3001
