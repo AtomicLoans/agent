@@ -73,6 +73,17 @@ function defineAgentsRouter (router) {
     res.json(agent.json())
   }))
 
+  router.get('/agents/principaladdress/:principalAddress', asyncHandler(async (req, res, next) => {
+    console.log('start /agents/principaladdress/:principalAddress')
+    const { params } = req
+    const { principalAddress } = params
+
+    const agent = await Agent.findOne({ principalAddress }).exec()
+    if (!agent) return next(res.createError(401, 'Agent not found'))
+
+    res.json(agent.json())
+  }))
+
   router.get('/agents', asyncHandler(async (req, res) => {
     const result = await Agent.find().exec()
 
