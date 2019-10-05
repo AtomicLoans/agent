@@ -24,6 +24,10 @@ function defineAgentsRouter (router) {
       const { data: agent } = await axios.get(`${url}/agentinfo/${loanMarkets[0].id}`)
       console.log('agent', agent)
       const { principalAddress: principalAddressResponse, collateralPublicKey: collateralPublicKeyResponse } = agent
+      console.log('principalAddress', principalAddress)
+      console.log('principalAddressResponse', principalAddressResponse)
+      console.log('collateralPublicKey', collateralPublicKey)
+      console.log('collateralPublicKeyResponse', collateralPublicKeyResponse)
       if (principalAddress === principalAddressResponse && collateralPublicKey === collateralPublicKeyResponse) {
         const agentExists = await Agent.findOne({ url }).exec()
         if (!agentExists) {
