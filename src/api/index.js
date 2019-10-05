@@ -12,6 +12,8 @@ const cors = require('../middlewares/cors')
 const httpHelpers = require('../middlewares/httpHelpers')
 const handleError = require('../middlewares/handleError')
 
+const { migrate } = require('../migrate/migrate')
+
 const {
   PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY
 } = process.env
@@ -22,6 +24,9 @@ if (PARTY !== 'arbiter') {
 } else {
   agenda = new Agenda({ db: { address: MONGODB_ARBITER_URI }})
 }
+
+try { migrate() }
+catch(e) { console.log(e) }
 
 const app = express()
 

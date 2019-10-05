@@ -61,8 +61,6 @@ module.exports.loadVariables = (config = {}) => {
     }
   })
 
-  console.log('process.env', process.env)
-
   process.env.PROCESS_TYPE = config.processType
 
   if (process.env.MNEMONIC !== 'undefined') {
