@@ -93,10 +93,10 @@ function defineAgentsRouter (router) {
   router.get('/agents/matchfunds/:principal/:collateral', asyncHandler(async (req, res) => {
     const { params, query } = req
     const { principal, collateral } = params
-    const { amount } = query
+    let { amount } = query
 
-    const agentFundQuery = { principal, collateral, status: { $ne: 'INACTIVE' } }
-    if (amount) agentFundQuery.marketLiquidity = { $gte: amount }
+    if (!amount) amount = 0
+    const agentFundQuery = { principal, collateral, status: { $ne: 'INACTIVE' }, marketLiquidity: { $gt: amount } }
 
     const result = await AgentFund.find(agentFundQuery).sort({ utilizationRatio: 'ascending' }).exec()
 

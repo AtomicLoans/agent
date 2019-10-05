@@ -5,6 +5,7 @@ const AgentFund = require('../../../models/AgentFund')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { numToBytes32 } = require('../../../utils/finance')
 const { currencies } = require('../../../utils/fx')
+const { getCurrentTime } = require('../../../utils/time')
 const web3 = require('web3')
 const { hexToNumber } = web3.utils
 
@@ -33,8 +34,14 @@ function defineAgentStatusJobs (agenda) {
       console.log(`${agent.url} status:`, status)
 
       loanMarkets = data
+
+      if (!(loanMarkets.length > 0)) {
+        throw Error('Loan Markets not set')
+      }
+
       lenderStatus = status
     } catch(e) {
+      console.log(e)
       lenderStatus = 401
     }
 
@@ -57,6 +64,10 @@ function defineAgentStatusJobs (agenda) {
 
           const fundId = await funds.methods.fundOwner(principalAddress).call()
           const marketLiquidity = await funds.methods.balance(fundId).call()
+
+          const currentTime = await getCurrentTime()
+          const { maxLoanDur, fundExpiry } = await funds.methods.funds(fundId).call()
+          const maxLoanLengthTimestamp = BN.min(fundExpiry, BN(currentTime).plus(maxLoanDur)).toFixed()
 
           let borrowed = 0
           const lenderLoanCount = await loans.methods.lenderLoanCount(principalAddress).call()
@@ -81,12 +92,13 @@ function defineAgentStatusJobs (agenda) {
             agentFund.supplied = suppliedFormatted
             agentFund.fundId = hexToNumber(fundId)
             agentFund.url = agent.url
+            agentFund.maxLoanLengthTimestamp = maxLoanLengthTimestamp
             agentFund.status = 'ACTIVE'
             await agentFund.save()
           } else {
             const params = {
               principal, collateral, principalAddress, utilizationRatio, fundId: hexToNumber(fundId), url: agent.url,
-              marketLiquidity: marketLiquidityFormatted, borrowed: borrowedFormatted, supplied: suppliedFormatted
+              marketLiquidity: marketLiquidityFormatted, borrowed: borrowedFormatted, supplied: suppliedFormatted, maxLoanLengthTimestamp
             }
             const newAgentFund = AgentFund.fromAgentFundParams(params)
             await newAgentFund.save()

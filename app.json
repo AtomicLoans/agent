@@ -10,7 +10,7 @@
   },
   "env": {
     "METAMASK_ETH_ADDRESS": {
-      "description": "Please enter the Etheruem address associated with your Metamask Wallet",
+      "description": "Please enter the Ethereum address associated with your Metamask Wallet",
       "value": ""
     },
     "MNEMONIC": {

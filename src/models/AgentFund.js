@@ -37,6 +37,10 @@ const AgentFundSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  maxLoanLengthTimestamp: {
+    type: Number,
+    index: true
+  },
   status: {
     type: String,
     enum: ['ACTIVE', 'INACTIVE'],
@@ -65,6 +69,7 @@ AgentFundSchema.static('fromAgentFundParams', function (params) {
     supplied: params.supplied,
     fundId: params.fundId,
     url: params.url,
+    maxLoanLengthTimestamp: params.maxLoanLengthTimestamp,
     status: 'ACTIVE'
   })
 })
