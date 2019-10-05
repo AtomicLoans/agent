@@ -87,7 +87,7 @@ function defineAgentsRouter (router) {
     const agentFundQuery = { principal, collateral, status: { $ne: 'INACTIVE' } }
     if (amount) agentFundQuery.marketLiquidity = { $gte: amount }
 
-    const result = await AgentFund.find(agentFundQuery).exec()
+    const result = await AgentFund.find(agentFundQuery).sort({ utilizationRatio: 'ascending' }).exec()
 
     res.json(result.map(r => r.json()))
   }))
