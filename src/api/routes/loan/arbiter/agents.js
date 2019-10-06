@@ -105,6 +105,8 @@ function defineAgentsRouter (router) {
 
     const currentTime = parseInt(await getCurrentTime())
 
+    const twelveHoursInSeconds = 21600
+
     const agentFundQuery = { principal, collateral, status: { $ne: 'INACTIVE' } }
     const agentFundSort = {}
 
@@ -114,17 +116,21 @@ function defineAgentsRouter (router) {
       agentFundSort.utilizationRatio = 'ascending'
     } else if (amount && !maxLength) {
       agentFundQuery.marketLiquidity = { $gte: amount }
+      agentFundQuery.maxLoanLengthTimestamp = { $gte: currentTime + twelveHoursInSeconds }
       agentFundSort.utilizationRatio = 'ascending'
     } else if (!amount && maxAmount) {
+      agentFundQuery.maxLoanLengthTimestamp = { $gte: currentTime + twelveHoursInSeconds }
       agentFundSort.marketLiquidity = 'descending'
     } else if (amount && maxLength) {
       agentFundQuery.marketLiquidity = { $gte: amount }
+      agentFundQuery.maxLoanLengthTimestamp = { $gte: currentTime + twelveHoursInSeconds }
       agentFundSort.maxLoanLengthTimestamp = 'descending'
     } else if (length && maxAmount) {
       agentFundQuery.maxLoanLengthTimestamp = { $gte: (currentTime + length) }
       agentFundSort.marketLiquidity = 'descending'
     } else {
       agentFundQuery.marketLiquidity = { $gt: 0 }
+      agentFundQuery.maxLoanLengthTimestamp = { $gte: currentTime + twelveHoursInSeconds }
       agentFundSort.utilizationRatio = 'ascending'
     }
 
