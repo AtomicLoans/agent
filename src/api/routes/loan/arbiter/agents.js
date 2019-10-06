@@ -118,14 +118,20 @@ function defineAgentsRouter (router) {
       agentFundQuery.marketLiquidity = { $gte: amount }
       agentFundQuery.maxLoanLengthTimestamp = { $gte: currentTime + twelveHoursInSeconds }
       agentFundSort.utilizationRatio = 'ascending'
-    } else if (!amount && maxAmount) {
+    } else if (!length && maxAmount) {
+      agentFundQuery.marketLiquidity = { $gt: 0 }
       agentFundQuery.maxLoanLengthTimestamp = { $gte: currentTime + twelveHoursInSeconds }
       agentFundSort.marketLiquidity = 'descending'
+    } else if (!amount && maxLength) {
+      agentFundQuery.marketLiquidity = { $gt: 0 }
+      agentFundQuery.maxLoanLengthTimestamp = { $gte: currentTime + twelveHoursInSeconds }
+      agentFundSort.maxLoanLengthTimestamp = 'descending'
     } else if (amount && maxLength) {
       agentFundQuery.marketLiquidity = { $gte: amount }
       agentFundQuery.maxLoanLengthTimestamp = { $gte: currentTime + twelveHoursInSeconds }
       agentFundSort.maxLoanLengthTimestamp = 'descending'
     } else if (length && maxAmount) {
+      agentFundQuery.marketLiquidity = { $gt: 0 }
       agentFundQuery.maxLoanLengthTimestamp = { $gte: (currentTime + length) }
       agentFundSort.marketLiquidity = 'descending'
     } else {
