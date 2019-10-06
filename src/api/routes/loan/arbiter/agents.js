@@ -3,6 +3,7 @@ const asyncHandler = require('express-async-handler')
 const requestIp = require('request-ip')
 
 const { verifySignature } = require('../../../../utils/signatures')
+const { getCurrentTime } = require('../../../../utils/time')
 
 const Agent = require('../../../../models/Agent')
 const AgentFund = require('../../../../models/AgentFund')
@@ -24,10 +25,6 @@ function defineAgentsRouter (router) {
       const { data: agent } = await axios.get(`${url}/agentinfo/${loanMarkets[0].id}`)
       console.log('agent', agent)
       const { principalAddress: principalAddressResponse, collateralPublicKey: collateralPublicKeyResponse } = agent
-      console.log('principalAddress', principalAddress)
-      console.log('principalAddressResponse', principalAddressResponse)
-      console.log('collateralPublicKey', collateralPublicKey)
-      console.log('collateralPublicKeyResponse', collateralPublicKeyResponse)
       if (principalAddress === principalAddressResponse && collateralPublicKey === collateralPublicKeyResponse) {
         const agentExists = await Agent.findOne({ url }).exec()
         if (!agentExists) {
@@ -97,12 +94,41 @@ function defineAgentsRouter (router) {
   router.get('/agents/matchfunds/:principal/:collateral', asyncHandler(async (req, res) => {
     const { params, query } = req
     const { principal, collateral } = params
-    let { amount } = query
+    let { amount, maxAmount, length, maxLength } = query
 
-    if (!amount) amount = 0
-    const agentFundQuery = { principal, collateral, status: { $ne: 'INACTIVE' }, marketLiquidity: { $gt: amount } }
+    if (maxAmount && maxLength) return next(res.createError(401, 'Can\'t query both maxAmount and maxLength'))
+    if (amount && maxAmount) return next(res.createError(401, 'Can\'t query both amount and maxAmount'))
+    if (length && maxLength) return next(res.createError(401, 'Can\'t query both length and maxLength'))
 
-    const result = await AgentFund.find(agentFundQuery).sort({ utilizationRatio: 'ascending' }).exec()
+    amount = parseInt(amount)
+    length = parseInt(length)
+
+    const currentTime = parseInt(await getCurrentTime())
+
+    const agentFundQuery = { principal, collateral, status: { $ne: 'INACTIVE' } }
+    const agentFundSort = {}
+
+    if (amount && length) {
+      agentFundQuery.marketLiquidity = { $gte: amount }
+      agentFundQuery.maxLoanLengthTimestamp = { $gte: (currentTime + length) }
+      agentFundSort.utilizationRatio = 'ascending'
+    } else if (amount && !maxLength) {
+      agentFundQuery.marketLiquidity = { $gte: amount }
+      agentFundSort.utilizationRatio = 'ascending'
+    } else if (!amount && maxAmount) {
+      agentFundSort.marketLiquidity = 'descending'
+    } else if (amount && maxLength) {
+      agentFundQuery.marketLiquidity = { $gte: amount }
+      agentFundSort.maxLoanLengthTimestamp = 'descending'
+    } else if (length && maxAmount) {
+      agentFundQuery.maxLoanLengthTimestamp = { $gte: (currentTime + length) }
+      agentFundSort.marketLiquidity = 'descending'
+    } else {
+      agentFundQuery.marketLiquidity = { $gt: 0 }
+      agentFundSort.utilizationRatio = 'ascending'
+    }
+
+    const result = await AgentFund.find(agentFundQuery).sort(agentFundSort).exec()
 
     res.json(result.map(r => r.json()))
   }))

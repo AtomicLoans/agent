@@ -16,8 +16,6 @@ async function start() {
   if (HEROKU_APP !== undefined && HEROKU_APP !== 'undefined') {
     const Mnemonic = require('./models/Mnemonic')
 
-    console.log('heroku app')
-
     const mnemonics = await Mnemonic.find().exec()
     if (mnemonics.length > 0) {
       const mnemonic = mnemonics[0]
