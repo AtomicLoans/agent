@@ -112,6 +112,7 @@ function defineLoansRouter (router) {
 
       res.json(loan.json())
     } catch (e) {
+      console.log(e)
       return next(res.createError(401, e))
     }
   }))
