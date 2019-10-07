@@ -54,8 +54,6 @@ function defineAgentRoutes (router) {
     const { signature, message, timestamp } = body
 
     if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
-    console.log('message', message)
-    console.log('message2', `Get Mnemonic for ${address} at ${timestamp}`)
     if (!(message === `Get Mnemonic for ${address} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
     if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
 
