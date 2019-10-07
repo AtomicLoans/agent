@@ -1,6 +1,8 @@
 const _ = require('lodash')
 const asyncHandler = require('express-async-handler')
-
+const { checksumEncode } = require('@liquality/ethereum-utils')
+const { getEthSigner } = require('../../../utils/address')
+const { verifySignature } = require('../../../utils/signatures')
 const LoanMarket = require('../../../models/LoanMarket')
 
 function defineAgentRoutes (router) {
@@ -42,6 +44,22 @@ function defineAgentRoutes (router) {
     const agentAddresses = await loanMarket.getAgentAddresses()
 
     res.json(agentAddresses)
+  }))
+
+  router.post('/backupseedphrase', asyncHandler(async (req, res, next) => {
+    const currentTime = Math.floor(new Date().getTime() / 1000)
+    const address = getEthSigner()
+
+    const { body } = req
+    const { signature, message, timestamp } = body
+
+    if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
+    console.log('message', message)
+    console.log('message2', `Get Mnemonic for ${address} at ${timestamp}`)
+    if (!(message === `Get Mnemonic for ${address} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
+    if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+
+    res.json({ mnemonic: process.env.MNEMONIC })
   }))
 
   if (process.env.NODE_ENV === 'test') {

@@ -1,0 +1,91 @@
+body {
+  font-family: "Roboto", sans-serif;
+  background-color: #202930;
+  color: #fff;
+  font-weight: lighter;
+  margin: 0; }
+
+.fade-appear {
+  opacity: 0.01; }
+
+.fade-appear.fade-appear-active {
+  opacity: 1;
+  transition: opacity 0.15s ease-in; }
+
+html,
+body {
+  height: 100%; }
+
+.white {
+  color: #fff; }
+
+.homedashboard {
+  padding: 150px 200px; }
+  .homedashboard h1 {
+    font-size: 2.4rem; }
+  .homedashboard h4 {
+    line-height: 1.4rem; }
+
+.text-center {
+  text-align: center;
+}
+
+.thin {
+  font-weight: 200; }
+  .thin h1 {
+    font-weight: 200; }
+  .thin h2 {
+    font-weight: 200; }
+  .thin h3 {
+    font-weight: 200; }
+  .thin h4 {
+    font-weight: 200; }
+
+.theme {
+  transition: color 0.5s ease;
+  color: #b868d9;
+  font-weight: 400; }
+
+.theme2 {
+  color: #5f9ae9;
+  font-weight: 400; }
+
+.theme3 {
+  transition: color 0.5s ease;
+  color: #22a6b3;
+  font-weight: 400; }
+
+#mnemonic {
+  border-color: #b868d9 !important;
+    display: block;
+    border-width: 1px;
+    border-style: solid;
+    padding: 20px;
+    width: 350px;
+    margin: 10px auto;
+    border-radius: 4px;
+    line-height: 1.5rem;
+}
+
+.borrow-btn {
+  padding: 25px 40px !important;
+  border-color: #b868d9 !important;
+  margin: 35px auto !important;
+  width: 320px !important;
+  text-transform: none !important;
+  text-decoration: none !important;
+  line-height: 0.75em !important;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.02857em;
+  color: #fff;
+  font-size: 1.2rem;
+  color: inherit;
+  position: relative;
+  user-select: none;
+  border-radius: 4px;
+  background-color: transparent;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.23);
+  display: block;
+}

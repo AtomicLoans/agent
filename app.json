@@ -19,7 +19,7 @@
       "required": false
     },
     "HEROKU_APP": {
-      "description": "Please copy the App name that you entered earlier",
+      "description": "Please copy the App name that you entered earlier. MAKE SURE IT MATCHES!",
       "require": true
     },
     "NPM_CONFIG_PRODUCTION": {
@@ -46,6 +46,5 @@
       "description": "Ethereum Network",
       "required": true
     }
-  },
-  "success_url": "https://atomicloans.io"
+  }
 }

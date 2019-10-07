@@ -40,6 +40,15 @@ function defineAgentApproveJobs (agenda) {
       await approveTokens(ethTx, approve, agenda, done)
     } else {
       console.log('Already approved')
+      const approve = Approve.findOne({ principal }).exec()
+      if (approve) {
+        approve.status = 'APPROVED'
+        await approve.save()
+      } else {
+        const approve = Approve.fromPrincipal({ principal })
+        approve.status = 'APPROVED'
+        await approve.save()
+      }
     }
   })
 

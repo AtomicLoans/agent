@@ -7,6 +7,8 @@ const bodyParser = require('body-parser')
 const mongoose = require('mongoose')
 const Agenda = require('agenda')
 const Agendash = require('agendash')
+const path = require('path')
+const reactViews = require('express-react-views')
 
 const cors = require('../middlewares/cors')
 const httpHelpers = require('../middlewares/httpHelpers')
@@ -46,7 +48,16 @@ app.set('agenda', agenda)
 app.use('/dash', Agendash(agenda));
 app.use('/api/swap', require('./routes/swap'))
 app.use('/api/loan', require('./routes/loan/index'))
-// app.use('/queue', Agendash(agenda))
+
+app.set('views', __dirname + '/views');
+app.set('view engine', 'js');
+app.engine('js', reactViews.createEngine());
+
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
+app.get('/', require('./viewRoutes').index);
+
+app.get('/verify', require('./viewRoutes').verify);
 
 if (process.env.NODE_ENV === 'production') {
   app.use(Sentry.Handlers.errorHandler())
