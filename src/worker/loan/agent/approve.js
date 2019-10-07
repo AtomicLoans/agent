@@ -107,12 +107,18 @@ async function approveTokens (ethTx, approve, agenda, done) {
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-tokens', { approveModelId: approve.id })
         done()
       })
-      .on('error', (error) => {
+      .on('error', async (error) => {
         console.log('APPROVE FAILED')
         console.log(error)
-        approve.status = 'FAILED'
-        approve.save()
-        done(error)
+        if (error.starsWith('Error: Transaction gas price supplied is too low. There is another transaction with same nonce in the queue.')) {
+          ethTx.nonce = ethTx.nonce + 1
+          await ethTx.save()
+          await approveTokens(ethTx, approve, agenda, done)
+        } else {
+          approve.status = 'FAILED'
+          approve.save()
+          done(error)
+        }
       })
   } catch (e) {
     console.log(e)
