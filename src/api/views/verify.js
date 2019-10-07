@@ -7,9 +7,7 @@ class App extends React.Component {
 
   render() {
     var initScript = `
-      window.ethereum.enable()
-
-      setTimeout(function(){
+      window.ethereum.enable().then(() => {
         const currentTime = Math.floor(new Date().getTime() / 1000)
         web3.eth.getAccounts((err, res) => {                   
           const address = web3.toChecksumAddress(res[0])
@@ -30,8 +28,8 @@ class App extends React.Component {
               }
             }
           })
-        });
-      }, 1000);
+        })
+      })
     `;
 
     return (
