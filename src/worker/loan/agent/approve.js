@@ -110,7 +110,7 @@ async function approveTokens (ethTx, approve, agenda, done) {
       .on('error', async (error) => {
         console.log('APPROVE FAILED')
         console.log(error)
-        if (error.starsWith('Error: Transaction gas price supplied is too low. There is another transaction with same nonce in the queue.')) {
+        if (error.startsWith('Error: Transaction gas price supplied is too low. There is another transaction with same nonce in the queue.')) {
           ethTx.nonce = ethTx.nonce + 1
           await ethTx.save()
           await approveTokens(ethTx, approve, agenda, done)
