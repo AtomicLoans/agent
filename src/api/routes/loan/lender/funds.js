@@ -20,8 +20,6 @@ function defineFundsRouter (router) {
   router.get('/funds/ticker/:principal', asyncHandler(async (req, res, next) => {
     const { params } = req
 
-    console.log('params', params)
-
     const fund = await Fund.findOne({ principal: params.principal.toUpperCase(), status: { $ne: 'FAILED' } }).exec()
     if (!fund) return next(res.createError(401, 'Fund not found'))
 
