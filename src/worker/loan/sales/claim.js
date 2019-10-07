@@ -20,9 +20,9 @@ function defineSalesClaimJobs (agenda) {
     if (NETWORK === 'mainnet' || NETWORK === 'kovan') {
       let baseUrl
       if (NETWORK === 'mainnet') {
-        const baseUrl = 'https://blockstream.info'
+        baseUrl = 'https://blockstream.info'
       } else {
-        const baseUrl = 'https://blockstream.info/testnet'
+        baseUrl = 'https://blockstream.info/testnet'
       }
 
       try {
