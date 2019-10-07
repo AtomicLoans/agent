@@ -1,3 +1,4 @@
+const axios = require('axios')
 const Sale = require('../../../models/Sale')
 
 function defineSalesClaimJobs (agenda) {
