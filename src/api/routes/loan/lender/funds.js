@@ -55,7 +55,7 @@ function defineFundsRouter (router) {
       const expectMessage = `Create ${custom ? 'Custom' : 'Non-Custom'} ${principal} Loan Fund backed by ${collateral} with ${compoundEnabled ? 'Compound Enabled' : 'Compound Disabled'} and Maximum Loan Duration of ${maxLoanDuration} seconds which expires at timestamp ${fundExpiry} and deposit ${amount} ${principal}`
 
       if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
-      if (!(message === expectMessage)) return next(res.createError(401, 'Message doesn\'t match params'))
+      if (!(message === expectMessage)) return next(res.createError(401, `Message doesn't match params (Expected Message: ${expectMessage}... Actual Message: ${message})`))
 
       fund = Fund.fromFundParams(body)
     }

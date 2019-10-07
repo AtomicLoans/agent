@@ -31,6 +31,7 @@ function defineLoanStatusJobs (agenda) {
           const loans = getObject('loans', principal)
 
           if (!isArbiter()) {
+            // change to use allowance
             const approves = await Approve.find({ principal, status: { $nin: ['FAILED'] } }).exec()
 
             if (approves.length === 0) {
