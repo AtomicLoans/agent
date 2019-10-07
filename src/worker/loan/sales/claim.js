@@ -24,7 +24,6 @@ function defineSalesClaimJobs (agenda) {
       } else {
         baseUrl = 'https://blockstream.info/testnet'
       }
-
       try {
         console.log(`${baseUrl}/api/tx/${initTxHash}/outspend/0`)
         const { status, data: spendInfo } = await axios.get(`${baseUrl}/api/tx/${initTxHash}/outspend/0`)

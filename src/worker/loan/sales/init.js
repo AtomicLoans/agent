@@ -133,10 +133,16 @@ function defineSalesInitJobs (agenda) {
         await agenda.schedule(getInterval('CHECK_BTC_TX_INTERVAL'), 'verify-init-liquidation', { saleModelId: sale.id })
       } else {
         // TODO: make sure this doesn't keep running
-        const sale = new Sale()
-        sale.loanModelId = loanModelId
-        sale.status = 'FAILED'
-        await sale.save()
+        const saleExists = await Sale.findOne({ loanModelId }).exec()
+        if (saleExists) {
+          saleExists.status = 'FAILED'
+          await saleExists.save()
+        } else {
+          const sale = new Sale()
+          sale.loanModelId = loanModelId
+          sale.status = 'FAILED'
+          await sale.save()
+        }
 
         console.log('CANNOT START LIQUIDATION BECAUSE COLLATERAL DOESN\'T EXIST')
       }
