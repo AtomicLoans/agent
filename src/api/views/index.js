@@ -17,7 +17,7 @@ class App extends React.Component {
               Welcome to your Autopilot <span className="theme">Agent</span>
             </h1>
             <p>Putting your stablecoins to work on the decentralized web</p>
-            <a href="/verify" class="borrow-btn">Backup Secret Phrase</a>
+            <a href="/verify" className="borrow-btn">Backup Secret Phrase</a>
           </div>
         </body>
      </>
