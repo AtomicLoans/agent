@@ -24,14 +24,20 @@ function defineSalesClaimJobs (agenda) {
       } else {
         const baseUrl = 'https://blockstream.info/testnet'
       }
-      const { status, data: spendInfo } = await axios.get(`${baseUrl}/api/tx/${initTxHash}/outspend/0`)
 
-      if (status === 200) {
-        if (spendInfo.spent === true) {
-          console.log('COLLATERAL_CLAIMED FOUND')
-          sale.claimTxHash = spendInfo.txid
-          sale.status = 'COLLATERAL_CLAIMED'
+      try {
+        console.log(`${baseUrl}/api/tx/${initTxHash}/outspend/0`)
+        const { status, data: spendInfo } = await axios.get(`${baseUrl}/api/tx/${initTxHash}/outspend/0`)
+
+        if (status === 200) {
+          if (spendInfo.spent === true) {
+            console.log('COLLATERAL_CLAIMED FOUND')
+            sale.claimTxHash = spendInfo.txid
+            sale.status = 'COLLATERAL_CLAIMED'
+          }
         }
+      } catch(e) {
+        console.log(e)
       }
     } else {
       const collateralBlockHeight = await sale.collateralClient().chain.getBlockHeight()
