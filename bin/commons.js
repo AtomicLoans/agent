@@ -15,7 +15,8 @@ const CONFIG_ENV_MAP = {
   ethPass: 'ETH_PASS',
   metamask: 'METAMASK_ETH_ADDRESS',
   mnemonic: 'MNEMONIC',
-  network: 'NETWORK'
+  network: 'NETWORK',
+  dashPass: 'DASH_PASS'
 }
 
 function rewriteEnv (envFile, key, value) {
@@ -51,6 +52,7 @@ module.exports.loadVariables = (config = {}) => {
     .option('--metamask <addr>', 'Metamask Ethereum Address')
     .option('--mnemonic <string>', '12 word seed phrase')
     .option('--network <string>', 'Ethereum Network', 'kovan')
+    .option('--dash-pass <string>', 'Jobs Dashboard Password')
 
   program
     .parse(process.argv)
