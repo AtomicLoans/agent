@@ -6,8 +6,8 @@ const { getObject, getContract } = require('../../../utils/contracts')
 const { numToBytes32 } = require('../../../utils/finance')
 const { currencies } = require('../../../utils/fx')
 const { getCurrentTime } = require('../../../utils/time')
-const web3 = require('web3')
-const { hexToNumber } = web3.utils
+const web3 = require('../../../utils/web3')
+const { fromWei, hexToNumber } = web3().utils
 
 function defineAgentStatusJobs (agenda) {
   agenda.define('check-lender-status', async (job, done) => {
@@ -59,6 +59,9 @@ function defineAgentStatusJobs (agenda) {
 
           const { data: { principalAddress } } = await axios.get(`${agent.url}/agentinfo/${loanMarket.id}`)
 
+          const ethBalance = await web3().eth.getBalance(principalAddress)
+          agent.ethBalance = fromWei(ethBalance.toString(), 'ether')
+
           const funds = getObject('funds', principal)
           const loans = getObject('loans', principal)
 
@@ -97,7 +100,7 @@ function defineAgentStatusJobs (agenda) {
             await agentFund.save()
           } else {
             const params = {
-              principal, collateral, principalAddress, utilizationRatio, fundId: hexToNumber(fundId), url: agent.url,
+              principal, collateral, principalAddress, utilizationRatio, fundId: hexToNumber(fundId), url: agent.url, ethBalance: fromWei(ethBalance.toString(), 'ether')
               marketLiquidity: marketLiquidityFormatted, borrowed: borrowedFormatted, supplied: suppliedFormatted, maxLoanLengthTimestamp
             }
             const newAgentFund = AgentFund.fromAgentFundParams(params)
