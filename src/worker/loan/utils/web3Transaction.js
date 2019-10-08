@@ -67,10 +67,10 @@ async function bumpTxFee (ethTx) {
     fastPriceInWei = currentGasPrice
   }
 
-  if (fastPriceInWei > (currentGasPrice * 1.1)) {
+  if (fastPriceInWei > (currentGasPrice * 1.5)) {
     ethTx.gasPrice = Math.ceil(fastPriceInWei)
   } else {
-    ethTx.gasPrice = Math.ceil(currentGasPrice * 1.15)
+    ethTx.gasPrice = Math.ceil(currentGasPrice * 1.51)
   }
 
   await ethTx.save()
