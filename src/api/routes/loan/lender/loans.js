@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler')
 const BN = require('bignumber.js')
-const { ensure0x } = require('@liquality/ethereum-utils')
+const { ensure0x, checksumEncode } = require('@liquality/ethereum-utils')
 const { verifySignature } = require('../../../../utils/signatures')
 const clients = require('../../../../utils/clients')
 const { getObject } = require('../../../../utils/contracts')
@@ -82,6 +82,7 @@ function defineLoansRouter (router) {
         if (!body[key]) return next(res.createError(401, `${key} is missing`))
         loan[key] = body[key]
       })
+      const { borrowerPrincipalAddress } = loan
 
       const proofOfFundsTxValid = (await clients[collateral].getMethod('jsonrpc')('testmempoolaccept', [proofOfFundsTxHex]))[0].allowed
       if (!proofOfFundsTxValid) return next(res.createError(401, 'Proof of funds tx not valid'))
@@ -94,11 +95,12 @@ function defineLoansRouter (router) {
       const [, msgHex] = rawTx.vout[1].scriptPubKey.asm.split(' ')
       const msg = hexToAscii(ensure0x(msgHex))
 
-      const [publicKey, amount, stablecoin, timestamp] = msg.split(' ')
+      const [principalAddress, amount, timestamp] = msg.split(' ')
 
-      if (!(publicKey === lenderCollateralPublicKey)) return next(res.createError(401, 'Proof of funds public key does not match lender public key'))
+      console.log('principalAddress', principalAddress)
+      console.log('borrowerPrincipalAddress', borrowerPrincipalAddress)
+      if (!(checksumEncode(principalAddress) === checksumEncode(borrowerPrincipalAddress))) return next(res.createError(401, 'Proof of funds ethAddress does not match borrower principal address'))
       if (!(parseFloat(amount) === principalAmount)) return next(res.createError(401, 'Amount provided in signature does not match proof of funds'))
-      if (!(principal === stablecoin)) return next(res.createError(401, 'Principal currency does not match principal currency in proof of funds'))
       if (!(requestExpiresAt >= timestamp && timestamp >= requestCreatedAt)) return next(res.createError(401, 'Proof of funds tx incorrect timestamp'))
       if (!(requestExpiresAt >= currentTime && currentTime >= requestCreatedAt)) return next(res.createError(401, 'Request details provided too late. Please request again'))
 
