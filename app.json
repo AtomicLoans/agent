@@ -45,6 +45,10 @@
     "NETWORK": {
       "description": "Ethereum Network",
       "required": true
+    },
+    "DASH_PASS": {
+      "description": "Jobs Dashboard Password",
+      "required": true
     }
   }
 }

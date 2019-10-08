@@ -9,6 +9,7 @@ const Agenda = require('agenda')
 const Agendash = require('agendash')
 const path = require('path')
 const reactViews = require('express-react-views')
+const basicAuth = require('express-basic-auth')
 
 const cors = require('../middlewares/cors')
 const httpHelpers = require('../middlewares/httpHelpers')
@@ -17,7 +18,7 @@ const handleError = require('../middlewares/handleError')
 const { migrate } = require('../migrate/migrate')
 
 const {
-  PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY
+  PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY, DASH_PASS
 } = process.env
 
 let agenda
@@ -32,8 +33,12 @@ catch(e) { console.log(e) }
 
 const app = express()
 
+let dashPass
 if (process.env.NODE_ENV === 'production') {
   app.use(Sentry.Handlers.requestHandler())
+  dashPass = DASH_PASS
+} else {
+  dashPass = 'test'
 }
 
 app.use(httpHelpers())
@@ -45,7 +50,16 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '5mb' }))
 app.set('etag', false)
 app.set('agenda', agenda)
 
-app.use('/dash', Agendash(agenda));
+app.use('/dash', 
+  basicAuth({
+    users: {
+      admin: dashPass,
+    },
+    challenge: true,
+  }),
+  Agendash(agenda)
+)
+
 app.use('/api/swap', require('./routes/swap'))
 app.use('/api/loan', require('./routes/loan/index'))
 

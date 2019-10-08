@@ -10,8 +10,6 @@ function defineWithdrawRoutes (router) {
     const currentTime = Math.floor(new Date().getTime() / 1000)
     const address = getEthSigner()
 
-    console.log('TESTING WITHDRAW')
-
     const { body } = req
     const { signature, message, amount, timestamp, currency } = body
 
