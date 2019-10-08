@@ -74,6 +74,7 @@ AgentFundSchema.static('fromAgentFundParams', function (params) {
     fundId: params.fundId,
     url: params.url,
     maxLoanLengthTimestamp: params.maxLoanLengthTimestamp,
+    ethBalance: params.ethBalance,
     status: 'ACTIVE'
   })
 })
