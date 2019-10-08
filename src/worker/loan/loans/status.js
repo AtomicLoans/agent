@@ -1,5 +1,5 @@
 const axios = require('axios')
-const BN = require('BigNumber.js')
+const BN = require('bignumber.js')
 const Agent = require('../../../models/Agent')
 const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
