@@ -49,6 +49,7 @@ AgentSchema.static('fromAgentParams', function (params) {
     url: params.url,
     principalAddress: params.principalAddress,
     collateralPublicKey: params.collateralPublicKey,
+    ethBalance: params.ethBalance,
     status: 'ACTIVE'
   })
 })

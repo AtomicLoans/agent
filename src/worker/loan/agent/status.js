@@ -96,6 +96,7 @@ function defineAgentStatusJobs (agenda) {
             agentFund.fundId = hexToNumber(fundId)
             agentFund.url = agent.url
             agentFund.maxLoanLengthTimestamp = maxLoanLengthTimestamp
+            agentFund.ethBalance = fromWei(ethBalance.toString(), 'ether')
             agentFund.status = 'ACTIVE'
             await agentFund.save()
           } else {
