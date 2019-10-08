@@ -100,7 +100,7 @@ function defineAgentStatusJobs (agenda) {
             await agentFund.save()
           } else {
             const params = {
-              principal, collateral, principalAddress, utilizationRatio, fundId: hexToNumber(fundId), url: agent.url, ethBalance: fromWei(ethBalance.toString(), 'ether')
+              principal, collateral, principalAddress, utilizationRatio, fundId: hexToNumber(fundId), url: agent.url, ethBalance: fromWei(ethBalance.toString(), 'ether'),
               marketLiquidity: marketLiquidityFormatted, borrowed: borrowedFormatted, supplied: suppliedFormatted, maxLoanLengthTimestamp
             }
             const newAgentFund = AgentFund.fromAgentFundParams(params)
