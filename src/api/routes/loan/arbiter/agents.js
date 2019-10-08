@@ -110,7 +110,7 @@ function defineAgentsRouter (router) {
 
     const twelveHoursInSeconds = 21600
 
-    const agentFundQuery = { principal, collateral, status: { $ne: 'INACTIVE' } }
+    const agentFundQuery = { principal, collateral, status: { $ne: 'INACTIVE' }, ethBalance: { $gte: 0.015 } }
     const agentFundSort = {}
 
     if (amount && length) {
