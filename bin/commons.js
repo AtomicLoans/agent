@@ -51,7 +51,7 @@ module.exports.loadVariables = (config = {}) => {
     .option('--eth-pass <pass>', 'Ethereum RPC pass')
     .option('--metamask <addr>', 'Metamask Ethereum Address')
     .option('--mnemonic <string>', '12 word seed phrase')
-    .option('--network <string>', 'Ethereum Network', 'kovan')
+    .option('--network <string>', 'Ethereum Network', 'mainnet')
     .option('--dash-pass <string>', 'Jobs Dashboard Password')
 
   program
