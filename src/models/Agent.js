@@ -21,6 +21,10 @@ const AgentSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  ethBalance: {
+    type: Number,
+    index: true
+  },
   status: {
     type: String,
     enum: ['ACTIVE', 'INACTIVE'],

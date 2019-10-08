@@ -41,6 +41,10 @@ const AgentFundSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
+  ethBalance: {
+    type: Number,
+    index: true
+  },
   status: {
     type: String,
     enum: ['ACTIVE', 'INACTIVE'],

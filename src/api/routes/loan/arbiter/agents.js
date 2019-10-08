@@ -4,6 +4,8 @@ const requestIp = require('request-ip')
 
 const { verifySignature } = require('../../../../utils/signatures')
 const { getCurrentTime } = require('../../../../utils/time')
+const web3 = require('../../../../utils/web3')
+const { fromWei } = web3().utils
 
 const Agent = require('../../../../models/Agent')
 const AgentFund = require('../../../../models/AgentFund')
@@ -28,7 +30,8 @@ function defineAgentsRouter (router) {
       if (principalAddress === principalAddressResponse && collateralPublicKey === collateralPublicKeyResponse) {
         const agentExists = await Agent.findOne({ url }).exec()
         if (!agentExists) {
-          const params = { ethSigner, principalAddress, collateralPublicKey, url, endpoint }
+          const ethBalance = await web3().eth.getBalance(principalAddress)
+          const params = { ethSigner, principalAddress, collateralPublicKey, url, endpoint, ethBalance: fromWei(ethBalance.toString(), 'ether') }
           const agent = Agent.fromAgentParams(params)
           await agent.save()
           res.json(agent.json())
