@@ -3,6 +3,8 @@ const web3 = require('../../../utils/web3')
 const EthTx = require('../../../models/EthTx')
 const { toWei } = web3().utils
 
+const { NETWORK } = process.env
+
 async function setTxParams (data, from, to, instance) {
   const txParams = { data, from, to }
 
@@ -27,8 +29,24 @@ async function setTxParams (data, from, to, instance) {
     throw Error(e)
   }
 
+  const currentGasPrice = gasPrice
+
+  let fastPriceInWei
+  try {
+    const { data: gasPricesFromOracle } = await axios(`https://www.etherchain.org/api/gasPriceOracle`)
+    const { fast } = gasPricesFromOracle
+    fastPriceInWei = parseInt(toWei(fast, 'gwei'))
+  } catch (e) {
+    fastPriceInWei = currentGasPrice
+  }
+
+  if (NETWORK === 'mainnet') {
+    txParams.gasPrice = fastPriceInWei
+  } else {
+    txParams.gasPrice = gasPrice
+  }
+
   txParams.nonce = nonce
-  txParams.gasPrice = gasPrice
   txParams.gasLimit = gasLimit
 
   const ethTx = EthTx.fromTxParams(txParams)
