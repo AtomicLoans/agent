@@ -46,9 +46,7 @@ function defineFundsRouter (router) {
     if (custom) {
       // TODO: verify signature for custom funds
 
-      // fund = Fund.fromCustomFundParams(body)
-
-      return next(res.createError(401, 'Custom Loan Funds are currently not supported'))
+      fund = Fund.fromCustomFundParams(body)
     } else {
       const { maxLoanDuration, fundExpiry, compoundEnabled, amount } = body
 

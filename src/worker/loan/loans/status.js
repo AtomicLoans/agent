@@ -1,4 +1,5 @@
 const axios = require('axios')
+const BN = require('BigNumber.js')
 const Agent = require('../../../models/Agent')
 const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
@@ -10,8 +11,10 @@ const { getCurrentTime } = require('../../../utils/time')
 const { getObject } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { isArbiter } = require('../../../utils/env')
+const { currencies } = require('../../../utils/fx')
 
 const web3 = require('../../../utils/web3')
+const { hexToNumber } = web3().utils
 
 function defineLoanStatusJobs (agenda) {
   agenda.define('check-loan-statuses-and-update', async (job, done) => {
@@ -27,7 +30,8 @@ function defineLoanStatusJobs (agenda) {
         const ethBalance = await web3().eth.getBalance(principalAddress)
 
         if (ethBalance > 0) {
-          const { principal } = loanMarket
+          const { principal, collateral } = loanMarket
+          const funds = getObject('funds', principal)
           const loans = getObject('loans', principal)
 
           if (!isArbiter()) {
@@ -37,11 +41,49 @@ function defineLoanStatusJobs (agenda) {
             if (approves.length === 0) {
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-tokens', { loanMarketModelId: loanMarket.id })
             } else {
-              const funds = await Fund.find({ status: 'WAITING_FOR_APPROVE' }).exec()
+              const fundModels = await Fund.find({ status: 'WAITING_FOR_APPROVE' }).exec()
 
-              for (let j = 0; j < funds.length; j++) {
-                const fund = funds[j]
+              for (let j = 0; j < fundModels.length; j++) {
+                const fund = fundModels[j]
                 await agenda.schedule(getInterval('ACTION_INTERVAL'), 'create-fund-ish', { fundModelId: fund.id })
+              }
+            }
+          }
+
+          const fundModels = await Fund.find({ principal }).exec()
+          if (fundModels.length === 0) {
+            const fundIdBytes32 = await funds.methods.fundOwner(principalAddress).call()
+            const fundId = hexToNumber(fundIdBytes32)
+            if (fundId > 0) {
+              const { maxLoanDur, fundExpiry } = await funds.methods.fund(numToBytes32(fundId)).call()
+              const { custom, compoundEnabled } = await funds.methods.bools(numToBytes32(fundId)).call()
+
+              if (!custom) {
+                const params = { principal, collateral, custom, maxLoanDuration: maxLoanDur, fundExpiry, compoundEnabled, amount: 0 }
+                const fund = Fund.fromFundParams(params)
+                fund.status = 'CREATED'
+                await fund.save()
+              }
+            }
+          }
+
+          const lenderLoanCount = await loans.methods.lenderLoanCount(principalAddress).call()
+          if (lenderLoanCount > 0) {
+            const loanModels = await Loan.find({ principal }).exec()
+            if (loanModels.length === 0) {
+              const unit = currencies[principal].unit
+              const decimals = currencies[principal].decimals
+              const multiplier = currencies[principal].multiplier
+              for (let i = 0; i < lenderLoanCount; i++) {
+                const loanIdBytes32 = await loans.methods.lenderLoans(principalAddress, i).call()
+                const loanId = hexToNumber(loanIdBytes32)
+
+                const { borrower, lender, arbiter, principal: principalAmount, collateral: collateralAmount, createdAt, loanExpiration } = await loans.methods.loans(numToBytes32(loanId)).call()
+                const minCollateralAmount = BN(collateralAmount).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
+
+                const params = { principal, collateral, principalAmount: BN(principalAmount).dividedBy(multiplier).toFixed(decimals), requestLoanDuration: loanExpiration - createdAt }
+                const loan = Loan.fromLoanMarket(loanMarket, params, minCollateralAmount)
+                await loan.save()
               }
             }
           }
