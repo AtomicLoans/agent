@@ -46,6 +46,8 @@ async function setTxParams (data, from, to, instance) {
     txParams.gasPrice = gasPrice
   }
 
+  console.log('txParams.gasPrice', txParams.gasPrice)
+
   txParams.nonce = nonce
   txParams.gasLimit = gasLimit
 
