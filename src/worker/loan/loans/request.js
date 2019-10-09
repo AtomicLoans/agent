@@ -76,7 +76,7 @@ function defineLoanRequestJobs (agenda) {
         await bumpTxFee(ethTx)
         await requestLoan(ethTx, loan, agenda, done)
       } else {
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), '<verify-request-loan></verify-request-loan>-ish', { loanModelId })
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan-ish', { loanModelId })
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')
