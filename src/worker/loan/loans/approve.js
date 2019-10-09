@@ -89,9 +89,15 @@ async function approveLoan (ethTx, loan, agenda, done) {
       await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-loan-ish', { loanModelId: loan.id })
       done()
     })
-    .on('error', (error) => {
+    .on('error', async (error) => {
       console.log(error)
-      done()
+      if (error.indexOf('nonce too low') >= 0) {
+        ethTx.nonce = ethTx.nonce + 1
+        await ethTx.save()
+        await approveLoan(ethTx, loan, agenda, done)
+      } else {
+        done()
+      }
     })
 }
 

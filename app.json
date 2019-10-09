@@ -38,6 +38,10 @@
       "description": "Bitcoin RPC pass",
       "require": true
     },
+    "BTC_API": {
+      "description": "Bitcoin API Endpoint",
+      "require": true
+    },
     "ETH_RPC": {
       "description": "Ethereum RPC Endpoint",
       "require": true

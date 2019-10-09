@@ -45,7 +45,7 @@ module.exports.loadVariables = (config = {}) => {
     .option('--btc-rpc <url>', 'Bitcoin RPC endpoint')
     .option('--btc-user <user>', 'Bitcoin RPC user')
     .option('--btc-pass <pass>', 'Bitcoin RPC pass,')
-    .option('--btc-api <api>', 'Bitcoin API Endpoint,', 'https://blockstream.info/testnet/api')
+    .option('--btc-api <api>', 'Bitcoin API Endpoint,', 'https://blockstream.info/api')
     .option('--eth-rpc <url>', 'Ethereum RPC endpoint')
     .option('--eth-user <user>', 'Ethereum RPC user')
     .option('--eth-pass <pass>', 'Ethereum RPC pass')

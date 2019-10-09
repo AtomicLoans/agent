@@ -101,9 +101,15 @@ async function provideSecretsAndAccept (ethTx, sale, agenda, done) {
       await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-sale', { saleModelId: sale.id })
       done()
     })
-    .on('error', (error) => {
+    .on('error', async (error) => {
       console.log(error)
-      done()
+      if (error.indexOf('nonce too low') >= 0) {
+        ethTx.nonce = ethTx.nonce + 1
+        await ethTx.save()
+        await provideSecretsAndAccept(ethTx, sale, agenda, done)
+      } else {
+        done()
+      }
     })
 }
 

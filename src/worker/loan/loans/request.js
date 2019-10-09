@@ -119,14 +119,20 @@ async function requestLoan (ethTx, loan, agenda, done) {
       loan.ethTxId = ethTx.id
       loan.loanRequestTxHash = transactionHash
       loan.status = 'REQUESTING'
-      loan.save()
+      await loan.save()
       console.log('LOAN REQUESTING')
       await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan-ish', { loanModelId: loan.id })
       done()
     })
-    .on('error', (error) => {
+    .on('error', async (error) => {
       console.log(error)
-      done()
+      if (error.indexOf('nonce too low') >= 0) {
+        ethTx.nonce = ethTx.nonce + 1
+        await ethTx.save()
+        await requestLoan(ethTx, loan, agenda, done)
+      } else {
+        done()
+      }
     })
 }
 

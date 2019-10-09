@@ -114,16 +114,20 @@ async function createFund (ethTx, fund, agenda, done) {
         fund.status = 'CREATING'
         await fund.save()
         console.log(`${fund.principal} FUND CREATING`)
-        console.log('CHECK_TX_INTERVAL', getInterval('CHECK_TX_INTERVAL'))
-        // await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
         done()
       })
-      .on('error', (error) => {
+      .on('error', async (error) => {
         console.log(`${fund.principal} FUND CREATION FAILED`)
         console.log(error)
-        fund.status = 'FAILED'
-        fund.save()
-        done(error)
+        if (error.indexOf('nonce too low') >= 0) {
+          ethTx.nonce = ethTx.nonce + 1
+          await ethTx.save()
+          await createFund(ethTx, fund, agenda, done)
+        } else {
+          fund.status = 'FAILED'
+          await fund.save()
+          done(error)
+        }
       })
   } catch (e) {
     console.log(e)

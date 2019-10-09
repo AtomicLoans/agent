@@ -107,12 +107,18 @@ async function generateSecretHashes (ethTx, secretsModel, loanMarket, agenda, do
       await agenda.now('verify-add-secret-hashes', { secretsModelId: secretsModel.id, loanMarketId: loanMarket.id })
       done()
     })
-    .on('error', (error) => {
-      console.log('FAILED TO GENERATE')
+    .on('error', async (error) => {
       console.log(error)
-      secretsModel.status = 'FAILED'
-      secretsModel.save()
-      done(error)
+      if (error.indexOf('nonce too low') >= 0) {
+        ethTx.nonce = ethTx.nonce + 1
+        await ethTx.save()
+        await generateSecretHashes(ethTx, secretsModel, loanMarket, agenda, done)
+      } else {
+        console.log('FAILED TO GENERATE')
+        secretsModel.status = 'FAILED'
+        await secretsModel.save()
+        done(error)
+      }
     })
   done()
 }

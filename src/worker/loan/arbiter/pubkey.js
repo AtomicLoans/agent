@@ -88,12 +88,18 @@ async function setPubKey (ethTx, pubKey, agenda, done) {
       await agenda.now('verify-set-pubkey', { pubKeyId: pubKey.id })
       done()
     })
-    .on('error', (error) => {
-      console.log('FAILED TO SET PUBKEY')
+    .on('error', async (error) => {
       console.log(error)
-      pubKey.status = 'FAILED'
-      pubKey.save()
-      done(error)
+      if (error.indexOf('nonce too low') >= 0) {
+        ethTx.nonce = ethTx.nonce + 1
+        await ethTx.save()
+        await setPubKey(ethTx, pubKey, agenda, done)
+      } else {
+        console.log('FAILED TO SET PUBKEY')
+        pubKey.status = 'FAILED'
+        await pubKey.save()
+        done(error)
+      }
     })
 }
 

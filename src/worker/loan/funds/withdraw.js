@@ -93,12 +93,18 @@ async function withdrawFromFund (ethTx, withdraw, agenda, done) {
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-withdraw', { withdrawModelId: withdraw.id })
         done()
       })
-      .on('error', (error) => {
+      .on('error', async (error) => {
         console.log('WITHDRAW FAILED')
         console.log(error)
-        withdraw.status = 'FAILED'
-        withdraw.save()
-        done(error)
+        if (error.indexOf('nonce too low') >= 0) {
+          ethTx.nonce = ethTx.nonce + 1
+          await ethTx.save()
+          await withdrawFromFund(ethTx, withdraw, agenda, done)
+        } else {
+          withdraw.status = 'FAILED'
+          await withdraw.save()
+          done(error)
+        }
       })
   } catch (e) {
     console.log(e)
