@@ -14,6 +14,7 @@ const LoanMarket = require('../../../../models/LoanMarket')
 const Market = require('../../../../models/Market')
 const Fund = require('../../../../models/Fund')
 const Loan = require('../../../../models/Loan')
+const EthTx = require('../../../../models/EthTx')
 
 function defineLoansRouter (router) {
   router.post('/loans/new', asyncHandler(async (req, res, next) => {
@@ -201,6 +202,7 @@ function defineLoansRouter (router) {
   if (process.env.NODE_ENV === 'test') {
     router.post('/remove_loans', asyncHandler(async (req, res, next) => {
       await Loan.deleteMany()
+      await EthTx.deleteMany()
 
       res.json({ message: 'Removed all loans' })
     }))

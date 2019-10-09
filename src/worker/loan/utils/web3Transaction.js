@@ -8,9 +8,9 @@ const { NETWORK } = process.env
 async function setTxParams (data, from, to, instance) {
   const txParams = { data, from, to }
 
-  let nonce, gasPrice, gasLimit, lastBlock
+  let txCount, gasPrice, gasLimit, lastBlock
   try {
-    [nonce, gasPrice, lastBlock] = await Promise.all([
+    [txCount, gasPrice, lastBlock] = await Promise.all([
       web3().eth.getTransactionCount(from),
       web3().eth.getGasPrice(),
       web3().eth.getBlock('latest')
@@ -34,8 +34,8 @@ async function setTxParams (data, from, to, instance) {
   let fastPriceInWei
   try {
     const { data: gasPricesFromOracle } = await axios(`https://www.etherchain.org/api/gasPriceOracle`)
-    const { fast } = gasPricesFromOracle
-    fastPriceInWei = parseInt(toWei(fast, 'gwei'))
+    const { fastest } = gasPricesFromOracle
+    fastPriceInWei = parseInt(toWei(fastest, 'gwei'))
   } catch (e) {
     fastPriceInWei = currentGasPrice
   }
@@ -46,9 +46,13 @@ async function setTxParams (data, from, to, instance) {
     txParams.gasPrice = gasPrice
   }
 
-  console.log('txParams.gasPrice', txParams.gasPrice)
+  const ethTxs = await EthTx.find().sort({ nonce: 'descending' }).exec()
+  if (ethTxs.length === 0) {
+    txParams.nonce = txCount
+  } else {
+    txParams.nonce = ethTxs[0].nonce + 1
+  }
 
-  txParams.nonce = nonce
   txParams.gasLimit = gasLimit
 
   const ethTx = EthTx.fromTxParams(txParams)
@@ -63,8 +67,8 @@ async function bumpTxFee (ethTx) {
   let fastPriceInWei
   try {
     const { data: gasPricesFromOracle } = await axios(`https://www.etherchain.org/api/gasPriceOracle`)
-    const { fast } = gasPricesFromOracle
-    fastPriceInWei = parseInt(toWei(fast, 'gwei'))
+    const { fastest } = gasPricesFromOracle
+    fastPriceInWei = parseInt(toWei(fastest, 'gwei'))
   } catch (e) {
     fastPriceInWei = currentGasPrice
   }
