@@ -16,10 +16,14 @@ async function setTxParams (data, from, to, instance) {
       web3().eth.getBlock('latest')
     ])
 
-    if (process.env.NODE_ENV === 'test') {
+    try {
+      if (process.env.NODE_ENV === 'test') {
+        gasLimit = lastBlock.gasLimit
+      } else {
+        gasLimit = await web3().eth.estimateGas(txParams)
+      }
+    } catch(e) {
       gasLimit = lastBlock.gasLimit
-    } else {
-      gasLimit = await web3().eth.estimateGas(txParams)
     }
   } catch (e) {
     console.log('FAILED AT GAS STEP')
@@ -34,8 +38,8 @@ async function setTxParams (data, from, to, instance) {
   let fastPriceInWei
   try {
     const { data: gasPricesFromOracle } = await axios(`https://www.etherchain.org/api/gasPriceOracle`)
-    const { fastest } = gasPricesFromOracle
-    fastPriceInWei = parseInt(toWei(fastest, 'gwei'))
+    const { fast } = gasPricesFromOracle
+    fastPriceInWei = parseInt(toWei(fast, 'gwei'))
   } catch (e) {
     fastPriceInWei = currentGasPrice
   }
