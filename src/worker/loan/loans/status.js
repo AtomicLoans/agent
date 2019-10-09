@@ -41,10 +41,10 @@ function defineLoanStatusJobs (agenda) {
             if (approves.length === 0) {
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-tokens', { loanMarketModelId: loanMarket.id })
             } else {
-              const fundModels = await Fund.find({ status: 'WAITING_FOR_APPROVE' }).exec()
+              const fundModels = await Fund.find({ status: 'WAITING_FOR_APPROVE', principal }).exec()
 
-              for (let j = 0; j < fundModels.length; j++) {
-                const fund = fundModels[j]
+              if (fundModels.length > 0) {
+                const fund = fundModels[0]
                 await agenda.schedule(getInterval('ACTION_INTERVAL'), 'create-fund-ish', { fundModelId: fund.id })
               }
             }

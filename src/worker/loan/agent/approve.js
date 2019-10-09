@@ -45,9 +45,9 @@ function defineAgentApproveJobs (agenda) {
         approve.status = 'APPROVED'
         await approve.save()
       } else {
-        const approve = Approve.fromPrincipal({ principal })
-        approve.status = 'APPROVED'
-        await approve.save()
+        const newApprove = Approve.fromPrincipal({ principal })
+        newApprove.status = 'APPROVED'
+        await newApprove.save()
       }
     }
   })
