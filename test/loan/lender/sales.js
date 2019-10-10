@@ -57,7 +57,7 @@ function testSales (web3Chain, ethNode, btcChain) {
 
       const currentTime = Date.now()
 
-      const data = Buffer.from(`${lenderCollateralPublicKey} ${principalAmount} ${principal} ${currentTime}`, 'utf8')
+      const data = Buffer.from(`${borrowerPrincipalAddress} ${principalAmount} ${currentTime}`, 'utf8')
       const dataScript = bitcoin.payments.embed({ data: [data] })
 
       const proofOfFundsTxHex = await btcChain.client.chain.buildBatchTransaction([{ to: address, value: collateralValue }, { to: dataScript.output, value: 0 }])

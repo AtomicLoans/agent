@@ -53,15 +53,11 @@ async function setTxParams (data, from, to, instance) {
     txParams.gasPrice = gasPrice
   }
 
-  if (process.env.NODE_ENV === 'test') {
+  const ethTxs = await EthTx.find().sort({ nonce: 'descending' }).exec()
+  if (ethTxs.length === 0) {
     txParams.nonce = txCount
   } else {
-    const ethTxs = await EthTx.find().sort({ nonce: 'descending' }).exec()
-    if (ethTxs.length === 0) {
-      txParams.nonce = txCount
-    } else {
-      txParams.nonce = ethTxs[0].nonce + 1
-    }
+    txParams.nonce = ethTxs[0].nonce + 1
   }
 
   txParams.gasLimit = gasLimit
