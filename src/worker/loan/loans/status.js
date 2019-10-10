@@ -1,17 +1,20 @@
 const axios = require('axios')
 const BN = require('bignumber.js')
+const { remove0x } = require('@liquality/ethereum-utils')
 const Agent = require('../../../models/Agent')
 const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
 const Loan = require('../../../models/Loan')
 const Sale = require('../../../models/Sale')
 const LoanMarket = require('../../../models/LoanMarket')
+const Market = require('../../../models/Market')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getCurrentTime } = require('../../../utils/time')
-const { getObject } = require('../../../utils/contracts')
+const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { isArbiter } = require('../../../utils/env')
 const { currencies } = require('../../../utils/fx')
+const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
 
 const web3 = require('../../../utils/web3')
 const { hexToNumber } = web3().utils
@@ -36,9 +39,12 @@ function defineLoanStatusJobs (agenda) {
 
           if (!isArbiter()) {
             // change to use allowance
-            const approves = await Approve.find({ principal, status: { $nin: ['FAILED'] } }).exec()
+            const token = getObject('erc20', principal)
+            const fundsAddress = getContract('funds', principal)
 
-            if (approves.length === 0) {
+            const allowance = await token.methods.allowance(principalAddress, fundsAddress).call()
+
+            if (parseInt(allowance) === 0) {
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-tokens', { loanMarketModelId: loanMarket.id })
             } else {
               const fundModels = await Fund.find({ status: 'WAITING_FOR_APPROVE', principal }).exec()
@@ -50,40 +56,96 @@ function defineLoanStatusJobs (agenda) {
             }
           }
 
-          const fundModels = await Fund.find({ principal }).exec()
-          if (fundModels.length === 0) {
-            const fundIdBytes32 = await funds.methods.fundOwner(principalAddress).call()
-            const fundId = hexToNumber(fundIdBytes32)
-            if (fundId > 0) {
-              const { maxLoanDur, fundExpiry } = await funds.methods.fund(numToBytes32(fundId)).call()
-              const { custom, compoundEnabled } = await funds.methods.bools(numToBytes32(fundId)).call()
+          if (!isArbiter()) {
+            const fundModel = await Fund.findOne({ principal }).exec()
+            if (!fundModel) {
+              const fundIdBytes32 = await funds.methods.fundOwner(principalAddress).call()
+              const fundId = hexToNumber(fundIdBytes32)
+              if (fundId > 0) {
+                console.log('principal', principal)
+                console.log('Repopulate Funds')
+                const { maxLoanDur, fundExpiry } = await funds.methods.funds(numToBytes32(fundId)).call()
+                const { custom, compoundEnabled } = await funds.methods.bools(numToBytes32(fundId)).call()
 
-              if (!custom) {
-                const params = { principal, collateral, custom, maxLoanDuration: maxLoanDur, fundExpiry, compoundEnabled, amount: 0 }
-                const fund = Fund.fromFundParams(params)
-                fund.status = 'CREATED'
-                await fund.save()
+                if (!custom) {
+                  const params = { principal, collateral, custom, maxLoanDuration: maxLoanDur, fundExpiry, compoundEnabled, amount: 0 }
+                  const fund = Fund.fromFundParams(params)
+                  fund.status = 'CREATED'
+                  await fund.save()
+                } else {
+                  const { liquidationRatio, interest, penalty, fee } = await funds.methods.funds(numToBytes32(fundId)).call()
+
+                  const params = {
+                    principal, collateral, custom, maxLoanDuration: maxLoanDur, fundExpiry, compoundEnabled, 
+                    liquidationRatio, interest, penalty, fee, amount: 0
+                  }
+                  const fund = Fund.fromCustomFundParams(params)
+                  fund.status = 'CREATED'
+                  await fund.save()
+                }
               }
             }
-          }
 
-          const lenderLoanCount = await loans.methods.lenderLoanCount(principalAddress).call()
-          if (lenderLoanCount > 0) {
-            const loanModels = await Loan.find({ principal }).exec()
-            if (loanModels.length === 0) {
-              const unit = currencies[principal].unit
-              const decimals = currencies[principal].decimals
-              const multiplier = currencies[principal].multiplier
-              for (let i = 0; i < lenderLoanCount; i++) {
-                const loanIdBytes32 = await loans.methods.lenderLoans(principalAddress, i).call()
-                const loanId = hexToNumber(loanIdBytes32)
+            const lenderLoanCount = await loans.methods.lenderLoanCount(principalAddress).call()
+            if (lenderLoanCount > 0) {
+              const loanModels = await Loan.find({ principal }).exec()
+              if (loanModels.length === 0) {
+                console.log('Repopulate Loans')
+                const unit = currencies[principal].unit
+                const decimals = currencies[principal].decimals
+                const multiplier = currencies[principal].multiplier
+                for (let i = 0; i < lenderLoanCount; i++) {
+                  const loanIdBytes32 = await loans.methods.lenderLoans(principalAddress, i).call()
+                  const loanId = hexToNumber(loanIdBytes32)
 
-                const { borrower, lender, arbiter, principal: principalAmount, collateral: collateralAmount, createdAt, loanExpiration } = await loans.methods.loans(numToBytes32(loanId)).call()
-                const minCollateralAmount = BN(collateralAmount).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
+                  const { borrower, lender, arbiter, principal: principalAmount, collateral: collateralAmount, createdAt, loanExpiration, requestTimestamp } = await loans.methods.loans(numToBytes32(loanId)).call()
+                  const minCollateralAmount = BN(collateralAmount).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
 
-                const params = { principal, collateral, principalAmount: BN(principalAmount).dividedBy(multiplier).toFixed(decimals), requestLoanDuration: loanExpiration - createdAt }
-                const loan = Loan.fromLoanMarket(loanMarket, params, minCollateralAmount)
-                await loan.save()
+                  const params = { principal, collateral, principalAmount: BN(principalAmount).dividedBy(multiplier).toFixed(decimals), requestLoanDuration: loanExpiration - createdAt }
+                  const loan = Loan.fromLoanMarket(loanMarket, params, minCollateralAmount)
+
+                  loan.loanId = loanId
+                  loan.requestCreatedAt = requestTimestamp
+
+                  await loan.setAgentAddresses()
+
+                  const { borrowerPubKey, lenderPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
+
+                  loan.borrowerPrincipalAddress = borrower
+                  loan.borrowerCollateralPublicKey = remove0x(borrowerPubKey)
+                  loan.lenderCollateralPublicKey = remove0x(lenderPubKey)
+
+                  await loan.setSecretHashes(minCollateralAmount)
+
+                  const market = await Market.findOne({ from: collateral, to: principal }).exec()
+                  const { rate } = market
+
+                  const lockArgs = await getLockArgs(numToBytes32(loanId), principal, collateral)
+                  const addresses = await loan.collateralClient().loan.collateral.getLockAddresses(...lockArgs)
+                  const amounts = await getCollateralAmounts(numToBytes32(loanId), loan, rate)
+
+                  loan.setCollateralAddressValues(addresses, amounts)
+
+                  const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
+
+                  if (off && withdrawn) {
+                    loan.status = 'ACCEPTED'
+                  } else if (off && !withdrawn) {
+                    loan.status = 'CANCELLED'
+                  } else if (sale) {
+                    loan.status = 'LIQUIDATED'
+                  } else if (paid) {
+                    loan.status = 'REPAID'
+                  } else if (withdrawn) {
+                    loan.status = 'WITHDRAWN'
+                  } else if (approved) {
+                    loan.status = 'APPROVED'
+                  } else {
+                    loan.status = 'AWAITING_COLLATERAL'
+                  }
+
+                  await loan.save()
+                }
               }
             }
           }
