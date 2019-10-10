@@ -19,40 +19,44 @@ function defineAgentsRouter (router) {
 
     // TODO verify signature when creating new agent
 
-    const { status, data: loanMarkets } = await axios.get(`${url}/loanmarketinfo`)
-    console.log('status', status)
-    console.log('loanMarkets', loanMarkets)
+    try {
+      const { status, data: loanMarkets } = await axios.get(`${url}/loanmarketinfo`)
+      console.log('status', status)
+      console.log('loanMarkets', loanMarkets)
 
-    if (status === 200) {
-      const { data: agent } = await axios.get(`${url}/agentinfo/${loanMarkets[0].id}`)
-      console.log('agent', agent)
-      const { principalAddress: principalAddressResponse, collateralPublicKey: collateralPublicKeyResponse } = agent
-      if (principalAddress === principalAddressResponse && collateralPublicKey === collateralPublicKeyResponse) {
-        const agentExists = await Agent.findOne({ url }).exec()
-        if (!agentExists) {
-          const ethBalance = await web3().eth.getBalance(principalAddress)
-          const params = { ethSigner, principalAddress, collateralPublicKey, url, endpoint, ethBalance: fromWei(ethBalance.toString(), 'ether') }
-          const agent = Agent.fromAgentParams(params)
-          await agent.save()
-          res.json(agent.json())
-        } else {
-          if (principalAddress !== agentExists.principalAddress || ethSigner !== agentExists.ethSigner) {
-            const agentFunds = await AgentFund.find({ principalAddress: agentExists.principalAddress }).exec()
-            for (let i = 0; i < agentFunds.length; i++) {
-              const agentFund = agentFunds[i]
-              await AgentFund.deleteOne({ _id: agentFund.id })
+      if (status === 200) {
+        const { data: agent } = await axios.get(`${url}/agentinfo/${loanMarkets[0].id}`)
+        console.log('agent', agent)
+        const { principalAddress: principalAddressResponse, collateralPublicKey: collateralPublicKeyResponse } = agent
+        if (principalAddress === principalAddressResponse && collateralPublicKey === collateralPublicKeyResponse) {
+          const agentExists = await Agent.findOne({ url }).exec()
+          if (!agentExists) {
+            const ethBalance = await web3().eth.getBalance(principalAddress)
+            const params = { ethSigner, principalAddress, collateralPublicKey, url, endpoint, ethBalance: fromWei(ethBalance.toString(), 'ether') }
+            const agent = Agent.fromAgentParams(params)
+            await agent.save()
+            res.json(agent.json())
+          } else {
+            if (principalAddress !== agentExists.principalAddress || ethSigner !== agentExists.ethSigner) {
+              const agentFunds = await AgentFund.find({ principalAddress: agentExists.principalAddress }).exec()
+              for (let i = 0; i < agentFunds.length; i++) {
+                const agentFund = agentFunds[i]
+                await AgentFund.deleteOne({ _id: agentFund.id })
+              }
+
+              agentExists.principalAddress = principalAddress
+              agentExists.collateralPublicKey = collateralPublicKey
+              agentExists.ethSigner = ethSigner
+              await agentExists.save()
             }
 
-            agentExists.principalAddress = principalAddress
-            agentExists.collateralPublicKey = collateralPublicKey
-            agentExists.ethSigner = ethSigner
-            await agentExists.save()
+            res.json(agentExists.json())
           }
-
-          res.json(agentExists.json())
-        }
-      } else { return next(res.createError(401, 'Principal Address doesn\'t match')) }
-    } else { return next(res.createError(401, 'Url Invalid or Lender Agent offline')) }
+        } else { return next(res.createError(401, 'Principal Address doesn\'t match')) }
+      } else { return next(res.createError(401, 'Url Invalid or Lender Agent offline')) }
+    } catch(e) {
+      console.log('Error:', e)
+    }
 
     // TODO: implement verify signature
     console.log('end /agents/new')
