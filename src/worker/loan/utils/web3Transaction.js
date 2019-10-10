@@ -21,6 +21,9 @@ async function setTxParams (data, from, to, instance) {
         gasLimit = lastBlock.gasLimit
       } else {
         gasLimit = await web3().eth.estimateGas(txParams)
+        if ((gasLimit + 100000) < lastBlock.gasLimit) {
+          gasLimit = gasLimit + 100000
+        }
       }
     } catch(e) {
       gasLimit = lastBlock.gasLimit
@@ -50,11 +53,15 @@ async function setTxParams (data, from, to, instance) {
     txParams.gasPrice = gasPrice
   }
 
-  const ethTxs = await EthTx.find().sort({ nonce: 'descending' }).exec()
-  if (ethTxs.length === 0) {
+  if (process.env.NODE_ENV === 'test') {
     txParams.nonce = txCount
   } else {
-    txParams.nonce = ethTxs[0].nonce + 1
+    const ethTxs = await EthTx.find().sort({ nonce: 'descending' }).exec()
+    if (ethTxs.length === 0) {
+      txParams.nonce = txCount
+    } else {
+      txParams.nonce = ethTxs[0].nonce + 1
+    }
   }
 
   txParams.gasLimit = gasLimit

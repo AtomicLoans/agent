@@ -41,7 +41,7 @@ function defineAgentStatusJobs (agenda) {
 
       lenderStatus = status
     } catch(e) {
-      console.log(e)
+      console.log(`Agent ${agent.url} not active`)
       lenderStatus = 401
     }
 
