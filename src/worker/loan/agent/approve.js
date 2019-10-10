@@ -40,7 +40,7 @@ function defineAgentApproveJobs (agenda) {
       await approveTokens(ethTx, approve, agenda, done)
     } else {
       console.log('Already approved')
-      const approve = Approve.findOne({ principal }).exec()
+      const approve = await Approve.findOne({ principal }).exec()
       if (approve) {
         approve.status = 'APPROVED'
         await approve.save()
@@ -50,6 +50,8 @@ function defineAgentApproveJobs (agenda) {
         await newApprove.save()
       }
     }
+
+    done()
   })
 
   agenda.define('verify-approve-tokens', async (job, done) => {

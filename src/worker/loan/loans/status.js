@@ -8,6 +8,7 @@ const Loan = require('../../../models/Loan')
 const Sale = require('../../../models/Sale')
 const LoanMarket = require('../../../models/LoanMarket')
 const Market = require('../../../models/Market')
+const Deposit = require('../../../models/Deposit')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getCurrentTime } = require('../../../utils/time')
 const { getObject, getContract } = require('../../../utils/contracts')
@@ -17,7 +18,7 @@ const { currencies } = require('../../../utils/fx')
 const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
 
 const web3 = require('../../../utils/web3')
-const { hexToNumber } = web3().utils
+const { hexToNumber, fromWei } = web3().utils
 
 function defineLoanStatusJobs (agenda) {
   agenda.define('check-loan-statuses-and-update', async (job, done) => {
@@ -231,6 +232,31 @@ function defineLoanStatusJobs (agenda) {
                 }
               } else if (!isArbiter() && !saleModel) {
                 await agenda.now('init-liquidation', { loanModelId: loan.id })
+              } else if (!isArbiter() && saleModel && saleModel.status !== 'FAILED') {
+                console.log('Try to deposit')
+
+                const sales = getObject('sales', principal)
+                const token = getObject('erc20', principal)
+                const { accepted, createdAt } = await sales.methods.sales(numToBytes32(saleModel.saleId)).call()
+                if (accepted) {
+                  const fundModel = await Fund.findOne({ principal }).exec()
+                  const deposit = await Deposit.findOne({ fundModelId: fundModel.id, saleId: saleModel.saleId }).exec()
+
+                  if (!deposit) {
+                    const owedToLender = await loans.methods.owedToLender(numToBytes32(loanId)).call()
+                    const tokenBalance = await token.methods.balanceOf(principalAddress).call()
+
+                    if (tokenBalance >= owedToLender) {
+                      const unit = currencies[principal].unit
+
+                      const amountToDeposit = fromWei(owedToLender.toString(), unit)
+                      await agenda.now('fund-deposit', { fundModelId: fundModel.id, amountToDeposit, saleId: saleModel.saleId })
+                    }
+                  } else {
+                    loan.status = 'LIQUIDATED'
+                    await loan.save()
+                  }
+                }
               }
             } else if (off) {
               loan.status = 'ACCEPTED'
