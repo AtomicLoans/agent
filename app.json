@@ -2,7 +2,7 @@
   "name": "Atomic Agent",
   "description": "Lending on autopilot",
   "repository": "https://github.com/atomicloans/atomicagent",
-  "logo": "https://labs.consensys.net/static/f2d9ac9d2c48ef3f13e8f43497ce7907/3318a/atomic-loans.png",
+  "logo": "https://raw.githubusercontent.com/AtomicLoans/agent/dev/atomic-loans.png",
   "keywords": ["atomic loans", "loans", "ethereum", "bitcoin", "cryptocurrency"],
   "addons": ["mongolab:sandbox"],
   "engines": {
