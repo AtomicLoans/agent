@@ -31,7 +31,7 @@ BTC.addProvider(new BitcoinRpcProvider(BTC_RPC, BTC_USER, BTC_PASS))
 if (NETWORK !== 'test') {
   BTC.addProvider(new BitcoinEsploraApiProvider(BTC_API))
 }
-BTC.addProvider(new BitcoinJsWalletProvider(BitcoinNetworks[bitcoinNetwork], BTC_RPC, BTC_USER, BTC_PASS, isArbiter() ? MNEMONIC_ARBITER : MNEMONIC, 'bech32'))
+BTC.addProvider(new BitcoinJsWalletProvider(BitcoinNetworks[bitcoinNetwork], isArbiter() ? MNEMONIC_ARBITER : MNEMONIC, 'bech32'))
 BTC.addProvider(new BitcoinSwapProvider({ network: BitcoinNetworks[bitcoinNetwork] }))
 BTC.loan.addProvider(new BitcoinCollateralProvider({ network: BitcoinNetworks[bitcoinNetwork] }))
 BTC.loan.addProvider(new BitcoinCollateralSwapProvider({ network: BitcoinNetworks[bitcoinNetwork] }))

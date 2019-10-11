@@ -40,7 +40,7 @@ const bitcoinWithJs = new Client()
 const bitcoinLoanWithJs = new LoanClient(bitcoinWithJs)
 bitcoinWithJs.loan = bitcoinLoanWithJs
 bitcoinWithJs.addProvider(new BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
-bitcoinWithJs.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, generateMnemonic(256), 'bech32'))
+bitcoinWithJs.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, generateMnemonic(256), 'bech32'))
 bitcoinWithJs.loan.addProvider(new BitcoinCollateralProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 bitcoinWithJs.loan.addProvider(new BitcoinCollateralSwapProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 
@@ -52,7 +52,7 @@ const bitcoinArbiter = new Client()
 const bitcoinLoanArbiter = new LoanClient(bitcoinArbiter)
 bitcoinArbiter.loan = bitcoinLoanArbiter
 bitcoinArbiter.addProvider(new BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
-bitcoinArbiter.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('ARBITER_MNEMONIC').toString(), 'bech32'))
+bitcoinArbiter.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, getEnvTestValue('ARBITER_MNEMONIC').toString(), 'bech32'))
 bitcoinArbiter.loan.addProvider(new BitcoinCollateralProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 bitcoinArbiter.loan.addProvider(new BitcoinCollateralSwapProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 
@@ -60,7 +60,7 @@ const bitcoinLender = new Client()
 const bitcoinLoanLender = new LoanClient(bitcoinLender)
 bitcoinLender.loan = bitcoinLoanLender
 bitcoinLender.addProvider(new BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
-bitcoinLender.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('LENDER_MNEMONIC').toString(), 'bech32'))
+bitcoinLender.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, getEnvTestValue('LENDER_MNEMONIC').toString(), 'bech32'))
 bitcoinLender.loan.addProvider(new BitcoinCollateralProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 bitcoinLender.loan.addProvider(new BitcoinCollateralSwapProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 
@@ -68,7 +68,7 @@ const bitcoinBorrower = new Client()
 const bitcoinLoanBorrower = new LoanClient(bitcoinBorrower)
 bitcoinBorrower.loan = bitcoinLoanBorrower
 bitcoinBorrower.addProvider(new BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
-bitcoinBorrower.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('BORROWER_MNEMONIC').toString(), 'bech32'))
+bitcoinBorrower.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, getEnvTestValue('BORROWER_MNEMONIC').toString(), 'bech32'))
 bitcoinBorrower.loan.addProvider(new BitcoinCollateralProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 bitcoinBorrower.loan.addProvider(new BitcoinCollateralSwapProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 
@@ -76,7 +76,7 @@ const bitcoinLiquidator = new Client()
 const bitcoinLoanLiquidator = new LoanClient(bitcoinLiquidator)
 bitcoinLiquidator.loan = bitcoinLoanLiquidator
 bitcoinLiquidator.addProvider(new BitcoinRpcProvider(config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password))
-bitcoinLiquidator.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, config.bitcoin.rpc.host, config.bitcoin.rpc.username, config.bitcoin.rpc.password, getEnvTestValue('LIQUIDATOR_MNEMONIC').toString(), 'bech32'))
+bitcoinLiquidator.addProvider(new BitcoinJsWalletProvider(bitcoinNetwork, getEnvTestValue('LIQUIDATOR_MNEMONIC').toString(), 'bech32'))
 bitcoinLiquidator.loan.addProvider(new BitcoinCollateralProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 bitcoinLiquidator.loan.addProvider(new BitcoinCollateralSwapProvider({ network: bitcoinNetwork }, { script: 'p2wsh', address: 'p2wpkh' }))
 
