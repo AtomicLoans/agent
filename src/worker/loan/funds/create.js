@@ -104,7 +104,6 @@ function defineFundCreateJobs (agenda) {
 
 async function createFund (ethTx, fund, agenda, done) {
   console.log('createFund')
-  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
   try {
     web3().eth.sendTransaction(ethTx.json())
       .on('transactionHash', async (transactionHash) => {
@@ -114,6 +113,7 @@ async function createFund (ethTx, fund, agenda, done) {
         fund.status = 'CREATING'
         await fund.save()
         console.log(`${fund.principal} FUND CREATING`)
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
         done()
       })
       .on('error', async (error) => {
