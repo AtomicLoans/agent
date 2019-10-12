@@ -1,6 +1,7 @@
 const axios = require('axios')
-const web3 = require('../../../utils/web3')
+const { getAgentUrl } = require('../../../utils/url')
 const EthTx = require('../../../models/EthTx')
+const web3 = require('../../../utils/web3')
 const { toWei } = web3().utils
 
 const { NETWORK, BUGSNAG_API } = process.env
@@ -114,10 +115,13 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
         await ethTx.save()
         await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
       } else {
+        const agentUrl = getAgentUrl()
+
         bugsnagClient.metaData = {
           ethTx,
           instance,
-          model: instance.collection.name
+          model: instance.collection.name,
+          agentUrl
         }
         bugsnagClient.notify(error)
 
