@@ -1,9 +1,13 @@
 const axios = require('axios')
-const web3 = require('../../../utils/web3')
+const { getAgentUrl } = require('../../../utils/url')
 const EthTx = require('../../../models/EthTx')
+const web3 = require('../../../utils/web3')
 const { toWei } = web3().utils
 
-const { NETWORK } = process.env
+const { NETWORK, BUGSNAG_API } = process.env
+
+const bugsnag = require('@bugsnag/js')
+const bugsnagClient = bugsnag(BUGSNAG_API)
 
 async function setTxParams (data, from, to, instance) {
   const txParams = { data, from, to }
@@ -89,7 +93,47 @@ async function bumpTxFee (ethTx) {
   await ethTx.save()
 }
 
+async function sendTransaction (ethTx, instance, agenda, done, successCallback, errorCallback) {
+  web3().eth.sendTransaction(ethTx.json())
+    .on('transactionHash', async (transactionHash) => {
+      await successCallback(transactionHash, ethTx, instance, agenda)
+      done()
+    })
+    .on('error', async (error) => {
+      console.log(error)
+      if ((String(error).indexOf('nonce too low') >= 0) || (String(error).indexOf('There is another transaction with same nonce in the queue') >= 0)) {
+        ethTx.nonce = ethTx.nonce + 1
+        await ethTx.save()
+        await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
+      } else if (String(error).indexOf('account has nonce of') >= 0) {
+        const [accountNonce, txNonce] = String(error)
+          .split("Error: the tx doesn't have the correct nonce. account has nonce of: ")[1]
+          .split(" tx has nonce of: ")
+          .map(x => parseInt(x))
+
+        ethTx.nonce = accountNonce
+        await ethTx.save()
+        await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
+      } else {
+        const agentUrl = getAgentUrl()
+
+        bugsnagClient.metaData = {
+          ethTx,
+          instance,
+          model: instance.collection.name,
+          agentUrl
+        }
+        bugsnagClient.notify(error)
+
+        await errorCallback(error, instance)
+        done(error)
+      }
+    })
+  done()
+}
+
 module.exports = {
   setTxParams,
-  bumpTxFee
+  bumpTxFee,
+  sendTransaction
 }

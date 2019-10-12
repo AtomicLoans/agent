@@ -7,7 +7,7 @@ const EthTx = require('../../../models/EthTx')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
+const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const web3 = require('../../../utils/web3')
 
 function defineSalesAcceptJobs (agenda) {
@@ -41,7 +41,7 @@ function defineSalesAcceptJobs (agenda) {
       const { principalAddress } = await loanMarket.getAgentAddresses()
 
       const ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('sales', principal), sale)
-      await provideSecretsAndAccept(ethTx, sale, agenda, done)
+      await sendTransaction(ethTx, sale, agenda, done, txSuccess, txFailure)
     }
   })
 
@@ -65,7 +65,7 @@ function defineSalesAcceptJobs (agenda) {
         console.log('BUMPING TX FEE')
 
         await bumpTxFee(ethTx)
-        await provideSecretsAndAccept(ethTx, sale, agenda, done)
+        await sendTransaction(ethTx, sale, agenda, done, txSuccess, txFailure)
       } else {
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-sale', { saleModelId })
       }
@@ -90,27 +90,17 @@ function defineSalesAcceptJobs (agenda) {
   })
 }
 
-async function provideSecretsAndAccept (ethTx, sale, agenda, done) {
-  web3().eth.sendTransaction(ethTx.json())
-    .on('transactionHash', async (transactionHash) => {
-      sale.ethTxId = ethTx.id
-      sale.acceptTxHash = transactionHash
-      sale.status = 'ACCEPTING'
-      console.log('ACCEPTING')
-      await sale.save()
-      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-sale', { saleModelId: sale.id })
-      done()
-    })
-    .on('error', async (error) => {
-      console.log(error)
-      if (error.indexOf('nonce too low') >= 0) {
-        ethTx.nonce = ethTx.nonce + 1
-        await ethTx.save()
-        await provideSecretsAndAccept(ethTx, sale, agenda, done)
-      } else {
-        done()
-      }
-    })
+async function txSuccess (transactionHash, ethTx, instance, agenda) {
+  sale.ethTxId = ethTx.id
+  sale.acceptTxHash = transactionHash
+  sale.status = 'ACCEPTING'
+  console.log('ACCEPTING')
+  await sale.save()
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-sale', { saleModelId: sale.id })
+}
+
+async function txFailure (error, instance) {
+  console.log('FAILED TO ACCEPT')
 }
 
 module.exports = {

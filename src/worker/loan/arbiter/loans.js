@@ -100,21 +100,26 @@ function defineArbiterLoanJobs (agenda) {
         const loanDuration = loanExpiration - createdAt
         const params = { principal, collateral, principalAmount, loanDuration }
         const minimumCollateralAmount = BN(principalAmount).dividedBy(rate).times(fromWei(liquidationRatio, 'gether')).toFixed(8)
+        const loanId = currentIndex
 
-        const loan = Loan.fromLoanMarket(loanMarket, params, minimumCollateralAmount)
+        const loanExists = await Loan.findOne({ principal, loanId }).exec()
 
-        loan.status = status
-        loan.loanId = currentIndex
+        if (!loanExists) {
+          const loan = Loan.fromLoanMarket(loanMarket, params, minimumCollateralAmount)
 
-        const lockArgs = await getLockArgs(numToBytes32(currentIndex), principal, collateral)
-        const addresses = await loan.collateralClient().loan.collateral.getLockAddresses(...lockArgs)
+          loan.status = status
+          loan.loanId = currentIndex
 
-        const { collateral: collateralAmountInSats } = await loansContract.methods.loans(numToBytes32(currentIndex)).call()
-        loan.collateralAmount = BN(collateralAmountInSats).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
-        const amounts = await getCollateralAmounts(numToBytes32(currentIndex), loan, rate)
-        loan.setCollateralAddressValues(addresses, amounts)
+          const lockArgs = await getLockArgs(numToBytes32(currentIndex), principal, collateral)
+          const addresses = await loan.collateralClient().loan.collateral.getLockAddresses(...lockArgs)
 
-        await loan.save()
+          const { collateral: collateralAmountInSats } = await loansContract.methods.loans(numToBytes32(currentIndex)).call()
+          loan.collateralAmount = BN(collateralAmountInSats).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
+          const amounts = await getCollateralAmounts(numToBytes32(currentIndex), loan, rate)
+          loan.setCollateralAddressValues(addresses, amounts)
+
+          await loan.save()
+        }
       }
 
       currentIndex++

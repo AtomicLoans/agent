@@ -1,5 +1,6 @@
 const axios = require('axios')
 const Sale = require('../../../models/Sale')
+const handleError = require('../../../utils/handleError')
 
 function defineSalesClaimJobs (agenda) {
   agenda.define('verify-collateral-claim', async (job, done) => {
@@ -36,7 +37,7 @@ function defineSalesClaimJobs (agenda) {
           }
         }
       } catch(e) {
-        console.log(e)
+        handleError(e)
       }
     } else {
       const collateralBlockHeight = await sale.collateralClient().chain.getBlockHeight()

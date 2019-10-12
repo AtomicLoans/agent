@@ -6,7 +6,7 @@ const { getInterval } = require('../../../utils/intervals')
 const { getEthSigner } = require('../../../utils/address')
 const { numToBytes32 } = require('../../../utils/finance')
 const { currencies } = require('../../../utils/fx')
-const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
+const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const { getFundParams } = require('../utils/fundParams')
 const web3 = require('../../../utils/web3')
 const { toWei } = web3().utils
@@ -35,7 +35,7 @@ function defineFundDepositJobs (agenda) {
     if (saleId) { deposit.saleId = saleId }
     await deposit.save()
 
-    await depositToFund(ethTx, deposit, agenda, done)
+    await sendTransaction(ethTx, deposit, agenda, done, txSuccess, txFailure)
   })
 
   agenda.define('verify-fund-deposit', async (job, done) => {
@@ -60,7 +60,7 @@ function defineFundDepositJobs (agenda) {
         console.log('BUMPING TX FEE')
 
         await bumpTxFee(ethTx)
-        await depositToFund(ethTx, deposit, agenda, done)
+        await sendTransaction(ethTx, deposit, agenda, done, txSuccess, txFailure)
       } else {
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-deposit', { depositModelId })
       }
@@ -80,36 +80,23 @@ function defineFundDepositJobs (agenda) {
   })
 }
 
-async function depositToFund (ethTx, deposit, agenda, done) {
-  console.log('depositToFund')
-  try {
-    web3().eth.sendTransaction(ethTx.json())
-      .on('transactionHash', async (transactionHash) => {
-        console.log('transactionHash', transactionHash)
-        deposit.depositTxHash = transactionHash
-        deposit.status = 'DEPOSITING'
-        await deposit.save()
-        console.log('DEPOSITING TO FUND')
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-deposit', { depositModelId: deposit.id })
-        done()
-      })
-      .on('error', async (error) => {
-        console.log('DEPOSIT FAILED')
-        console.log(error)
-        if (error.indexOf('nonce too low') >= 0) {
-          ethTx.nonce = ethTx.nonce + 1
-          await ethTx.save()
-          await depositToFund(ethTx, deposit, agenda, done)
-        } else {
-          deposit.status = 'FAILED'
-          await deposit.save()
-          done(error)
-        }
-      })
-  } catch (e) {
-    console.log(e)
-    console.log('ERROR')
-  }
+async function txSuccess (transactionHash, ethTx, instance, agenda) {
+  const deposit = instance
+
+  console.log('transactionHash', transactionHash)
+  deposit.depositTxHash = transactionHash
+  deposit.status = 'DEPOSITING'
+  await deposit.save()
+  console.log('DEPOSITING TO FUND')
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-deposit', { depositModelId: deposit.id })
+}
+
+async function txFailure (error, instance) {
+  const deposit = instance
+
+  console.log('DEPOSIT FAILED')
+  deposit.status = 'FAILED'
+  await deposit.save()
 }
 
 module.exports = {

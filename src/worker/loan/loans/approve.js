@@ -4,7 +4,7 @@ const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { ensure0x } = require('@liquality/ethereum-utils')
-const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
+const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const web3 = require('../../../utils/web3')
 const date = require('date.js')
 
@@ -26,7 +26,7 @@ function defineLoanApproveJobs (agenda) {
     } else {
       const txData = loans.methods.approve(numToBytes32(loanId)).encodeABI()
       const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), getContract('loans', principal), loan)
-      await approveLoan(ethTx, loan, agenda, done)
+      await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
     }
   })
 
@@ -52,7 +52,7 @@ function defineLoanApproveJobs (agenda) {
         console.log('BUMPING TX FEE')
 
         await bumpTxFee(ethTx)
-        await approveLoan(ethTx, loan, agenda, done)
+        await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
       } else {
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-loan-ish', { loanModelId })
       }
@@ -78,27 +78,19 @@ function defineLoanApproveJobs (agenda) {
   })
 }
 
-async function approveLoan (ethTx, loan, agenda, done) {
-  web3().eth.sendTransaction(ethTx.json())
-    .on('transactionHash', async (transactionHash) => {
-      loan.ethTxId = ethTx.id
-      loan.approveTxHash = transactionHash
-      loan.status = 'APPROVING'
-      loan.save()
-      console.log('APPROVING')
-      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-loan-ish', { loanModelId: loan.id })
-      done()
-    })
-    .on('error', async (error) => {
-      console.log(error)
-      if (error.indexOf('nonce too low') >= 0) {
-        ethTx.nonce = ethTx.nonce + 1
-        await ethTx.save()
-        await approveLoan(ethTx, loan, agenda, done)
-      } else {
-        done()
-      }
-    })
+async function txSuccess (transactionHash, ethTx, instance, agenda) {
+  const loan = instance
+
+  loan.ethTxId = ethTx.id
+  loan.approveTxHash = transactionHash
+  loan.status = 'APPROVING'
+  loan.save()
+  console.log('APPROVING')
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-loan-ish', { loanModelId: loan.id })
+}
+
+async function txFailure (error, instance) {
+  console.log('APPROVE LOAN FAILED')
 }
 
 module.exports = {

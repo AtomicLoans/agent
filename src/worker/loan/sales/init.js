@@ -10,6 +10,7 @@ const { getLockArgs } = require('../utils/collateral')
 const { getInitArgs } = require('../utils/collateralSwap')
 const { isArbiter } = require('../../../utils/env')
 const { getEndpoint } = require('../../../utils/endpoints')
+const handleError = require('../../../utils/handleError')
 
 const web3 = require('web3')
 const { hexToNumber } = web3.utils
@@ -103,6 +104,8 @@ function defineSalesInitJobs (agenda) {
             sale.initTxHash = txHash
             sale.status = 'COLLATERAL_SENDING'
           } catch (e) {
+            handleError(e)
+
             console.log('ERROR FIRST ATTEPT TO SEND COLLATERAL')
             console.log(e)
 
@@ -148,6 +151,7 @@ function defineSalesInitJobs (agenda) {
       }
       done()
     } catch(e) {
+      handleError(e)
       console.log(e)
       done()
     }
@@ -225,6 +229,7 @@ function defineSalesInitJobs (agenda) {
 
       done()
     } catch (e) {
+      handleError(e)
       console.log('VERIFY-INIT-ERROR')
       console.log(e)
       done()

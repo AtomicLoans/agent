@@ -6,6 +6,7 @@ const { getObject, getContract } = require('../../../utils/contracts')
 const { numToBytes32 } = require('../../../utils/finance')
 const { currencies } = require('../../../utils/fx')
 const { getCurrentTime } = require('../../../utils/time')
+const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 const { fromWei, hexToNumber } = web3().utils
 
@@ -109,7 +110,7 @@ function defineAgentStatusJobs (agenda) {
           }
         }
       } catch (e) {
-        console.log(e)
+        handleError(e)
       }
     } else {
       agent.status = 'INACTIVE'

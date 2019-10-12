@@ -52,6 +52,8 @@
     "@atomicloans/bitcoin-collateral-provider": "^0.3.2-beta.2",
     "@atomicloans/bitcoin-collateral-swap-provider": "^0.3.2-beta.2",
     "@atomicloans/loan-client": "^0.3.2-beta.2",
+    "@bugsnag/js": "^6.4.2",
+    "@bugsnag/plugin-express": "^6.4.1",
     "@liquality/bitcoin-esplora-api-provider": "^0.4.3",
     "@liquality/bitcoin-js-wallet-provider": "^0.4.3",
     "@liquality/bitcoin-networks": "^0.4.3",

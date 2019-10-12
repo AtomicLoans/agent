@@ -16,6 +16,7 @@ const { getInterval } = require('../../../utils/intervals')
 const { isArbiter } = require('../../../utils/env')
 const { currencies } = require('../../../utils/fx')
 const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
+const handleError = require('../../../utils/handleError')
 
 const web3 = require('../../../utils/web3')
 const { hexToNumber, fromWei } = web3().utils
@@ -103,49 +104,54 @@ function defineLoanStatusJobs (agenda) {
                   const minCollateralAmount = BN(collateralAmount).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
 
                   const params = { principal, collateral, principalAmount: BN(principalAmount).dividedBy(multiplier).toFixed(decimals), requestLoanDuration: loanExpiration - createdAt }
-                  const loan = Loan.fromLoanMarket(loanMarket, params, minCollateralAmount)
 
-                  loan.loanId = loanId
-                  loan.requestCreatedAt = requestTimestamp
+                  const loanExists = await Loan.findOne({ principal, loanId }).exec()
 
-                  await loan.setAgentAddresses()
+                  if (!loanExists) {
+                    const loan = Loan.fromLoanMarket(loanMarket, params, minCollateralAmount)
 
-                  const { borrowerPubKey, lenderPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
+                    loan.loanId = loanId
+                    loan.requestCreatedAt = requestTimestamp
 
-                  loan.borrowerPrincipalAddress = borrower
-                  loan.borrowerCollateralPublicKey = remove0x(borrowerPubKey)
-                  loan.lenderCollateralPublicKey = remove0x(lenderPubKey)
+                    await loan.setAgentAddresses()
 
-                  await loan.setSecretHashes(minCollateralAmount)
+                    const { borrowerPubKey, lenderPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
 
-                  const market = await Market.findOne({ from: collateral, to: principal }).exec()
-                  const { rate } = market
+                    loan.borrowerPrincipalAddress = borrower
+                    loan.borrowerCollateralPublicKey = remove0x(borrowerPubKey)
+                    loan.lenderCollateralPublicKey = remove0x(lenderPubKey)
 
-                  const lockArgs = await getLockArgs(numToBytes32(loanId), principal, collateral)
-                  const addresses = await loan.collateralClient().loan.collateral.getLockAddresses(...lockArgs)
-                  const amounts = await getCollateralAmounts(numToBytes32(loanId), loan, rate)
+                    await loan.setSecretHashes(minCollateralAmount)
 
-                  loan.setCollateralAddressValues(addresses, amounts)
+                    const market = await Market.findOne({ from: collateral, to: principal }).exec()
+                    const { rate } = market
 
-                  const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
+                    const lockArgs = await getLockArgs(numToBytes32(loanId), principal, collateral)
+                    const addresses = await loan.collateralClient().loan.collateral.getLockAddresses(...lockArgs)
+                    const amounts = await getCollateralAmounts(numToBytes32(loanId), loan, rate)
 
-                  if (off && withdrawn) {
-                    loan.status = 'ACCEPTED'
-                  } else if (off && !withdrawn) {
-                    loan.status = 'CANCELLED'
-                  } else if (sale) {
-                    loan.status = 'LIQUIDATED'
-                  } else if (paid) {
-                    loan.status = 'REPAID'
-                  } else if (withdrawn) {
-                    loan.status = 'WITHDRAWN'
-                  } else if (approved) {
-                    loan.status = 'APPROVED'
-                  } else {
-                    loan.status = 'AWAITING_COLLATERAL'
+                    loan.setCollateralAddressValues(addresses, amounts)
+
+                    const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
+
+                    if (off && withdrawn) {
+                      loan.status = 'ACCEPTED'
+                    } else if (off && !withdrawn) {
+                      loan.status = 'CANCELLED'
+                    } else if (sale) {
+                      loan.status = 'LIQUIDATED'
+                    } else if (paid) {
+                      loan.status = 'REPAID'
+                    } else if (withdrawn) {
+                      loan.status = 'WITHDRAWN'
+                    } else if (approved) {
+                      loan.status = 'APPROVED'
+                    } else {
+                      loan.status = 'AWAITING_COLLATERAL'
+                    }
+
+                    await loan.save()
                   }
-
-                  await loan.save()
                 }
               }
             }
@@ -269,6 +275,7 @@ function defineLoanStatusJobs (agenda) {
 
       done()
     } catch (e) {
+      handleError(e)
       console.log('ERROR')
       console.log(e)
       done()

@@ -16,7 +16,8 @@ const CONFIG_ENV_MAP = {
   metamask: 'METAMASK_ETH_ADDRESS',
   mnemonic: 'MNEMONIC',
   network: 'NETWORK',
-  dashPass: 'DASH_PASS'
+  dashPass: 'DASH_PASS',
+  bugsnag: 'BUGSNAG_API'
 }
 
 function rewriteEnv (envFile, key, value) {

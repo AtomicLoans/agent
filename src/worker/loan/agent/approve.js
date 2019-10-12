@@ -5,7 +5,7 @@ const EthTx = require('../../../models/EthTx')
 const Approve = require('../../../models/Approve')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
+const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const web3 = require('../../../utils/web3')
 
 const date = require('date.js')
@@ -37,7 +37,7 @@ function defineAgentApproveJobs (agenda) {
       approve.ethTxId = ethTx.id
       await approve.save()
 
-      await approveTokens(ethTx, approve, agenda, done)
+      await sendTransaction(ethTx, approve, agenda, done, txSuccess, txFailure)
     } else {
       console.log('Already approved')
       const approve = await Approve.findOne({ principal }).exec()
@@ -76,7 +76,7 @@ function defineAgentApproveJobs (agenda) {
         console.log('BUMPING TX FEE')
 
         await bumpTxFee(ethTx)
-        await approveTokens(ethTx, approve, agenda, done)
+        await sendTransaction(ethTx, approve, agenda, done, txSuccess, txFailure)
       } else {
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-tokens', { approveModelId })
       }
@@ -96,40 +96,22 @@ function defineAgentApproveJobs (agenda) {
   })
 }
 
-async function approveTokens (ethTx, approve, agenda, done) {
-  console.log('approveTokens')
-  try {
-    web3().eth.sendTransaction(ethTx.json())
-      .on('transactionHash', async (transactionHash) => {
-        console.log('transactionHash', transactionHash)
-        approve.approveTxHash = transactionHash
-        approve.status = 'APPROVING'
-        await approve.save()
-        console.log(`APPROVING ${approve.principal}`)
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-tokens', { approveModelId: approve.id })
-        done()
-      })
-      .on('error', async (error) => {
-        console.log('APPROVE FAILED')
-        console.log(error)
-        if (error.indexOf('There is another transaction with same nonce in the queue') >= 0) {
-          ethTx.nonce = ethTx.nonce + 1
-          await ethTx.save()
-          await approveTokens(ethTx, approve, agenda, done)
-        } else if (error.indexOf('nonce too low') >= 0) {
-          ethTx.nonce = ethTx.nonce + 1
-          await ethTx.save()
-          await approveTokens(ethTx, approve, agenda, done)
-        } else {
-          approve.status = 'FAILED'
-          await approve.save()
-          done(error)
-        }
-      })
-  } catch (e) {
-    console.log(e)
-    console.log('ERROR')
-  }
+async function txSuccess (transactionHash, ethTx, instance, agenda) {
+  const approve = instance
+
+  console.log('transactionHash', transactionHash)
+  approve.approveTxHash = transactionHash
+  approve.status = 'APPROVING'
+  await approve.save()
+  console.log(`APPROVING ${approve.principal}`)
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-tokens', { approveModelId: approve.id })
+}
+
+async function txFailure (error, instance) {
+  const approve = instance
+
+  approve.status = 'FAILED'
+  await approve.save()
 }
 
 module.exports = {

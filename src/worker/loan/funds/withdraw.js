@@ -6,7 +6,7 @@ const { getInterval } = require('../../../utils/intervals')
 const { getEthSigner } = require('../../../utils/address')
 const { numToBytes32 } = require('../../../utils/finance')
 const { currencies } = require('../../../utils/fx')
-const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
+const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const { getFundParams } = require('../utils/fundParams')
 const web3 = require('../../../utils/web3')
 const { toWei } = web3().utils
@@ -35,7 +35,7 @@ function defineFundWithdrawJobs (agenda) {
     const withdraw = Withdraw.fromTxParams({ fundModelId, fundId, amount: amountToWithdraw, ethTxId: ethTx.id })
     await withdraw.save()
 
-    await withdrawFromFund(ethTx, withdraw, agenda, done)
+    await sendTransaction(ethTx, withdraw, agenda, done, txSuccess, txFailure)
   })
 
   agenda.define('verify-fund-withdraw', async (job, done) => {
@@ -60,7 +60,7 @@ function defineFundWithdrawJobs (agenda) {
         console.log('BUMPING TX FEE')
 
         await bumpTxFee(ethTx)
-        await withdrawFromFund(ethTx, withdraw, agenda, done)
+        await sendTransaction(ethTx, withdraw, agenda, done, txSuccess, txFailure)
       } else {
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-withdraw', { withdrawModelId })
       }
@@ -80,36 +80,23 @@ function defineFundWithdrawJobs (agenda) {
   })
 }
 
-async function withdrawFromFund (ethTx, withdraw, agenda, done) {
-  console.log('withdrawFromFund')
-  try {
-    web3().eth.sendTransaction(ethTx.json())
-      .on('transactionHash', async (transactionHash) => {
-        console.log('transactionHash', transactionHash)
-        withdraw.withdrawTxHash = transactionHash
-        withdraw.status = 'WITHDRAWING'
-        await withdraw.save()
-        console.log('WITHDRAWING FROM FUND')
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-withdraw', { withdrawModelId: withdraw.id })
-        done()
-      })
-      .on('error', async (error) => {
-        console.log('WITHDRAW FAILED')
-        console.log(error)
-        if (error.indexOf('nonce too low') >= 0) {
-          ethTx.nonce = ethTx.nonce + 1
-          await ethTx.save()
-          await withdrawFromFund(ethTx, withdraw, agenda, done)
-        } else {
-          withdraw.status = 'FAILED'
-          await withdraw.save()
-          done(error)
-        }
-      })
-  } catch (e) {
-    console.log(e)
-    console.log('ERROR')
-  }
+async function txSuccess (transactionHash, ethTx, instance, agenda) {
+  const withdraw = instance
+
+  console.log('transactionHash', transactionHash)
+  withdraw.withdrawTxHash = transactionHash
+  withdraw.status = 'WITHDRAWING'
+  await withdraw.save()
+  console.log('WITHDRAWING FROM FUND')
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-withdraw', { withdrawModelId: withdraw.id })
+}
+
+async function txFailure (error, instance) {
+  const withdraw = instance
+
+  console.log('WITHDRAW FAILED')
+  withdraw.status = 'FAILED'
+  await withdraw.save()
 }
 
 module.exports = {
