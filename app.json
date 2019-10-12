@@ -53,6 +53,10 @@
     "DASH_PASS": {
       "description": "Jobs Dashboard Password",
       "required": true
+    },
+    "BUGSNAG_API": {
+      "description": "Error monitoring",
+      "required": true
     }
   }
 }
