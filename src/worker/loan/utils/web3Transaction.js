@@ -89,7 +89,37 @@ async function bumpTxFee (ethTx) {
   await ethTx.save()
 }
 
+async function sendTransaction (ethTx, instance, agenda, done, successCallback, errorCallback) {
+  web3().eth.sendTransaction(ethTx.json())
+    .on('transactionHash', async (transactionHash) => {
+      await successCallback(transactionHash, ethTx, instance, agenda)
+      done()
+    })
+    .on('error', async (error) => {
+      console.log(error)
+      if ((String(error).indexOf('nonce too low') >= 0) || (String(error).indexOf('There is another transaction with same nonce in the queue') >= 0)) {
+        ethTx.nonce = ethTx.nonce + 1
+        await ethTx.save()
+        await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
+      } else if (String(error).indexOf('account has nonce of') >= 0) {
+        const [accountNonce, txNonce] = String(error)
+          .split("Error: the tx doesn't have the correct nonce. account has nonce of: ")[1]
+          .split(" tx has nonce of: ")
+          .map(x => parseInt(x))
+
+        ethTx.nonce = accountNonce
+        await ethTx.save()
+        await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
+      } else {
+        await errorCallback(error, instance)
+        done(error)
+      }
+    })
+  done()
+}
+
 module.exports = {
   setTxParams,
-  bumpTxFee
+  bumpTxFee,
+  sendTransaction
 }

@@ -10,7 +10,7 @@ const clients = require('../../../utils/clients')
 const BN = require('bignumber.js')
 const { getMarketModels } = require('../utils/models')
 const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
-const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
+const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const web3 = require('../../../utils/web3')
 const { hexToNumber } = web3().utils
 const date = require('date.js')
@@ -50,7 +50,7 @@ function defineLoanRequestJobs (agenda) {
     const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), getContract('funds', principal), loan)
     await ethTx.save()
 
-    await requestLoan(ethTx, loan, agenda, done)
+    await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
   })
 
   agenda.define('verify-request-loan-ish', async (job, done) => {
@@ -74,7 +74,7 @@ function defineLoanRequestJobs (agenda) {
       if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && loan.status !== 'FAILED') {
         console.log('BUMPING TX FEE')
         await bumpTxFee(ethTx)
-        await requestLoan(ethTx, loan, agenda, done)
+        await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
       } else {
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan-ish', { loanModelId })
       }
@@ -112,28 +112,19 @@ function defineLoanRequestJobs (agenda) {
   })
 }
 
-async function requestLoan (ethTx, loan, agenda, done) {
-  console.log('requestLoan fn')
-  web3().eth.sendTransaction(ethTx.json())
-    .on('transactionHash', async (transactionHash) => {
-      loan.ethTxId = ethTx.id
-      loan.loanRequestTxHash = transactionHash
-      loan.status = 'REQUESTING'
-      await loan.save()
-      console.log('LOAN REQUESTING')
-      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan-ish', { loanModelId: loan.id })
-      done()
-    })
-    .on('error', async (error) => {
-      console.log(error)
-      if (error.indexOf('nonce too low') >= 0) {
-        ethTx.nonce = ethTx.nonce + 1
-        await ethTx.save()
-        await requestLoan(ethTx, loan, agenda, done)
-      } else {
-        done()
-      }
-    })
+async function txSuccess (transactionHash, ethTx, instance, agenda) {
+  const loan = instance
+
+  loan.ethTxId = ethTx.id
+  loan.loanRequestTxHash = transactionHash
+  loan.status = 'REQUESTING'
+  await loan.save()
+  console.log('LOAN REQUESTING')
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan-ish', { loanModelId: loan.id })
+}
+
+async function txFailure (error, instance) {
+  console.log('REQUEST LOAN FAIL')
 }
 
 module.exports = {

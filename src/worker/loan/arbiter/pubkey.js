@@ -6,7 +6,7 @@ const LoanMarket = require('../../../models/LoanMarket')
 const PubKey = require('../../../models/PubKey')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
+const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const web3 = require('../../../utils/web3')
 
 function defineArbiterPubKeyJobs (agenda) {
@@ -32,7 +32,7 @@ function defineArbiterPubKeyJobs (agenda) {
     pubKey.ethTxId = ethTx.id
     await pubKey.save()
 
-    await setPubKey(ethTx, pubKey, agenda, done)
+    await sendTransaction(ethTx, pubKey, agenda, done, txSuccess, txFailure)
   })
 
   agenda.define('verify-set-pubkey', async (job, done) => {
@@ -57,7 +57,7 @@ function defineArbiterPubKeyJobs (agenda) {
         console.log('BUMPING TX FEE')
 
         await bumpTxFee(ethTx)
-        await setPubKey(ethTx, pubKey, agenda, done)
+        await sendTransaction(ethTx, pubKey, agenda, done, txSuccess, txFailure)
       } else {
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-set-pubkey', { pubKeyId })
       }
@@ -77,30 +77,23 @@ function defineArbiterPubKeyJobs (agenda) {
   })
 }
 
-async function setPubKey (ethTx, pubKey, agenda, done) {
-  web3().eth.sendTransaction(ethTx.json())
-    .on('transactionHash', async (transactionHash) => {
-      pubKey.ethTxId = ethTx.id
-      pubKey.pubKeyTxHash = transactionHash
-      pubKey.status = 'SETTING'
-      pubKey.save()
-      console.log('SETTING')
-      await agenda.now('verify-set-pubkey', { pubKeyId: pubKey.id })
-      done()
-    })
-    .on('error', async (error) => {
-      console.log(error)
-      if (error.indexOf('nonce too low') >= 0) {
-        ethTx.nonce = ethTx.nonce + 1
-        await ethTx.save()
-        await setPubKey(ethTx, pubKey, agenda, done)
-      } else {
-        console.log('FAILED TO SET PUBKEY')
-        pubKey.status = 'FAILED'
-        await pubKey.save()
-        done(error)
-      }
-    })
+async function txSuccess (transactionHash, ethTx, instance, agenda) {
+  const pubKey = instance
+
+  pubKey.ethTxId = ethTx.id
+  pubKey.pubKeyTxHash = transactionHash
+  pubKey.status = 'SETTING'
+  pubKey.save()
+  console.log('SETTING')
+  await agenda.now('verify-set-pubkey', { pubKeyId: pubKey.id })
+}
+
+async function txFailure (error, instance) {
+  const pubKey = instance
+
+  console.log('FAILED TO SET PUBKEY')
+  pubKey.status = 'FAILED'
+  await pubKey.save()
 }
 
 module.exports = {

@@ -1,5 +1,6 @@
 const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
 const date = require('date.js')
+const Agent = require('../../../models/Agent')
 const Loan = require('../../../models/Loan')
 const LoanMarket = require('../../../models/LoanMarket')
 const EthTx = require('../../../models/EthTx')
@@ -7,7 +8,7 @@ const Secret = require('../../../models/Secret')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
+const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const { isArbiter } = require('../../../utils/env')
 const web3 = require('../../../utils/web3')
 
@@ -30,18 +31,44 @@ function defineLoanAcceptOrCancelJobs (agenda) {
       console.log('Loan already accepted')
       done()
     } else {
-      let txData
+      // If Arbiter, check if lender agent is already accepting, if not accept
+      // If Lender, just accept
+
+      let lenderAccepting = false
       if (isArbiter()) {
-        const { secretHashC1 } = await loans.methods.secretHashes(numToBytes32(loanId)).call()
-
-        const secretModel = await Secret.findOne({ secretHash: remove0x(secretHashC1) })
-
-        txData = loans.methods.accept(numToBytes32(loanId), ensure0x(secretModel.secret)).encodeABI()
-      } else {
-        txData = loans.methods.accept(numToBytes32(loanId), ensure0x(lenderSecrets[0])).encodeABI()
+        const { lender } = await loans.methods.loans(numToBytes32(loanId)).call()
+        const agent = await Agent.findOne({ principalAddress: lender }).exec()
+        if (agent) {
+          try {
+            const { status, data } = await axios.get(`${agent.url}/loans/contract/${principal}/${loanId}`)
+            console.log(`${agent.url} status:`, status)
+            if (status === 200) {
+              const { acceptOrCancelTxHash } = data
+              if (acceptOrCancelTxHash) {
+                lenderAccepting = true
+              }
+            }
+          } catch(e) {
+            console.log(`Agent ${agent.url} not active`)
+          }
+        }
       }
-      const ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('loans', principal), loan)
-      await acceptOrCancelLoan(ethTx, loan, agenda, done)
+
+      if (!isArbiter() || !lenderAccepting) {
+        let txData
+        if (isArbiter()) {
+          const { secretHashC1 } = await loans.methods.secretHashes(numToBytes32(loanId)).call()
+
+          const secretModel = await Secret.findOne({ secretHash: remove0x(secretHashC1) })
+
+          txData = loans.methods.accept(numToBytes32(loanId), ensure0x(secretModel.secret)).encodeABI()
+        } else {
+          txData = loans.methods.accept(numToBytes32(loanId), ensure0x(lenderSecrets[0])).encodeABI()
+        }
+        const ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('loans', principal), loan)
+        console.log('sending tx to accept')
+        await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
+      }
     }
   })
 
@@ -65,7 +92,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
         console.log('BUMPING TX FEE')
 
         await bumpTxFee(ethTx)
-        await acceptOrCancelLoan(ethTx, loan, agenda, done)
+        await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
       } else {
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan-ish', { loanModelId })
       }
@@ -94,35 +121,27 @@ function defineLoanAcceptOrCancelJobs (agenda) {
   })
 }
 
-async function acceptOrCancelLoan (ethTx, loan, agenda, done) {
-  web3().eth.sendTransaction(ethTx.json())
-    .on('transactionHash', async (transactionHash) => {
-      const { principal, loanId } = loan
-      const loans = getObject('loans', principal)
-      const paid = await loans.methods.paid(numToBytes32(loanId)).call()
-      loan.ethTxId = ethTx.id
-      loan.acceptOrCancelTxHash = transactionHash
-      if (paid) {
-        loan.status = 'ACCEPTING'
-        console.log('ACCEPTING')
-      } else {
-        loan.status = 'CANCELLING'
-        console.log('CANCELLING')
-      }
-      await loan.save()
-      await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan-ish', { loanModelId: loan.id })
-      done()
-    })
-    .on('error', async (error) => {
-      console.log(error)
-      if (error.indexOf('nonce too low') >= 0) {
-        ethTx.nonce = ethTx.nonce + 1
-        await ethTx.save()
-        await acceptOrCancelLoan(ethTx, loan, agenda, done)
-      } else {
-        done()
-      }
-    })
+async function txSuccess (transactionHash, ethTx, instance, agenda) {
+  const loan = instance
+
+  const { principal, loanId } = loan
+  const loans = getObject('loans', principal)
+  const paid = await loans.methods.paid(numToBytes32(loanId)).call()
+  loan.ethTxId = ethTx.id
+  loan.acceptOrCancelTxHash = transactionHash
+  if (paid) {
+    loan.status = 'ACCEPTING'
+    console.log('ACCEPTING')
+  } else {
+    loan.status = 'CANCELLING'
+    console.log('CANCELLING')
+  }
+  await loan.save()
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan-ish', { loanModelId: loan.id })
+}
+
+async function txFailure (error, instance) {
+  console.log('FAILED TO ACCEPT OR CANCEL')
 }
 
 module.exports = {

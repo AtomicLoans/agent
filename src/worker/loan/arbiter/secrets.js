@@ -8,7 +8,7 @@ const Secret = require('../../../models/Secret')
 const Secrets = require('../../../models/Secrets')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
+const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const web3 = require('../../../utils/web3')
 
 function defineArbiterSecretsJobs (agenda) {
@@ -48,7 +48,8 @@ function defineArbiterSecretsJobs (agenda) {
     secretsModel.ethTxId = ethTx.id
     await secretsModel.save()
 
-    await generateSecretHashes(ethTx, secretsModel, loanMarket, agenda, done)
+    const instance = { secretsModel, loanMarket }
+    await sendTransaction(ethTx, instance, agenda, done, txSuccess, txFailure)
   })
 
   agenda.define('verify-add-secret-hashes', async (job, done) => {
@@ -76,7 +77,8 @@ function defineArbiterSecretsJobs (agenda) {
         if (!loanMarket) return console.log('Error: LoanMarket not found')
 
         await bumpTxFee(ethTx)
-        await generateSecretHashes(ethTx, secretsModel, loanMarket, agenda, done) // TODO: ensure loanMarket is found
+        const instance = { secretsModel, loanMarket }
+        await sendTransaction(ethTx, instance, agenda, done, txSuccess, txFailure)
       } else {
         await agenda.schedule(getInterval('SECRETS_BUMP_TX_INTERVAL'), 'verify-add-secret-hashes', { loanMarketId, secretsModelId })
       }
@@ -96,31 +98,23 @@ function defineArbiterSecretsJobs (agenda) {
   })
 }
 
-async function generateSecretHashes (ethTx, secretsModel, loanMarket, agenda, done) {
-  web3().eth.sendTransaction(ethTx.json())
-    .on('transactionHash', async (transactionHash) => {
-      secretsModel.ethTxId = ethTx.id
-      secretsModel.generateTxHash = transactionHash
-      secretsModel.status = 'GENERATING'
-      secretsModel.save()
-      console.log('GENERATING')
-      await agenda.now('verify-add-secret-hashes', { secretsModelId: secretsModel.id, loanMarketId: loanMarket.id })
-      done()
-    })
-    .on('error', async (error) => {
-      console.log(error)
-      if (error.indexOf('nonce too low') >= 0) {
-        ethTx.nonce = ethTx.nonce + 1
-        await ethTx.save()
-        await generateSecretHashes(ethTx, secretsModel, loanMarket, agenda, done)
-      } else {
-        console.log('FAILED TO GENERATE')
-        secretsModel.status = 'FAILED'
-        await secretsModel.save()
-        done(error)
-      }
-    })
-  done()
+async function txSuccess (transactionHash, ethTx, instance, agenda) {
+  const { secretsModel, loanMarket } = instance
+
+  secretsModel.ethTxId = ethTx.id
+  secretsModel.generateTxHash = transactionHash
+  secretsModel.status = 'GENERATING'
+  secretsModel.save()
+  console.log('GENERATING')
+  await agenda.now('verify-add-secret-hashes', { secretsModelId: secretsModel.id, loanMarketId: loanMarket.id })
+}
+
+async function txFailure (error, instance) {
+  const { secretsModel } = instance
+
+  console.log('FAILED TO GENERATE')
+  secretsModel.status = 'FAILED'
+  await secretsModel.save()
 }
 
 module.exports = {

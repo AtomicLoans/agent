@@ -6,7 +6,7 @@ const Fund = require('../../../models/Fund')
 const EthTx = require('../../../models/EthTx')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { setTxParams, bumpTxFee } = require('../utils/web3Transaction')
+const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const { getFundParams } = require('../utils/fundParams')
 const web3 = require('../../../utils/web3')
 const { hexToNumber } = web3().utils
@@ -42,7 +42,7 @@ function defineFundCreateJobs (agenda) {
       fund.ethTxId = ethTx.id
       await fund.save()
 
-      await createFund(ethTx, fund, agenda, done)
+      await sendTransaction(ethTx, fund, agenda, done, txSuccess, txFailure)
     } else {
       console.log('Rescheduling fund create because erc20 approve hasn\'t finished')
 
@@ -74,7 +74,7 @@ function defineFundCreateJobs (agenda) {
         console.log('BUMPING TX FEE')
 
         await bumpTxFee(ethTx)
-        await createFund(ethTx, fund, agenda, done)
+        await sendTransaction(ethTx, fund, agenda, done, txSuccess, txFailure)
       } else {
         await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId })
       }
@@ -102,37 +102,24 @@ function defineFundCreateJobs (agenda) {
   })
 }
 
-async function createFund (ethTx, fund, agenda, done) {
-  console.log('createFund')
-  try {
-    web3().eth.sendTransaction(ethTx.json())
-      .on('transactionHash', async (transactionHash) => {
-        console.log('transactionHash', transactionHash)
-        fund.ethTxId = ethTx.id
-        fund.createTxHash = transactionHash
-        fund.status = 'CREATING'
-        await fund.save()
-        console.log(`${fund.principal} FUND CREATING`)
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
-        done()
-      })
-      .on('error', async (error) => {
-        console.log(`${fund.principal} FUND CREATION FAILED`)
-        console.log(error)
-        if (error.indexOf('nonce too low') >= 0) {
-          ethTx.nonce = ethTx.nonce + 1
-          await ethTx.save()
-          await createFund(ethTx, fund, agenda, done)
-        } else {
-          fund.status = 'FAILED'
-          await fund.save()
-          done(error)
-        }
-      })
-  } catch (e) {
-    console.log(e)
-    console.log('ERROR')
-  }
+async function txSuccess (transactionHash, ethTx, instance, agenda) {
+  const fund = instance
+
+  console.log('transactionHash', transactionHash)
+  fund.ethTxId = ethTx.id
+  fund.createTxHash = transactionHash
+  fund.status = 'CREATING'
+  await fund.save()
+  console.log(`${fund.principal} FUND CREATING`)
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
+}
+
+async function txFailure (error, instance) {
+  const fund = instance
+
+  console.log(`${fund.principal} FUND CREATION FAILED`)
+  fund.status = 'FAILED'
+  await fund.save()
 }
 
 module.exports = {
