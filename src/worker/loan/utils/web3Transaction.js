@@ -3,7 +3,10 @@ const web3 = require('../../../utils/web3')
 const EthTx = require('../../../models/EthTx')
 const { toWei } = web3().utils
 
-const { NETWORK } = process.env
+const { NETWORK, BUGSNAG_API } = process.env
+
+const bugsnag = require('@bugsnag/js')
+const bugsnagClient = bugsnag(BUGSNAG_API)
 
 async function setTxParams (data, from, to, instance) {
   const txParams = { data, from, to }
@@ -111,6 +114,13 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
         await ethTx.save()
         await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
       } else {
+        bugsnagClient.metaData = {
+          ethTx,
+          instance,
+          model: instance.collection.name
+        }
+        bugsnagClient.notify(error)
+
         await errorCallback(error, instance)
         done(error)
       }

@@ -16,6 +16,7 @@ const { getInterval } = require('../../../utils/intervals')
 const { isArbiter } = require('../../../utils/env')
 const { currencies } = require('../../../utils/fx')
 const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
+const handleError = require('../../../utils/handleError')
 
 const web3 = require('../../../utils/web3')
 const { hexToNumber, fromWei } = web3().utils
@@ -274,6 +275,7 @@ function defineLoanStatusJobs (agenda) {
 
       done()
     } catch (e) {
+      handleError(e)
       console.log('ERROR')
       console.log(e)
       done()

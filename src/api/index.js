@@ -11,15 +11,22 @@ const path = require('path')
 const reactViews = require('express-react-views')
 const basicAuth = require('express-basic-auth')
 
+const bugsnag = require('@bugsnag/js')
+const bugsnagExpress = require('@bugsnag/plugin-express')
+
 const cors = require('../middlewares/cors')
 const httpHelpers = require('../middlewares/httpHelpers')
 const handleError = require('../middlewares/handleError')
 
 const { migrate } = require('../migrate/migrate')
 
+const Market = require('../models/Market')
+
 const {
-  PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY, DASH_PASS
+  PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY, DASH_PASS, BUGSNAG_API
 } = process.env
+
+const bugsnagClient = bugsnag(BUGSNAG_API)
 
 let agenda
 if (PARTY !== 'arbiter') {
@@ -28,10 +35,18 @@ if (PARTY !== 'arbiter') {
   agenda = new Agenda({ db: { address: MONGODB_ARBITER_URI }})
 }
 
-try { migrate() }
-catch(e) { console.log(e) }
+const markets = Market.find().exec().then((markets) => {
+  if (markets.length === 0) {
+    migrate()
+  }
+})
 
 const app = express()
+
+bugsnagClient.use(bugsnagExpress)
+const middleware = bugsnagClient.getPlugin('express')
+
+app.use(middleware.requestHandler)
 
 let dashPass
 if (process.env.NODE_ENV === 'production') {
@@ -78,5 +93,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.use(handleError())
+
+app.use(middleware.errorHandler)
 
 app.listen(PORT)
