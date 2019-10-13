@@ -64,6 +64,8 @@ module.exports.loadVariables = (config = {}) => {
     }
   })
 
+  console.log('process.env.HEROKU_API_KEY', process.env.HEROKU_API_KEY)
+
   process.env.PROCESS_TYPE = config.processType
 
   if (process.env.MNEMONIC !== 'undefined') {
