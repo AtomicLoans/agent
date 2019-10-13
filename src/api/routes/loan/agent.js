@@ -1,9 +1,15 @@
 const _ = require('lodash')
+const axios = require('axios')
 const asyncHandler = require('express-async-handler')
 const { checksumEncode } = require('@liquality/ethereum-utils')
 const { getEthSigner } = require('../../../utils/address')
 const { verifySignature } = require('../../../utils/signatures')
 const LoanMarket = require('../../../models/LoanMarket')
+var wget = require('node-wget')
+var extract = require('extract-zip')
+
+const ncp = require('ncp').ncp
+ncp.limit = 16;
 
 function defineAgentRoutes (router) {
   router.get('/loanmarketinfo', asyncHandler(async (req, res) => {
@@ -58,6 +64,31 @@ function defineAgentRoutes (router) {
     if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
 
     res.json({ mnemonic: process.env.MNEMONIC })
+  }))
+
+  router.get('/update', asyncHandler(async (req, res) => {
+    const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
+
+    if (status === 200) {
+      const { zipball_url, name } = release
+
+      wget(`https://github.com/AtomicLoans/agent/archive/${name}.zip`,function (error, response, body) {
+        if (error) {
+            console.log(error)
+        } else {
+          extract(`${process.cwd()}/${name}.zip`, {dir: `${process.cwd()}/tmp`}, function (err) {
+
+            ncp(`${process.cwd()}/tmp/agent-0.1.4`, process.cwd(), { stopOnErr: true }, function (err) {
+             if (err) {
+               return console.error(err);
+             }
+             console.log('done!');
+             res.json({ message: 'test' })
+            });
+          })
+        }
+      })
+    }
   }))
 
   if (process.env.NODE_ENV === 'test') {

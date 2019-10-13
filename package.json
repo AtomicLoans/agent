@@ -49,8 +49,8 @@
     ]
   },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/AtomicLoans/agent.git"
+    "type": "git",
+    "url": "https://github.com/AtomicLoans/agent.git"
   },
   "license": "ISC",
   "dependencies": {
@@ -94,6 +94,7 @@
     "express-async-handler": "^1.1.4",
     "express-basic-auth": "^1.2.0",
     "express-react-views": "^0.11.0",
+    "extract-zip": "^1.6.7",
     "fastq": "^1.6.0",
     "fs": "0.0.1-security",
     "gh-release": "^3.5.0",
@@ -104,7 +105,9 @@
     "level": "^5.0.1",
     "mongoose": "^5.6.6",
     "mongoose-timestamp": "^0.6.0",
+    "ncp": "^2.0.0",
     "node-metamask": "^1.1.2",
+    "node-wget": "^0.4.3",
     "path": "^0.12.7",
     "react": "^16.10.2",
     "react-dom": "^16.10.2",
