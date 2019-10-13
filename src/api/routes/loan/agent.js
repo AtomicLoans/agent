@@ -74,16 +74,16 @@ function defineAgentRoutes (router) {
 
       wget({
         url:`https://github.com/AtomicLoans/agent/archive/${name}.zip`,
-        dest: `/tmp/`,
+        dest: `${process.cwd()}/tmp/`,
         timeout: 2000
       },
       function (error, response, body) {
         if (error) {
             console.log(error)
         } else {
-          extract(`/tmp/${name}.zip`, {dir: `${process.cwd()}/tmp`}, function (err) {
+          extract(`${process.cwd()}/tmp/${name}.zip`, {dir: `${process.cwd()}/tmp`}, function (err) {
 
-            ncp(`/tmp/agent-${name.replace('v', '')}`, process.cwd(), { stopOnErr: true }, function (err) {
+            ncp(`${process.cwd()}/tmp/agent-${name.replace('v', '')}`, process.cwd(), { stopOnErr: true }, function (err) {
              if (err) {
                return console.error(err);
              }
