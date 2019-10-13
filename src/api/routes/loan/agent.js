@@ -79,14 +79,14 @@ function defineAgentRoutes (router) {
       },
       function (error, response, body) {
         if (error) {
-            console.log(error)
+          console.log(error)
         } else {
           extract(`${process.cwd()}/tmp/${name}.zip`, {dir: `${process.cwd()}/tmp`}, function (err) {
 
             ncp(`${process.cwd()}/tmp/agent-${name.replace('v', '')}`, process.cwd(), { stopOnErr: true }, function (err) {
-             if (err) {
-               return console.error(err);
-             }
+              if (err) {
+                return console.error(err);
+              }
              console.log('done!');
             });
           })
