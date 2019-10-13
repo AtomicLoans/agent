@@ -74,10 +74,12 @@ function defineAgentRoutes (router) {
 
       wget(`https://github.com/AtomicLoans/agent/archive/${name}.zip`,function (error, response, body) {
         if (error) {
-            console.log(error)
+          console.log('wget failed')
+          console.log(error)
         } else {
+          console.log('wget worked')
           extract(`${process.cwd()}/${name}.zip`, {dir: `${process.cwd()}/tmp`}, function (err) {
-
+            console.log('extract')
             ncp(`${process.cwd()}/tmp/agent-${name.replace('v', '')}`, process.cwd(), { stopOnErr: true }, function (err) {
              if (err) {
                return console.error(err);
