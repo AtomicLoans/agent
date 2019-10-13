@@ -78,7 +78,7 @@ function defineAgentRoutes (router) {
         } else {
           extract(`${process.cwd()}/${name}.zip`, {dir: `${process.cwd()}/tmp`}, function (err) {
 
-            ncp(`${process.cwd()}/tmp/agent-0.1.4`, process.cwd(), { stopOnErr: true }, function (err) {
+            ncp(`${process.cwd()}/tmp/agent-${name.replace('v', '')}`, process.cwd(), { stopOnErr: true }, function (err) {
              if (err) {
                return console.error(err);
              }
