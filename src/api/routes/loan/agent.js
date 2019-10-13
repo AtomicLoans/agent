@@ -72,6 +72,7 @@ function defineAgentRoutes (router) {
     if (status === 200) {
       const { zipball_url, name } = release
 
+      console.log(`${process.cwd()}/tmp/`)
       wget({
         url:`https://github.com/AtomicLoans/agent/archive/${name}.zip`,
         dest: `${process.cwd()}/tmp/`,
