@@ -72,15 +72,18 @@ function defineAgentRoutes (router) {
     if (status === 200) {
       const { zipball_url, name } = release
 
-      wget(`https://github.com/AtomicLoans/agent/archive/${name}.zip`,function (error, response, body) {
+      wget({
+        url:`https://github.com/AtomicLoans/agent/archive/${name}.zip`,
+        dest: `/tmp/`,
+        timeout: 2000
+      },
+      function (error, response, body) {
         if (error) {
-          console.log('wget failed')
-          console.log(error)
+            console.log(error)
         } else {
-          console.log('wget worked')
-          extract(`${process.cwd()}/${name}.zip`, {dir: `${process.cwd()}/tmp`}, function (err) {
-            console.log('extract')
-            ncp(`${process.cwd()}/tmp/agent-${name.replace('v', '')}`, process.cwd(), { stopOnErr: true }, function (err) {
+          extract(`/tmp/${name}.zip`, {dir: `${process.cwd()}/tmp`}, function (err) {
+
+            ncp(`/tmp/agent-${name.replace('v', '')}`, process.cwd(), { stopOnErr: true }, function (err) {
              if (err) {
                return console.error(err);
              }
