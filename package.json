@@ -34,7 +34,8 @@
     "deploy:ledger": "mocha test/loan/lender/deploy/ledger $npm_package_options_mocha",
     "deploy:send_ether": "mocha test/loan/lender/deploy/send_ether $npm_package_options_mocha",
     "reset:jobs": "mocha test/loan/lender/reset/jobs $npm_package_options_mocha",
-    "reset:mnemonic": "mocha test/loan/lender/reset/mnemonic $npm_package_options_mocha"
+    "reset:mnemonic": "mocha test/loan/lender/reset/mnemonic $npm_package_options_mocha",
+    "new:version": "gh-release"
   },
   "options": {
     "mocha": "--timeout 200000 --recursive --exit"
@@ -46,6 +47,10 @@
     "env": [
       "mocha"
     ]
+  },
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/AtomicLoans/agent.git"
   },
   "license": "ISC",
   "dependencies": {
