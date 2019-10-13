@@ -83,7 +83,6 @@ function defineAgentRoutes (router) {
                return console.error(err);
              }
              console.log('done!');
-             res.json({ message: 'test' })
             });
           })
         }
