@@ -95,19 +95,14 @@ function defineAgentRoutes (router) {
 
     router.get('/update', asyncHandler(async (req, res, next) => {
       const mnemonics = await Mnemonic.find().exec()
-      console.log('test1')
       if (mnemonics.length > 0) {
         const mnemonic = mnemonics[0]
         const { heroku_api_key: token } = mnemonic
-
-        console.log('test2', token)
 
         const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
 
         if (status === 200) {
           const { name } = release
-
-          console.log('test3')
 
           const params = { 'source_blob': { 'url': `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
           const config = {
@@ -118,26 +113,17 @@ function defineAgentRoutes (router) {
             }
           }
 
-          console.log(`https://api.heroku.com/apps/${HEROKU_APP}/builds`)
-          console.log('params', params)
-          console.log('config', config)
-
-          const herokuResult = await axios.post(`https://api.heroku.com/apps/${HEROKU_APP}/builds`, params, config)
-          console.log('herokuResult', herokuResult)
-          const { status: herokuStatus } = herokuResult
+          const { status: herokuStatus } = await axios.post(`https://api.heroku.com/apps/${HEROKU_APP}/builds`, params, config)
 
           if (herokuStatus === 201) {
             res.json({ message: 'Success' })
           } else {
-            console.log('Heroku error')
             return next(res.createError(401, 'Heroku error'))
           }
         } else {
-          console.log('Github error')
           return next(res.createError(401, 'Github error'))
         }
       } else {
-        console.log('Mnemonic not set')
         return next(res.createError(401, 'Mnemonic not set'))
       }
     }))
