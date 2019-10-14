@@ -93,7 +93,7 @@ function defineAgentRoutes (router) {
       }
     }))
 
-    router.get('/update', asyncHandler(async (req, res) => {
+    router.get('/update', asyncHandler(async (req, res, next) => {
       const mnemonics = await Mnemonic.find().exec()
       console.log('test1')
       if (mnemonics.length > 0) {
@@ -122,7 +122,9 @@ function defineAgentRoutes (router) {
           console.log('params', params)
           console.log('config', config)
 
-          const { status: herokuStatus } = await axios.post(`https://api.heroku.com/apps/${HEROKU_APP}/builds`, params, config)
+          const herokuResult = await axios.post(`https://api.heroku.com/apps/${HEROKU_APP}/builds`, params, config)
+          console.log('herokuResult', herokuResult)
+          const { status: herokuStatus } = herokuResult
 
           if (herokuStatus === 200) {
             res.json({ message: 'Success' })
