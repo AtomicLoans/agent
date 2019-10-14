@@ -112,12 +112,15 @@ function defineAgentRoutes (router) {
           if (herokuStatus === 200) {
             res.json({ message: 'Success' })
           } else {
+            console.log('Heroku error')
             return next(res.createError(401, 'Heroku error'))
           }
         } else {
+          console.log('Github error')
           return next(res.createError(401, 'Github error'))
         }
       } else {
+        console.log('Mnemonic not set')
         return next(res.createError(401, 'Mnemonic not set'))
       }
     }))
