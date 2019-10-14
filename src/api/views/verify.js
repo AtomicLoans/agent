@@ -22,6 +22,7 @@ class App extends React.Component {
               if (xmlhttp.status === 200) {
                 const response = JSON.parse(xmlhttp.responseText)
                 document.getElementById("mnemonic").innerHTML = response.mnemonic
+                document.getElementById("finish-btn").style.display = 'inline-flex'
               }
               else if (xmlhttp.status !== 200) {
                 alert('An error occured')
@@ -46,6 +47,15 @@ class App extends React.Component {
             <p>Never disclose your backup phrase. Anyone with this phrase can steal your Ether and stablecoins.</p>
             <br/>
             <div id="mnemonic">Sign message on MetaMask to reveal Secret Backup Phrase</div>
+
+            <br/>
+            <br/>
+
+            <a href="/key" className="MuiButtonBase-root MuiButton-root borrow-selected app-btn MuiButton-text" id="finish-btn" tabindex="0" type="button" style={{ cursor: 'pointer', display: 'none' }}>
+              <span className="MuiButton-label">Finish Setup</span>
+              <span className="MuiTouchRipple-root"></span>
+            </a>
+
           </div>
 
           <script dangerouslySetInnerHTML={{__html: initScript}} />
