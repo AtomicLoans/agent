@@ -95,14 +95,19 @@ function defineAgentRoutes (router) {
 
     router.get('/update', asyncHandler(async (req, res) => {
       const mnemonics = await Mnemonic.find().exec()
+      console.log('test1')
       if (mnemonics.length > 0) {
         const mnemonic = mnemonics[0]
         const { heroku_api_key: token } = mnemonic
+
+        console.log('test2', token)
 
         const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
 
         if (status === 200) {
           const { name } = release
+
+          console.log('test3')
 
           const params = { 'source_blob': { 'url': `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
           const config = { headers: { 'Authorization': `Bearer ${token}` } }
