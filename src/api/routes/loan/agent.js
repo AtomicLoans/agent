@@ -68,36 +68,6 @@ function defineAgentRoutes (router) {
     res.json({ mnemonic: process.env.MNEMONIC })
   }))
 
-  router.get('/update', asyncHandler(async (req, res) => {
-    const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
-
-    if (status === 200) {
-      const { zipball_url, name } = release
-
-      console.log(`${process.cwd()}/tmp/`)
-      wget({
-        url:`https://github.com/AtomicLoans/agent/archive/${name}.zip`,
-        dest: `${process.cwd()}/tmp/`,
-        timeout: 2000
-      },
-      function (error, response, body) {
-        if (error) {
-          console.log(error)
-        } else {
-          extract(`${process.cwd()}/tmp/${name}.zip`, {dir: `${process.cwd()}/tmp`}, function (err) {
-
-            ncp(`${process.cwd()}/tmp/agent-${name.replace('v', '')}`, process.cwd(), { stopOnErr: true }, function (err) {
-              if (err) {
-                return console.error(err);
-              }
-             console.log('done!');
-            });
-          })
-        }
-      })
-    }
-  }))
-
   if ((HEROKU_APP !== undefined && HEROKU_APP !== 'undefined') || process.env.NODE_ENV === 'test') {
     const Mnemonic = require('../../../models/Mnemonic')
 
@@ -118,6 +88,35 @@ function defineAgentRoutes (router) {
         mnemonic.heroku_api_key = key
         await mnemonic.save()
         res.json({ message: 'Success' })
+      } else {
+        return next(res.createError(401, 'Mnemonic not set'))
+      }
+    }))
+
+    router.get('/update', asyncHandler(async (req, res) => {
+      const mnemonics = await Mnemonic.find().exec()
+      if (mnemonics.length > 0) {
+        const mnemonic = mnemonics[0]
+        const { heroku_api_key: token } = mnemonic
+
+        const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
+
+        if (status === 200) {
+          const { name } = release
+
+          const params = { 'source_blob': { 'url': `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
+          const config = { headers: { 'Authorization': `Bearer ${token}` } }
+
+          const { status: herokuStatus } = await axios.post(`https://api.heroku.com/apps/${HEROKU_APP}/builds`, params, config)
+
+          if (herokuStatus === 200) {
+            res.json({ message: 'Success' })
+          } else {
+            return next(res.createError(401, 'Heroku error'))
+          }
+        } else {
+          return next(res.createError(401, 'Github error'))
+        }
       } else {
         return next(res.createError(401, 'Mnemonic not set'))
       }
