@@ -110,7 +110,13 @@ function defineAgentRoutes (router) {
           console.log('test3')
 
           const params = { 'source_blob': { 'url': `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
-          const config = { headers: { 'Authorization': `Bearer ${token}` } }
+          const config = {
+            headers: {
+              'Accept': 'application/vnd.heroku+json; version=3',
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          }
 
           console.log(`https://api.heroku.com/apps/${HEROKU_APP}/builds`)
           console.log('params', params)
