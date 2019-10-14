@@ -126,7 +126,7 @@ function defineAgentRoutes (router) {
           console.log('herokuResult', herokuResult)
           const { status: herokuStatus } = herokuResult
 
-          if (herokuStatus === 200) {
+          if (herokuStatus === 201) {
             res.json({ message: 'Success' })
           } else {
             console.log('Heroku error')
