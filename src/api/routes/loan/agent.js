@@ -112,6 +112,10 @@ function defineAgentRoutes (router) {
           const params = { 'source_blob': { 'url': `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
           const config = { headers: { 'Authorization': `Bearer ${token}` } }
 
+          console.log(`https://api.heroku.com/apps/${HEROKU_APP}/builds`)
+          console.log('params', params)
+          console.log('config', config)
+
           const { status: herokuStatus } = await axios.post(`https://api.heroku.com/apps/${HEROKU_APP}/builds`, params, config)
 
           if (herokuStatus === 200) {
