@@ -9,7 +9,9 @@ var wget = require('node-wget')
 var extract = require('extract-zip')
 
 const ncp = require('ncp').ncp
-ncp.limit = 16;
+ncp.limit = 16
+
+const { HEROKU_APP } = process.env
 
 function defineAgentRoutes (router) {
   router.get('/loanmarketinfo', asyncHandler(async (req, res) => {
@@ -95,6 +97,32 @@ function defineAgentRoutes (router) {
       })
     }
   }))
+
+  if ((HEROKU_APP !== undefined && HEROKU_APP !== 'undefined') || process.env.NODE_ENV === 'test') {
+    const Mnemonic = require('../../../models/Mnemonic')
+
+    router.post('/set_heroku_api_key', asyncHandler(async (req, res, next) => {
+      const currentTime = Math.floor(new Date().getTime() / 1000)
+      const address = getEthSigner()
+
+      const { body } = req
+      const { signature, message, timestamp, key } = body
+
+      if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
+      if (!(message === `Set Heroku API Key ${key} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
+      if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+
+      const mnemonics = await Mnemonic.find().exec()
+      if (mnemonics.length > 0) {
+        const mnemonic = mnemonics[0]
+        mnemonic.heroku_api_key = key
+        await mnemonic.save()
+        res.json({ message: 'Success' })
+      } else {
+        return next(res.createError(401, 'Mnemonic not set'))
+      }
+    }))
+  }
 
   if (process.env.NODE_ENV === 'test') {
     router.post('/bitcoin/generate_block', asyncHandler(async (req, res) => {

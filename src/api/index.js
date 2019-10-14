@@ -85,8 +85,9 @@ app.engine('js', reactViews.createEngine());
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
 app.get('/', require('./viewRoutes').index);
-
 app.get('/verify', require('./viewRoutes').verify);
+app.get('/key', require('./viewRoutes').key);
+app.get('/success', require('./viewRoutes').success);
 
 if (process.env.NODE_ENV === 'production') {
   app.use(Sentry.Handlers.errorHandler())
