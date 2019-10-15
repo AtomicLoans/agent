@@ -1,3 +1,5 @@
+const { getEndpoint } = require('./endpoints')
+
 const { NETWORK, HEROKU_APP, PARTY } = process.env
 
 function getAgentUrl () {

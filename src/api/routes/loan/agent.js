@@ -5,8 +5,9 @@ const { checksumEncode } = require('@liquality/ethereum-utils')
 const { getEthSigner } = require('../../../utils/address')
 const { verifySignature } = require('../../../utils/signatures')
 const LoanMarket = require('../../../models/LoanMarket')
-var wget = require('node-wget')
-var extract = require('extract-zip')
+const { version } = require('../../../../package.json')
+const wget = require('node-wget')
+const extract = require('extract-zip')
 
 const ncp = require('ncp').ncp
 ncp.limit = 16
@@ -68,6 +69,10 @@ function defineAgentRoutes (router) {
     res.json({ mnemonic: process.env.MNEMONIC })
   }))
 
+  router.get('/version', asyncHandler(async (req, res) => {
+    res.json({ version })
+  }))
+
   if ((HEROKU_APP !== undefined && HEROKU_APP !== 'undefined') || process.env.NODE_ENV === 'test') {
     const Mnemonic = require('../../../models/Mnemonic')
 
@@ -93,7 +98,17 @@ function defineAgentRoutes (router) {
       }
     }))
 
-    router.get('/update', asyncHandler(async (req, res, next) => {
+    router.post('/update', asyncHandler(async (req, res, next) => {
+      const currentTime = Math.floor(new Date().getTime() / 1000)
+      const address = getEthSigner()
+
+      const { body } = req
+      const { signature, message, timestamp } = body
+
+      if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
+      if (!(message === `Update Autopilot Agent at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
+      if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+
       const mnemonics = await Mnemonic.find().exec()
       if (mnemonics.length > 0) {
         const mnemonic = mnemonics[0]
