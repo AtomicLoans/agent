@@ -1,3 +1,9 @@
+## [0.1.8](https://github.com/AtomicLoans/agent/compare/v0.1.7...v0.1.8) - 2019-10-15
+
+- add agent version endpoint
+- add signature verication for update endpoint
+- improve block timestamp query
+
 ## [0.1.7](https://github.com/AtomicLoans/agent/compare/v0.1.6...v0.1.7) - 2019-10-13
 
 - add basic update with heroku
