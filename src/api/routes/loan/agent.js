@@ -114,29 +114,33 @@ function defineAgentRoutes (router) {
         const mnemonic = mnemonics[0]
         const { heroku_api_key: token } = mnemonic
 
-        const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
+        if (token) {
+          const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
 
-        if (status === 200) {
-          const { name } = release
+          if (status === 200) {
+            const { name } = release
 
-          const params = { 'source_blob': { 'url': `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
-          const config = {
-            headers: {
-              'Accept': 'application/vnd.heroku+json; version=3',
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+            const params = { 'source_blob': { 'url': `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
+            const config = {
+              headers: {
+                'Accept': 'application/vnd.heroku+json; version=3',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              }
             }
-          }
 
-          const { status: herokuStatus } = await axios.post(`https://api.heroku.com/apps/${HEROKU_APP}/builds`, params, config)
+            const { status: herokuStatus } = await axios.post(`https://api.heroku.com/apps/${HEROKU_APP}/builds`, params, config)
 
-          if (herokuStatus === 201) {
-            res.json({ message: 'Success' })
+            if (herokuStatus === 201) {
+              res.json({ message: 'Success' })
+            } else {
+              return next(res.createError(401, 'Heroku error'))
+            }
           } else {
-            return next(res.createError(401, 'Heroku error'))
+            return next(res.createError(401, 'Github error'))
           }
         } else {
-          return next(res.createError(401, 'Github error'))
+          return next(res.createError(401, 'Heroku API Key not set'))
         }
       } else {
         return next(res.createError(401, 'Mnemonic not set'))
