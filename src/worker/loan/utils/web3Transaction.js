@@ -134,7 +134,7 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
           ethTx.failed = true
           await ethTx.save()
         }
-      } else if (String(error).indexOf('Insufficient funds') >=) {
+      } else if (String(error).indexOf('Insufficient funds') >= 0) {
         const { from } = ethTx
         const txCount = await web3().eth.getTransactionCount(from)
         if (ethTx.nonce >= txCount) {
