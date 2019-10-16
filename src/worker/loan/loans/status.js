@@ -73,6 +73,7 @@ function defineLoanStatusJobs (agenda) {
                   const params = { principal, collateral, custom, maxLoanDuration: maxLoanDur, fundExpiry, compoundEnabled, amount: 0 }
                   const fund = Fund.fromFundParams(params)
                   fund.status = 'CREATED'
+                  fund.fundId = fundId
                   await fund.save()
                 } else {
                   const { liquidationRatio, interest, penalty, fee } = await funds.methods.funds(numToBytes32(fundId)).call()
@@ -83,6 +84,7 @@ function defineLoanStatusJobs (agenda) {
                   }
                   const fund = Fund.fromCustomFundParams(params)
                   fund.status = 'CREATED'
+                  fund.fundId = fundId
                   await fund.save()
                 }
               }
