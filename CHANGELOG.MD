@@ -1,3 +1,7 @@
+## [0.1.10](https://github.com/AtomicLoans/agent/compare/v0.1.9...v0.1.10) - 2019-10-15
+
+- Add handling of transactions with insufficient balance
+
 ## [0.1.9](https://github.com/AtomicLoans/agent/compare/v0.1.8...v0.1.9) - 2019-10-15
 
 - Add handling of transactions that have timed out
