@@ -25,6 +25,16 @@ const EthTxSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
+  timedOut: {
+    type: Boolean,
+    index: true,
+    default: false
+  },
+  overWritten: {
+    type: Boolean,
+    index: true,
+    default: false
+  },
   status: {
     type: String,
     enum: ['QUOTE', 'REQUESTING', 'AWAITING_COLLATERAL', 'APPROVING', 'APPROVED', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'AGENT_CLAIMED'],

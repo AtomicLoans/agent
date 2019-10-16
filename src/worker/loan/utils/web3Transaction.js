@@ -61,7 +61,20 @@ async function setTxParams (data, from, to, instance) {
   if (ethTxs.length === 0) {
     txParams.nonce = txCount
   } else {
-    txParams.nonce = ethTxs[0].nonce + 1
+    // check to see if any txs have timed out
+    const ethTxsTimedOut = await EthTx.find({ timedOut: true, overWritten: false }).sort({ nonce: 'descending' }).exec()
+    if (ethTxsTimedOut.length > 0) {
+      const ethTxToReplace = ethTxsTimedOut[0]
+      if (ethTxToReplace.nonce >= txCount) {
+        txParams.nonce = ethTxToReplace.nonce
+        ethTxToReplace.overWritten = true
+        await ethTxToReplace.save()
+      } else {
+        txParams.nonce = ethTxs[0].nonce + 1
+      }
+    } else {
+      txParams.nonce = ethTxs[0].nonce + 1
+    }
   }
 
   txParams.gasLimit = gasLimit
@@ -85,9 +98,9 @@ async function bumpTxFee (ethTx) {
   }
 
   if (fastPriceInWei > (currentGasPrice * 1.5)) {
-    ethTx.gasPrice = Math.ceil(fastPriceInWei)
+    ethTx.gasPrice = Math.min(Math.ceil(fastPriceInWei), toWei('50', 'gwei'))
   } else {
-    ethTx.gasPrice = Math.ceil(currentGasPrice * 1.51)
+    ethTx.gasPrice = Math.min(Math.ceil(currentGasPrice * 1.51), toWei('50', 'gwei'))
   }
 
   await ethTx.save()
@@ -114,6 +127,11 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
         ethTx.nonce = accountNonce
         await ethTx.save()
         await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
+      } else if (String(error).indexOf('Transaction was not mined within') >= 0) {
+        const { from } = ethTx
+        const txCount = await web3().eth.getTransactionCount(from)
+        ethTx.timedOut = true
+        await ethTx.save()
       } else {
         const agentUrl = getAgentUrl()
 
