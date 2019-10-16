@@ -1,3 +1,7 @@
+## [0.1.12](https://github.com/AtomicLoans/agent/compare/v0.1.11...v0.1.12) - 2019-10-15
+
+- Improve error handling for web3 transactions
+
 ## [0.1.11](https://github.com/AtomicLoans/agent/compare/v0.1.10...v0.1.11) - 2019-10-15
 
 - Fix typo with transaction error handling
