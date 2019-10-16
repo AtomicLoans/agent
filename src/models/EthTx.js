@@ -25,7 +25,7 @@ const EthTxSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
-  timedOut: {
+  failed: {
     type: Boolean,
     index: true,
     default: false

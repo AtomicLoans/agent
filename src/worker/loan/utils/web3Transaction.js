@@ -62,9 +62,9 @@ async function setTxParams (data, from, to, instance) {
     txParams.nonce = txCount
   } else {
     // check to see if any txs have timed out
-    const ethTxsTimedOut = await EthTx.find({ timedOut: true, overWritten: false }).sort({ nonce: 'descending' }).exec()
-    if (ethTxsTimedOut.length > 0) {
-      const ethTxToReplace = ethTxsTimedOut[0]
+    const ethTxsFailed = await EthTx.find({ failed: true, overWritten: false }).sort({ nonce: 'descending' }).exec()
+    if (ethTxsFailed.length > 0) {
+      const ethTxToReplace = ethTxsFailed[0]
       if (ethTxToReplace.nonce >= txCount) {
         txParams.nonce = ethTxToReplace.nonce
         ethTxToReplace.overWritten = true
@@ -130,8 +130,17 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
       } else if (String(error).indexOf('Transaction was not mined within') >= 0) {
         const { from } = ethTx
         const txCount = await web3().eth.getTransactionCount(from)
-        ethTx.timedOut = true
-        await ethTx.save()
+        if (ethTx.nonce >= txCount) {
+          ethTx.failed = true
+          await ethTx.save()
+        }
+      } else if (String(error).indexOf('Insufficient funds') >=) {
+        const { from } = ethTx
+        const txCount = await web3().eth.getTransactionCount(from)
+        if (ethTx.nonce >= txCount) {
+          ethTx.failed = true
+          await ethTx.save()
+        }
       } else {
         const agentUrl = getAgentUrl()
 
