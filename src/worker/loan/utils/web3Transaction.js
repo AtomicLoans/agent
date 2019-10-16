@@ -107,55 +107,106 @@ async function bumpTxFee (ethTx) {
 }
 
 async function sendTransaction (ethTx, instance, agenda, done, successCallback, errorCallback) {
-  web3().eth.sendTransaction(ethTx.json())
-    .on('transactionHash', async (transactionHash) => {
-      await successCallback(transactionHash, ethTx, instance, agenda)
-      done()
-    })
-    .on('error', async (error) => {
-      console.log(error)
-      if ((String(error).indexOf('nonce too low') >= 0) || (String(error).indexOf('There is another transaction with same nonce in the queue') >= 0)) {
-        ethTx.nonce = ethTx.nonce + 1
-        await ethTx.save()
-        await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
-      } else if (String(error).indexOf('account has nonce of') >= 0) {
-        const [accountNonce, txNonce] = String(error)
-          .split("Error: the tx doesn't have the correct nonce. account has nonce of: ")[1]
-          .split(" tx has nonce of: ")
-          .map(x => parseInt(x))
-
-        ethTx.nonce = accountNonce
-        await ethTx.save()
-        await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
-      } else if (String(error).indexOf('Transaction was not mined within') >= 0) {
-        const { from } = ethTx
-        const txCount = await web3().eth.getTransactionCount(from)
-        if (ethTx.nonce >= txCount) {
-          ethTx.failed = true
+  try {
+    web3().eth.sendTransaction(ethTx.json())
+      .on('transactionHash', async (transactionHash) => {
+        await successCallback(transactionHash, ethTx, instance, agenda)
+        done()
+      })
+      .on('error', async (error) => {
+        console.log('web3 tx error')
+        console.log(error)
+        if ((String(error).indexOf('nonce too low') >= 0) || (String(error).indexOf('There is another transaction with same nonce in the queue') >= 0)) {
+          ethTx.nonce = ethTx.nonce + 1
           await ethTx.save()
-        }
-      } else if (String(error).indexOf('Insufficient funds') >= 0) {
-        const { from } = ethTx
-        const txCount = await web3().eth.getTransactionCount(from)
-        if (ethTx.nonce >= txCount) {
-          ethTx.failed = true
+          await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
+        } else if (String(error).indexOf('account has nonce of') >= 0) {
+          const [accountNonce, txNonce] = String(error)
+            .split("Error: the tx doesn't have the correct nonce. account has nonce of: ")[1]
+            .split(" tx has nonce of: ")
+            .map(x => parseInt(x))
+
+          ethTx.nonce = accountNonce
           await ethTx.save()
-        }
-      } else {
-        const agentUrl = getAgentUrl()
+          await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
+        } else if (String(error).indexOf('Transaction was not mined within') >= 0) {
+          const { from } = ethTx
+          const txCount = await web3().eth.getTransactionCount(from)
+          if (ethTx.nonce >= txCount) {
+            ethTx.failed = true
+            await ethTx.save()
+          }
+        } else if (String(error).indexOf('Insufficient funds') >= 0) {
+          const { from } = ethTx
+          const txCount = await web3().eth.getTransactionCount(from)
+          if (ethTx.nonce >= txCount) {
+            ethTx.failed = true
+            await ethTx.save()
+          }
+        } else if (String(error).indexOf('Transaction with the same hash was already imported') >= 0) {
+          console.log('Transaction with the same hash was already imported')
+        } else {
+          const agentUrl = getAgentUrl()
 
-        bugsnagClient.metaData = {
-          ethTx,
-          instance,
-          model: instance.collection.name,
-          agentUrl
-        }
-        bugsnagClient.notify(error)
+          bugsnagClient.metaData = {
+            ethTx,
+            instance,
+            model: instance.collection.name,
+            agentUrl
+          }
+          bugsnagClient.notify(error)
 
-        await errorCallback(error, instance)
-        done(error)
+          await errorCallback(error, instance)
+          done(error)
+        }
+      })
+  } catch(error) {
+    console.log('web3 try catch error')
+
+    if ((String(error).indexOf('nonce too low') >= 0) || (String(error).indexOf('There is another transaction with same nonce in the queue') >= 0)) {
+      ethTx.nonce = ethTx.nonce + 1
+      await ethTx.save()
+      await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
+    } else if (String(error).indexOf('account has nonce of') >= 0) {
+      const [accountNonce, txNonce] = String(error)
+        .split("Error: the tx doesn't have the correct nonce. account has nonce of: ")[1]
+        .split(" tx has nonce of: ")
+        .map(x => parseInt(x))
+
+      ethTx.nonce = accountNonce
+      await ethTx.save()
+      await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
+    } else if (String(error).indexOf('Transaction was not mined within') >= 0) {
+      const { from } = ethTx
+      const txCount = await web3().eth.getTransactionCount(from)
+      if (ethTx.nonce >= txCount) {
+        ethTx.failed = true
+        await ethTx.save()
       }
-    })
+    } else if (String(error).indexOf('Insufficient funds') >= 0) {
+      const { from } = ethTx
+      const txCount = await web3().eth.getTransactionCount(from)
+      if (ethTx.nonce >= txCount) {
+        ethTx.failed = true
+        await ethTx.save()
+      }
+    } else if (String(error).indexOf('Transaction with the same hash was already imported') >= 0) {
+      console.log('Transaction with the same hash was already imported')
+    } else {
+      const agentUrl = getAgentUrl()
+
+      bugsnagClient.metaData = {
+        ethTx,
+        instance,
+        model: instance.collection.name,
+        agentUrl
+      }
+      bugsnagClient.notify(error)
+
+      await errorCallback(error, instance)
+      done(error)
+    }
+  }
   done()
 }
 
