@@ -1,3 +1,7 @@
+## [0.1.13](https://github.com/AtomicLoans/agent/compare/v0.1.12...v0.1.13) - 2019-10-15
+
+- Improve handling of replacing failed transactions
+
 ## [0.1.12](https://github.com/AtomicLoans/agent/compare/v0.1.11...v0.1.12) - 2019-10-15
 
 - Improve error handling for web3 transactions
