@@ -1,3 +1,7 @@
+## [0.1.11](https://github.com/AtomicLoans/agent/compare/v0.1.10...v0.1.11) - 2019-10-15
+
+- Fix typo with transaction error handling
+
 ## [0.1.10](https://github.com/AtomicLoans/agent/compare/v0.1.9...v0.1.10) - 2019-10-15
 
 - Add handling of transactions with insufficient balance
