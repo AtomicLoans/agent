@@ -164,7 +164,12 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
     console.log('web3 try catch error')
 
     if ((String(error).indexOf('nonce too low') >= 0) || (String(error).indexOf('There is another transaction with same nonce in the queue') >= 0)) {
-      ethTx.nonce = ethTx.nonce + 1
+      const ethTxsFailed = await EthTx.find({ failed: true, nonce: ethTx.nonce }).sort({ gasPrice: 'descending' }).exec()
+      if (ethTxsFailed.length > 0) {
+        ethTx.gasPrice = Math.ceil(ethTxsFailed[0].gasPrice * 1.51)
+      } else {
+        ethTx.nonce = ethTx.nonce + 1
+      }
       await ethTx.save()
       await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
     } else if (String(error).indexOf('account has nonce of') >= 0) {
