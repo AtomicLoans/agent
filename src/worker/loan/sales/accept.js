@@ -91,6 +91,8 @@ function defineSalesAcceptJobs (agenda) {
 }
 
 async function txSuccess (transactionHash, ethTx, instance, agenda) {
+  const sale = instance
+
   sale.ethTxId = ethTx.id
   sale.acceptTxHash = transactionHash
   sale.status = 'ACCEPTING'

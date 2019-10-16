@@ -202,6 +202,7 @@ function defineLoanStatusJobs (agenda) {
                       const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
 
                       if (accepted) {
+                        saleModel.status = 'ACCEPTED'
                         loan.status = 'LIQUIDATED'
                       }
                     } else if (paid) {
@@ -315,6 +316,9 @@ function defineLoanStatusJobs (agenda) {
                 const token = getObject('erc20', principal)
                 const { accepted, createdAt } = await sales.methods.sales(numToBytes32(saleModel.saleId)).call()
                 if (accepted) {
+                  saleModel.status = 'ACCEPTED'
+                  await saleModel.save()
+
                   const fundModel = await Fund.findOne({ principal }).exec()
                   const deposit = await Deposit.findOne({ fundModelId: fundModel.id, saleId: saleModel.saleId }).exec()
 
