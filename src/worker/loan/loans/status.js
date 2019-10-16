@@ -1,6 +1,7 @@
 const axios = require('axios')
 const BN = require('bignumber.js')
 const { remove0x } = require('@liquality/ethereum-utils')
+const { sha256 } = require('@liquality/crypto')
 const Agent = require('../../../models/Agent')
 const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
@@ -15,6 +16,7 @@ const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { isArbiter } = require('../../../utils/env')
 const { currencies } = require('../../../utils/fx')
+const { getEndpoint } = require('../../../utils/endpoints')
 const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
 const handleError = require('../../../utils/handleError')
 
@@ -38,6 +40,7 @@ function defineLoanStatusJobs (agenda) {
           const { principal, collateral } = loanMarket
           const funds = getObject('funds', principal)
           const loans = getObject('loans', principal)
+          const sales = getObject('sales', principal)
 
           if (!isArbiter()) {
             // change to use allowance
@@ -136,12 +139,71 @@ function defineLoanStatusJobs (agenda) {
 
                     const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
 
+                    let saleModel
                     if (off && withdrawn) {
                       loan.status = 'ACCEPTED'
                     } else if (off && !withdrawn) {
                       loan.status = 'CANCELLED'
                     } else if (sale) {
-                      loan.status = 'LIQUIDATED'
+                      loan.status = 'WITHDRAWN'
+
+                      // TODO: add Sale records
+
+                      const next = await sales.methods.next(numToBytes32(loanId)).call()
+                      const saleIndexByLoan = next - 1
+                      const saleIdBytes32 = await sales.methods.saleIndexByLoan(numToBytes32(loanId), saleIndexByLoan).call()
+                      const saleId = hexToNumber(saleIdBytes32)
+
+                      const { data: arbiterSale } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${principal}/${saleId}`)
+
+                      saleModel = new Sale(arbiterSale)
+
+                      const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress } = loan
+
+                      const { NETWORK } = process.env
+
+                      if (NETWORK === 'mainnet' || NETWORK === 'kovan') {
+                        let baseUrl
+                        if (NETWORK === 'mainnet') {
+                          baseUrl = 'https://blockstream.info'
+                        } else {
+                          baseUrl = 'https://blockstream.info/testnet'
+                        }
+                        try {
+                          console.log(`${baseUrl}/api/addresss/${collateralRefundableP2SHAddress}`)
+                          const { status, data: refundableAddressInfo } = await axios.get(`${baseUrl}/api/addresss/${collateralRefundableP2SHAddress}`)
+                          const { data: seizableAddressInfo } = await axios.get(`${baseUrl}/api/addresss/${collateralSeizableP2SHAddress}`)
+
+                          if (status === 200) {
+                            const { chain_stats: refChainStats } = refundableAddressInfo
+                            const { chain_stats: sezChainStats } = seizableAddressInfo
+
+                            if (refChainStats.funded_txo_sum > 0 && sezChainStats.funded_txo_sum > 0) {
+
+                              const refDif = refChainStats.funded_txo_sum - refChainStats.spent_txo_sum
+                              const sezDif = sezChainStats.funded_txo_sum - sezChainStats.spent_txo_sum
+
+                              if (refDif === 0 && sezDif === 0) {
+                                const secret = loan.lenderSecrets[1]
+
+                                if (sha256(secret) === sale.secretHashB) {
+                                  console.log('LENDER SECRET MATCHES')
+                                  sale.secretB = secret
+                                  sale.status = 'SECRETS_PROVIDED'
+                                }
+                              }
+                            }
+                          }
+                        } catch(e) {
+                          handleError(e)
+                        }
+                      }
+
+                      const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
+
+                      if (accepted) {
+                        loan.status = 'LIQUIDATED'
+                      }
                     } else if (paid) {
                       loan.status = 'REPAID'
                     } else if (withdrawn) {
@@ -153,6 +215,11 @@ function defineLoanStatusJobs (agenda) {
                     }
 
                     await loan.save()
+
+                    if (saleModel) {
+                      saleModel.loanModelId = loan.id
+                      await saleModel.save()
+                    }
                   }
                 }
               }
