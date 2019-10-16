@@ -1,3 +1,7 @@
+## [0.1.14](https://github.com/AtomicLoans/agent/compare/v0.1.13...v0.1.14) - 2019-10-16
+
+- Improve handling of transactions with same nonce in queue
+
 ## [0.1.13](https://github.com/AtomicLoans/agent/compare/v0.1.12...v0.1.13) - 2019-10-15
 
 - Improve handling of replacing failed transactions
