@@ -1,3 +1,7 @@
+## [0.1.16](https://github.com/AtomicLoans/agent/compare/v0.1.15...v0.1.16) - 2019-10-17
+
+- Improve logging for liquidation
+
 ## [0.1.15](https://github.com/AtomicLoans/agent/compare/v0.1.14...v0.1.15) - 2019-10-16
 
 - Add ability to repopulate Liquidation data after resetting an Agent
