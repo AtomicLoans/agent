@@ -1,3 +1,8 @@
+## [0.1.15](https://github.com/AtomicLoans/agent/compare/v0.1.14...v0.1.15) - 2019-10-16
+
+- Add ability to repopulate Liquidation data after resetting an Agent
+- Improve handling of case where loan is approved but not withdrawn (should cancel loan after 3 hours of request)
+
 ## [0.1.14](https://github.com/AtomicLoans/agent/compare/v0.1.13...v0.1.14) - 2019-10-16
 
 - Improve handling of transactions with same nonce in queue
