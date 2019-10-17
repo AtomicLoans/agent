@@ -57,6 +57,7 @@ function defineSalesInitJobs (agenda) {
         const exampleSig = `30440220${exampleRSSigValue}0220${exampleRSSigValue}01`
 
         const multisigParams = [lockTxHash, ...lockArgs, party, outputs]
+        console.log('multisigParams', multisigParams)
         const agentSigs = await loan.collateralClient().loan.collateral.multisigSign(...multisigParams)
 
         let sigs
@@ -65,13 +66,18 @@ function defineSalesInitJobs (agenda) {
             refundable: [Buffer.from(lenderSigs.refundableSig, 'hex'), Buffer.from(agentSigs.refundableSig, 'hex')],
             seizable: [Buffer.from(lenderSigs.seizableSig, 'hex'), Buffer.from(agentSigs.seizableSig, 'hex')]
           }
+
+          console.log('arbiterSigs', sigs)
         } else {
           sigs = {
             refundable: [Buffer.from(agentSigs.refundableSig, 'hex'), Buffer.from(exampleSig, 'hex')],
             seizable: [Buffer.from(agentSigs.seizableSig, 'hex'), Buffer.from(exampleSig, 'hex')]
           }
+
+          console.log('lenderSigs', sigs)
         }
 
+        console.log('lockTxHash, sigs, ...lockArgs, outputs', lockTxHash, sigs, ...lockArgs, outputs)
         const multisigSendTxRaw = await loan.collateralClient().loan.collateral.multisigBuild(lockTxHash, sigs, ...lockArgs, outputs)
         console.log('multisigSendTxRaw', multisigSendTxRaw)
 
@@ -115,6 +121,7 @@ function defineSalesInitJobs (agenda) {
             }
 
             const multisigSendReverseTxRaw = await loan.collateralClient().loan.collateral.multisigBuild(lockTxHash, sigsReverse, ...lockArgs, outputs)
+            console.log('multisigSendReverseTxRaw', multisigSendReverseTxRaw)
 
             const txHash = await loan.collateralClient().chain.sendRawTransaction(multisigSendReverseTxRaw)
             console.log('alternate txHash', txHash)
