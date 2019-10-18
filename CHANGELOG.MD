@@ -1,3 +1,7 @@
+## [0.1.18](https://github.com/AtomicLoans/agent/compare/v0.1.17...v0.1.18) - 2019-10-18
+
+- Reduce maximum gas limit
+
 ## [0.1.17](https://github.com/AtomicLoans/agent/compare/v0.1.16...v0.1.17) - 2019-10-17
 
 - Fix rounding issues with liquidation
