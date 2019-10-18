@@ -30,7 +30,7 @@ async function setTxParams (data, from, to, instance) {
         }
       }
     } catch(e) {
-      gasLimit = lastBlock.gasLimit
+      gasLimit = lastBlock.gasLimit - 1000000
     }
   } catch (e) {
     console.log('FAILED AT GAS STEP')
