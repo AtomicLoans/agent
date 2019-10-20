@@ -65,6 +65,7 @@ function defineAgentStatusJobs (agenda) {
 
           const funds = getObject('funds', principal)
           const loans = getObject('loans', principal)
+          const sales = getObject('sales', principal)
 
           const fundId = await funds.methods.fundOwner(principalAddress).call()
           const marketLiquidity = await funds.methods.balance(fundId).call()
@@ -78,7 +79,19 @@ function defineAgentStatusJobs (agenda) {
           for (let j = 0; j < lenderLoanCount; j++) {
             const loanId = await loans.methods.lenderLoans(principalAddress, j).call()
             const loanPrincipal = await loans.methods.principal(loanId).call()
-            borrowed = BN(borrowed).plus(loanPrincipal)
+            const loanSale = await loans.methods.sale(loanId).call()
+            if (loanSale) {
+              const next = await sales.methods.next(loanId).call()
+              const saleIndexByLoan = next - 1
+              const saleId = await sales.methods.saleIndexByLoan(loanId, saleIndexByLoan).call()
+              const { accepted: saleAccepted } = await sales.methods.sales(saleId).call()
+
+              if (!saleAccepted) {
+                borrowed = BN(borrowed).plus(loanPrincipal)
+              }
+            } else {
+              borrowed = BN(borrowed).plus(loanPrincipal)
+            }
           }
 
           const supplied = BN(borrowed).plus(marketLiquidity)
