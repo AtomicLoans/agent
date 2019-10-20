@@ -79,7 +79,7 @@ function defineAgentStatusJobs (agenda) {
           for (let j = 0; j < lenderLoanCount; j++) {
             const loanId = await loans.methods.lenderLoans(principalAddress, j).call()
             const loanPrincipal = await loans.methods.principal(loanId).call()
-            const loanSale = await loans.methods.sale(loanId).call()
+            const { sale: loanSale, off: loanOff } = await loans.methods.bools(loanId).call()
             if (loanSale) {
               const next = await sales.methods.next(loanId).call()
               const saleIndexByLoan = next - 1
@@ -89,7 +89,7 @@ function defineAgentStatusJobs (agenda) {
               if (!saleAccepted) {
                 borrowed = BN(borrowed).plus(loanPrincipal)
               }
-            } else {
+            } else if (!loanOff) {
               borrowed = BN(borrowed).plus(loanPrincipal)
             }
           }
