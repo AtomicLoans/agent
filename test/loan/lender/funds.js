@@ -223,7 +223,7 @@ function testFunds (web3Chain, ethNode) {
       expect(statusSuccess).to.equal('CREATED')
     })
 
-    it.only('should allow lender to withdraw excess funds in loan fund', async () => {
+    it('should allow lender to withdraw excess funds in loan fund', async () => {
       const currentTime = Math.floor(new Date().getTime() / 1000)
       const principal = 'USDC'
       const amount = 200
@@ -271,6 +271,56 @@ function testFunds (web3Chain, ethNode) {
       const { cBalance: newCBalance } = await funds.methods.funds(numToBytes32(fundId)).call()
 
       expect(parseInt(newCBalance)).to.equal(cBalance / 2)
+    })
+
+    it('should allow lender to update loan fund', async () => {
+      const currentTime = Math.floor(new Date().getTime() / 1000)
+      const principal = 'USDC'
+      const amount = 200
+      const fixture = fundFixtures.fundWithFundExpiryIn100DaysAndCompoundEnabled
+      const [funds, ctoken] = await getTestObjects(web3Chain, principal, ['funds', 'ctoken'])
+
+      const params = fixture(currentTime, principal)
+
+      const { collateral, custom, maxLoanDuration, fundExpiry, compoundEnabled } = params
+
+      console.log('custom', custom)
+
+      const message = `Create ${custom ? 'Custom' : 'Non-Custom'} ${principal} Loan Fund backed by ${collateral} with ${compoundEnabled ? 'Compound Enabled' : 'Compound Disabled'} and Maximum Loan Duration of ${maxLoanDuration} seconds which expires at timestamp ${fundExpiry} and deposit ${0} ${principal}`
+      console.log('message', message)
+
+      const address = await getWeb3Address(web3Chain)
+
+      const signature = await web3Chain.client.eth.personal.sign(message, address)
+
+      const { fundId, fundModelId, amountDeposited, agentAddress } = await createFundFromFixture(web3Chain, fixture, principal, amount, message, signature)
+
+      const { lender, maxLoanDur, fundExpiry: actualFundExpiry, cBalance } = await funds.methods.funds(numToBytes32(fundId)).call()
+
+      const exchangeRateCurrent = await ctoken.methods.exchangeRateCurrent().call()
+      const expectedCBalance = BN(amountDeposited).times(WAD).dividedBy(exchangeRateCurrent).toString()
+
+      expect(fromWei(cBalance, 'wei')).to.equal(expectedCBalance)
+      expect(lender).to.equal(checksumEncode(agentAddress))
+      expect(maxLoanDur).to.equal(BN(2).pow(256).minus(1).toFixed())
+      expect(actualFundExpiry).to.equal(fundExpiry.toString())
+
+      const currentTimeUpdate = Math.floor(new Date().getTime() / 1000)
+      const newFundExpiry = currentTimeUpdate + 100000
+
+      const updateMessage = `Update ${principal} Fund with maxLoanDuration: ${maxLoanDuration} and fundExpiry ${newFundExpiry} at timestamp ${currentTimeUpdate}`
+      const updateSignature = await web3Chain.client.eth.personal.sign(updateMessage, address)
+
+      await chai.request(server).post(`/funds/contract/${principal}/${fundId}/update`).send({
+        timestamp: currentTimeUpdate, maxLoanDuration, fundExpiry: newFundExpiry, signature: updateSignature, message: updateMessage
+      })
+
+      console.log('sleep 10000')
+      await sleep(12000)
+
+      const { fundExpiry: actualFundExpiry2 } = await funds.methods.funds(numToBytes32(fundId)).call()
+
+      expect(parseInt(actualFundExpiry2)).to.equal(newFundExpiry)
     })
   })
 

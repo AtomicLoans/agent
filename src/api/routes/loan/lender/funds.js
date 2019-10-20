@@ -1,4 +1,5 @@
 const _ = require('lodash')
+const axios = require('axios')
 const asyncHandler = require('express-async-handler')
 
 const LoanMarket = require('../../../../models/LoanMarket')
@@ -6,6 +7,7 @@ const Fund = require('../../../../models/Fund')
 const { verifySignature } = require('../../../../utils/signatures')
 const { getInterval } = require('../../../../utils/intervals')
 const { getEthSigner } = require('../../../../utils/address')
+const { getEndpoint } = require('../../../../utils/endpoints')
 
 function defineFundsRouter (router) {
   router.get('/funds/:fundModelId', asyncHandler(async (req, res, next) => {
@@ -124,6 +126,38 @@ function defineFundsRouter (router) {
     console.log('end /funds/contract/:fundId/withdraw')
 
     res.json(fund.json())
+  }))
+
+  router.post('/funds/contract/:principal/:fundId/update', asyncHandler(async (req, res, next) => {
+    console.log('start /funds/contract/:principal/:fundId/update')
+
+    const currentTime = Math.floor(new Date().getTime() / 1000)
+    const agenda = req.app.get('agenda')
+    const address = getEthSigner()
+    const { params, body } = req
+    const { maxLoanDuration, fundExpiry, signature, message, timestamp } = body
+    const { fundId, principal } = params
+
+    const fund = await Fund.findOne({ fundId, principal }).exec()
+    if (!fund) return next(res.createError(401, 'Fund not found'))
+
+    if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
+    if (!(message === `Update ${principal} Fund with maxLoanDuration: ${maxLoanDuration} and fundExpiry ${fundExpiry} at timestamp ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
+    if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+
+    const { status, data } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/agentinfo/ticker/${principal}/BTC`)
+
+    if (status === 200) {
+      const { principalAddress: arbiter } = data
+
+      await agenda.schedule(getInterval('ACTION_INTERVAL'), 'fund-update', { fundModelId: fund.id, maxLoanDuration, fundExpiry, arbiter })
+
+      console.log('end /funds/contract/:principal/:fundId/update')
+
+      res.json(fund.json())
+    } else {
+      return next(res.createError(401, 'Arbiter down'))
+    }
   }))
 
   if (process.env.NODE_ENV === 'test') {
