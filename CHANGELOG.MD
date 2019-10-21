@@ -1,3 +1,8 @@
+## [0.1.20](https://github.com/AtomicLoans/agent/compare/v0.1.19...v0.1.20) - 2019-10-21
+
+- Add ability to update loan fund through agent
+- Fix loan fund supplied calculation issues
+
 ## [0.1.19](https://github.com/AtomicLoans/agent/compare/v0.1.18...v0.1.19) - 2019-10-18
 
 - Set max gas limit for all transactions
