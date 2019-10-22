@@ -241,7 +241,7 @@ function defineLoanStatusJobs (agenda) {
             ])
 
             // Cancel loan if not withdrawn within an hour after approveExpiration
-            if (currentTime > (approveExpiration + 3600) && !withdrawn) {
+            if ((currentTime > (parseInt(approveExpiration) + 3600)) && !withdrawn) {
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
             }
 
@@ -249,7 +249,7 @@ function defineLoanStatusJobs (agenda) {
               // CHECK LOCK COLLATERAL
 
               // Cancel loan if collateral not locked before approve expiration
-              if ((currentTime > approveExpiration && !approved)) {
+              if ((currentTime > parseInt(approveExpiration)) && !approved) {
                 // TODO: arbiter should check if lender agent has already tried cancelling
                 await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
               } else {
