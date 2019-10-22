@@ -235,6 +235,11 @@ function defineLoanStatusJobs (agenda) {
 
             const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
 
+            const [approveExpiration, currentTime] = await Promise.all([
+              loans.methods.approveExpiration(numToBytes32(loanId)).call(),
+              getCurrentTime()
+            ])
+
             // Cancel loan if not withdrawn within an hour after approveExpiration
             if (currentTime > (approveExpiration + 3600) && !withdrawn) {
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
@@ -242,12 +247,6 @@ function defineLoanStatusJobs (agenda) {
 
             if (!approved && !withdrawn && !paid && !sale && !off) {
               // CHECK LOCK COLLATERAL
-
-              const [approved, approveExpiration, currentTime] = await Promise.all([
-                loans.methods.approved(numToBytes32(loanId)).call(), // Sanity check
-                loans.methods.approveExpiration(numToBytes32(loanId)).call(),
-                getCurrentTime()
-              ])
 
               // Cancel loan if collateral not locked before approve expiration
               if ((currentTime > approveExpiration && !approved)) {
