@@ -1,3 +1,8 @@
+## [0.1.21](https://github.com/AtomicLoans/agent/compare/v0.1.20...v0.1.21) - 2019-10-23
+
+- Ensure Agent cancels loan if not withdrawn within 3 hours of request
+- Add version of agent to agent info route
+
 ## [0.1.20](https://github.com/AtomicLoans/agent/compare/v0.1.19...v0.1.20) - 2019-10-21
 
 - Add ability to update loan fund through agent
