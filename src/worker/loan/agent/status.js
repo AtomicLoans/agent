@@ -69,7 +69,10 @@ function defineAgentStatusJobs (agenda) {
           const multiplier = currencies[principal].multiplier
           const decimals = currencies[principal].decimals
 
-          const { data: { principalAddress } } = await axios.get(`${agent.url}/agentinfo/${loanMarket.id}`)
+          const { data: { principalAddress, collateralPublicKey } } = await axios.get(`${agent.url}/agentinfo/${loanMarket.id}`)
+
+          agent.principalAddress = principalAddress
+          agent.collateralPublicKey = collateralPublicKey
 
           const ethBalance = await web3().eth.getBalance(principalAddress)
           agent.ethBalance = fromWei(ethBalance.toString(), 'ether')
