@@ -47,6 +47,17 @@ function defineAgentStatusJobs (agenda) {
     }
 
     if (lenderStatus === 200) {
+      try {
+        const { status: versionStatus, data: versionData } = await axios.get(`${agent.url}/version`)
+        const { version } = versionData
+
+        if (versionStatus === 200) {
+          agent.version = version
+        }
+      } catch(e) {
+        handleError(e)
+      }
+
       agent.status = 'ACTIVE'
 
       // get agent principal address, and check if a fund exists for each loanmarket, if a fund does exist, update the balance

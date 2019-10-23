@@ -25,6 +25,11 @@ const AgentSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
+  version: {
+    type: String,
+    index: true,
+    default: '0.1.17'
+  },
   status: {
     type: String,
     enum: ['ACTIVE', 'INACTIVE'],
