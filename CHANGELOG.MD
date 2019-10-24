@@ -1,3 +1,7 @@
+## [0.1.23](https://github.com/AtomicLoans/agent/compare/v0.1.22...v0.1.23) - 2019-10-24
+
+- Enable agent to work in single api and worker process
+
 ## [0.1.22](https://github.com/AtomicLoans/agent/compare/v0.1.21...v0.1.22) - 2019-10-23
 
 - Increase cancel expiration to 24 hours
