@@ -21,6 +21,8 @@ function defineNewAgentJobs (agenda) {
       url = 'https://atomicloans.io/lender-agent/api/loan/'
     }
 
+    console.log('notify-arbiter')
+
     const ethSigner = process.env.METAMASK_ETH_ADDRESS
 
     await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/agents/new`, { collateralPublicKey, principalAddress, ethSigner, url })
