@@ -26,7 +26,7 @@ const {
   PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY, DASH_PASS, BUGSNAG_API, RUN_SINGLE_PROCESS
 } = process.env
 
-if (RUN_SINGLE_PROCESS) {
+if (RUN_SINGLE_PROCESS || (HEROKU_APP !== undefined && HEROKU_APP !== 'undefined')) {
   require('../worker/index')
 }
 

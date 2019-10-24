@@ -57,10 +57,6 @@
     "BUGSNAG_API": {
       "description": "Error monitoring",
       "required": true
-    },
-    "RUN_SINGLE_PROCESS": {
-      "description": "Run API and Worker in same process",
-      "required": true
     }
   }
 }
