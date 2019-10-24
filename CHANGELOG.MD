@@ -1,3 +1,7 @@
+## [0.1.22](https://github.com/AtomicLoans/agent/compare/v0.1.21...v0.1.22) - 2019-10-23
+
+- Increase cancel expiration to 24 hours
+
 ## [0.1.21](https://github.com/AtomicLoans/agent/compare/v0.1.20...v0.1.21) - 2019-10-23
 
 - Ensure Agent cancels loan if not withdrawn within 3 hours of request
