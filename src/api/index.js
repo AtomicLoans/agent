@@ -23,7 +23,7 @@ const { migrate } = require('../migrate/migrate')
 const Market = require('../models/Market')
 
 const {
-  PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY, DASH_PASS, BUGSNAG_API, RUN_SINGLE_PROCESS
+  PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY, DASH_PASS, BUGSNAG_API, RUN_SINGLE_PROCESS, HEROKU_APP
 } = process.env
 
 if (RUN_SINGLE_PROCESS || (HEROKU_APP !== undefined && HEROKU_APP !== 'undefined')) {
