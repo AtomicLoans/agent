@@ -23,8 +23,12 @@ const { migrate } = require('../migrate/migrate')
 const Market = require('../models/Market')
 
 const {
-  PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY, DASH_PASS, BUGSNAG_API
+  PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY, DASH_PASS, BUGSNAG_API, RUN_SINGLE_PROCESS
 } = process.env
+
+if (RUN_SINGLE_PROCESS) {
+  require('../worker/index')
+}
 
 const bugsnagClient = bugsnag(BUGSNAG_API)
 
