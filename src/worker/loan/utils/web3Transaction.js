@@ -1,6 +1,7 @@
 const axios = require('axios')
 const { getAgentUrl } = require('../../../utils/url')
 const EthTx = require('../../../models/EthTx')
+const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 const { toWei } = web3().utils
 
@@ -162,6 +163,7 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
           bugsnagClient.notify(error)
 
           await errorCallback(error, instance)
+          handleError(error)
           done(error)
         }
       })
@@ -214,6 +216,7 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
       bugsnagClient.notify(error)
 
       await errorCallback(error, instance)
+      handleError(error)
       done(error)
     }
   }
