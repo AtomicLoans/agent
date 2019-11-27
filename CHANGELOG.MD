@@ -1,3 +1,7 @@
+## [0.1.32](https://github.com/AtomicLoans/agent/compare/v0.1.31...v0.1.32) - 2019-11-27
+
+- Remove unnecessary migrate
+
 ## [0.1.31](https://github.com/AtomicLoans/agent/compare/v0.1.30...v0.1.31) - 2019-11-27
 
 - Move MongoDB migrations agent startup

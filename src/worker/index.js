@@ -1,6 +1,5 @@
 const mongoose = require('mongoose')
 const Agenda = require('agenda')
-// const { migrate } = require('../migrate/migrate')
 
 const agenda = new Agenda({ mongo: mongoose.connection, maxConcurrency: 1000, defaultConcurrency: 1000, defaultLockLifetime: 500 })
 
@@ -11,8 +10,6 @@ const { defineLoanJobs } = require('./loan/index')
 
 async function start () {
   await agenda.start()
-
-  await agenda.now('migrate')
 
   await agenda.every('2 minutes', 'update-market-data')
 
@@ -29,11 +26,6 @@ async function start () {
     await start()
     done()
   })
-
-  // agenda.define('migrate', async (job, done) => {
-  //   await migrate()
-  //   done()
-  // })
 }
 
 async function stop () {
