@@ -1,3 +1,7 @@
+## [0.1.27](https://github.com/AtomicLoans/agent/compare/v0.1.26...v0.1.27) - 2019-11-27
+
+- Add timeout for connect and socket to avoid MongoTimeoutError
+
 ## [0.1.26](https://github.com/AtomicLoans/agent/compare/v0.1.25...v0.1.26) - 2019-11-27
 
 - Remove MongoDB deprecation warning for migrations
