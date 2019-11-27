@@ -18,8 +18,6 @@ const cors = require('../middlewares/cors')
 const httpHelpers = require('../middlewares/httpHelpers')
 const handleError = require('../middlewares/handleError')
 
-const { migrate } = require('../migrate/migrate')
-
 const Market = require('../models/Market')
 
 const {
@@ -38,8 +36,6 @@ if (PARTY !== 'arbiter') {
 } else {
   agenda = new Agenda({ db: { address: MONGODB_ARBITER_URI }})
 }
-
-migrate()
 
 const app = express()
 
