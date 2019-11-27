@@ -1,3 +1,8 @@
+## [0.1.24](https://github.com/AtomicLoans/agent/compare/v0.1.23...v0.1.24) - 2019-11-26
+
+- Add improved error handling
+- Migrate [DAI to SAI](https://blog.makerdao.com/single-collateral-dai-to-multi-collateral-dai-upgrade-timeline-and-actions/)
+
 ## [0.1.23](https://github.com/AtomicLoans/agent/compare/v0.1.22...v0.1.23) - 2019-10-24
 
 - Enable agent to work in single api and worker process
