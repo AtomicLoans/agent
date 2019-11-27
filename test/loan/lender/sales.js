@@ -36,9 +36,9 @@ const arbiterChain = chains.web3WithArbiter
 function testSales (web3Chain, ethNode, btcChain) {
   describe('Sales', () => {
     it('should POST loanMarket details and return loan details', async () => {
-      await createCustomFund(web3Chain, arbiterChain, 200, 'DAI') // Create Custom Loan Fund with 200 DAI
+      await createCustomFund(web3Chain, arbiterChain, 200, 'SAI') // Create Custom Loan Fund with 200 SAI
 
-      const principal = 'DAI'
+      const principal = 'SAI'
       const collateral = 'BTC'
       const principalAmount = 25
       const loanDuration = toSecs({ days: 2 })
@@ -318,7 +318,7 @@ async function testSetup (web3Chain, ethNode, btcChain) {
   await removeLoans()
   await fundAgent(server)
   await fundArbiter()
-  await generateSecretHashesArbiter('DAI')
+  await generateSecretHashesArbiter('SAI')
   await fundWeb3Address(web3Chain)
   await importBitcoinAddresses(btcChain)
   await fundUnusedBitcoinAddress(btcChain)

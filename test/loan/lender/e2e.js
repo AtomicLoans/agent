@@ -34,9 +34,9 @@ const arbiterChain = chains.web3WithArbiter
 function testE2E (web3Chain, ethNode, btcChain) {
   describe('E2E Tests', () => {
     it('should POST loanMarket details and return loan details', async () => {
-      await createCustomFund(web3Chain, arbiterChain, 200, 'DAI') // Create Custom Loan Fund with 200 DAI
+      await createCustomFund(web3Chain, arbiterChain, 200, 'SAI') // Create Custom Loan Fund with 200 SAI
 
-      const principal = 'DAI'
+      const principal = 'SAI'
       const collateral = 'BTC'
       const principalAmount = 25
       const loanDuration = toSecs({ days: 2 })
@@ -133,7 +133,7 @@ function testE2E (web3Chain, ethNode, btcChain) {
       console.log('Mine BTC Block')
       await chains.bitcoinWithNode.client.chain.generateBlock(1)
 
-      await secondsCountDown(25)
+      await secondsCountDown(40)
 
       const approvedAfter = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedAfter).to.equal(true)
@@ -191,7 +191,7 @@ async function testSetup (web3Chain, ethNode, btcChain) {
   await removeLoans()
   await fundAgent(server)
   await fundArbiter()
-  await generateSecretHashesArbiter('DAI')
+  await generateSecretHashesArbiter('SAI')
   await fundWeb3Address(web3Chain)
   await importBitcoinAddresses(btcChain)
   await fundUnusedBitcoinAddress(btcChain)

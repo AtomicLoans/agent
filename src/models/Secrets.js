@@ -9,6 +9,10 @@ const SecretsSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  oldPrincipal: {
+    type: String,
+    index: true
+  },
   ethTxId: {
     type: String,
     index: true

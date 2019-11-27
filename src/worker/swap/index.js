@@ -115,7 +115,12 @@ function defineSwapJobs (agenda) {
     const MAP = {}
 
     await Promise.all(currencies.map(currency => {
-      return axios(`https://api.coinbase.com/v2/prices/${currency}-USD/spot`)
+      let safeCurrency = currency
+      if (currency === 'SAI') {
+        safeCurrency = 'DAI'
+      }
+
+      return axios(`https://api.coinbase.com/v2/prices/${safeCurrency}-USD/spot`)
         .then(res => {
           MAP[currency] = res.data.data.amount
         })

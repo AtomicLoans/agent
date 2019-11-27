@@ -20,7 +20,7 @@ const server = 'http://localhost:3032/api/loan'
 function testFunds (web3Chain, ethNode) {
   describe('Create Custom Loan Fund', () => {
     it('should create a new loan fund and deposit funds into it', async () => {
-      const principal = 'DAI'
+      const principal = 'SAI'
       const address = await getWeb3Address(web3Chain)
       const [funds] = await getTestObjects(web3Chain, principal, ['funds'])
 
@@ -32,7 +32,7 @@ function testFunds (web3Chain, ethNode) {
 
       const count = 3
 
-      await createFundAndRequestMultipleTimes('DAI', 'BTC', 500, count) // TODO: replace with creation of loan fund
+      await createFundAndRequestMultipleTimes('SAI', 'BTC', 500, count) // TODO: replace with creation of loan fund
 
       expect(true).to.equal(true)
     })

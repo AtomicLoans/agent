@@ -40,9 +40,9 @@ const ETH = new Client()
 ETH.addProvider(new EthereumRpcProvider(ETH_RPC, ETH_USER, ETH_PASS))
 ETH.addProvider(new EthereumSwapProvider())
 
-const DAI = new Client()
-DAI.addProvider(new EthereumRpcProvider(ETH_RPC, ETH_USER, ETH_PASS))
-DAI.addProvider(new EthereumErc20Provider(addresses.DAI))
+const SAI = new Client()
+SAI.addProvider(new EthereumRpcProvider(ETH_RPC, ETH_USER, ETH_PASS))
+SAI.addProvider(new EthereumErc20Provider(addresses.SAI))
 
 const USDC = new Client()
 USDC.addProvider(new EthereumRpcProvider(ETH_RPC, ETH_USER, ETH_PASS))
@@ -51,6 +51,6 @@ USDC.addProvider(new EthereumErc20Provider(addresses.USDC))
 module.exports = {
   BTC,
   ETH,
-  DAI,
+  SAI,
   USDC
 }

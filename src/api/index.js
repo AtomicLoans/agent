@@ -39,11 +39,7 @@ if (PARTY !== 'arbiter') {
   agenda = new Agenda({ db: { address: MONGODB_ARBITER_URI }})
 }
 
-const markets = Market.find().exec().then((markets) => {
-  if (markets.length === 0) {
-    migrate()
-  }
-})
+migrate()
 
 const app = express()
 

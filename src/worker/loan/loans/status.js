@@ -2,6 +2,7 @@ const axios = require('axios')
 const BN = require('bignumber.js')
 const { remove0x } = require('@liquality/ethereum-utils')
 const { sha256 } = require('@liquality/crypto')
+const compareVersions = require('compare-versions')
 const Agent = require('../../../models/Agent')
 const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
@@ -154,7 +155,17 @@ function defineLoanStatusJobs (agenda) {
                       const saleIdBytes32 = await sales.methods.saleIndexByLoan(numToBytes32(loanId), saleIndexByLoan).call()
                       const saleId = hexToNumber(saleIdBytes32)
 
-                      const { data: arbiterSale } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${principal}/${saleId}`)
+                      let safePrincipal = principal
+                      if (principal === 'SAI') {
+                        const { data: versionData } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/version`)
+                        const { version } = versionData
+
+                        if (!compareVersions(version, '0.1.23', '>')) {
+                          safePrincipal = 'DAI'
+                        }
+                      }
+
+                      const { data: arbiterSale } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${safePrincipal}/${saleId}`)
 
                       saleModel = new Sale(arbiterSale)
 

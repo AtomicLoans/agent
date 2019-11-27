@@ -1,6 +1,7 @@
 const web3 = require('web3')
 const axios = require('axios')
 const { ensure0x } = require('@liquality/ethereum-utils')
+const compareVersions = require('compare-versions')
 const { currencies } = require('../../../utils/fx')
 const { rateToSec } = require('../../../utils/finance')
 const { getEndpoint } = require('../../../utils/endpoints')
@@ -18,7 +19,17 @@ async function getFundParams (fund) {
 
   const unit = currencies[principal].unit
 
-  const { data: agentAddresses } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/agentinfo/ticker/${principal}/${collateral}`)
+  let safePrincipal = principal
+  if (principal === 'SAI') {
+    const { data: versionData } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/version`)
+    const { version } = versionData
+
+    if (!compareVersions(version, '0.1.23', '>')) {
+      safePrincipal = 'DAI'
+    }
+  }
+
+  const { data: agentAddresses } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/agentinfo/ticker/${safePrincipal}/${collateral}`)
   const { principalAddress: arbiterAddress } = agentAddresses
 
   let fundParams
