@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 const Agenda = require('agenda')
-const { migrate } = require('../migrate/migrate')
+// const { migrate } = require('../migrate/migrate')
 
 const agenda = new Agenda({ mongo: mongoose.connection, maxConcurrency: 1000, defaultConcurrency: 1000, defaultLockLifetime: 500 })
 
@@ -30,10 +30,10 @@ async function start () {
     done()
   })
 
-  agenda.define('migrate', async (job, done) => {
-    await migrate()
-    done()
-  })
+  // agenda.define('migrate', async (job, done) => {
+  //   await migrate()
+  //   done()
+  // })
 }
 
 async function stop () {

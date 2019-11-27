@@ -20,6 +20,8 @@ const handleError = require('../middlewares/handleError')
 
 const Market = require('../models/Market')
 
+const { migrate } = require('../migrate/migrate')
+
 const {
   PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY, DASH_PASS, BUGSNAG_API, RUN_SINGLE_PROCESS, HEROKU_APP
 } = process.env
@@ -36,6 +38,8 @@ if (PARTY !== 'arbiter') {
 } else {
   agenda = new Agenda({ db: { address: MONGODB_ARBITER_URI }})
 }
+
+migrate()
 
 const app = express()
 

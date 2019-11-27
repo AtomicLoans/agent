@@ -20,7 +20,7 @@ const config = {
   mongodb: {
     url: mongodbURI,
 
-    // databaseName: mongoDBName,
+    databaseName: mongoDBName,
 
     options: {
       useNewUrlParser: true, // removes a deprecation warning when connecting
