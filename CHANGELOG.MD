@@ -1,3 +1,7 @@
+## [0.1.26](https://github.com/AtomicLoans/agent/compare/v0.1.25...v0.1.26) - 2019-11-27
+
+- Remove MongoDB deprecation warning for migrations
+
 ## [0.1.25](https://github.com/AtomicLoans/agent/compare/v0.1.24...v0.1.25) - 2019-11-26
 
 - Fix [MongoDB connection timeout](https://github.com/Automattic/mongoose/issues/8180)
