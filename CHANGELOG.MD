@@ -1,3 +1,7 @@
+## [0.1.30](https://github.com/AtomicLoans/agent/compare/v0.1.29...v0.1.30) - 2019-11-27
+
+- Bump Migrate Mongo package
+
 ## [0.1.29](https://github.com/AtomicLoans/agent/compare/v0.1.28...v0.1.29) - 2019-11-27
 
 - Remove unnecessary increase connection for MongoDB

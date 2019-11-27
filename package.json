@@ -1,6 +1,6 @@
 {
   "name": "atomicagent",
-  "version": "0.1.29",
+  "version": "0.1.30",
   "description": "Atomic Swap Agent",
   "main": "src/index.js",
   "scripts": {
@@ -71,7 +71,7 @@
     "@liquality/ethereum-rpc-provider": "^0.4.3",
     "@liquality/ethereum-swap-provider": "^0.4.3",
     "@liquality/ethereum-utils": "^0.4.3",
-    "@mblackmblack/migrate-mongo": "^6.0.5",
+    "@mblackmblack/migrate-mongo": "^6.0.6",
     "@mblackmblack/to-seconds": "^0.1.0",
     "@sentry/node": "^5.5.0",
     "@truffle/hdwallet-provider": "^1.0.18",

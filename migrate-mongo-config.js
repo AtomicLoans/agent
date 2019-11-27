@@ -18,9 +18,9 @@ console.log('mongoDBName', mongoDBName)
 
 const config = {
   mongodb: {
-    url: mongoUrl,
+    url: mongodbURI,
 
-    databaseName: mongoDBName,
+    // databaseName: mongoDBName,
 
     options: {
       useNewUrlParser: true, // removes a deprecation warning when connecting
