@@ -1,7 +1,7 @@
 [
   {
     "collateral": "BTC",
-    "principal": "DAI",
+    "principal": "SAI",
     "chain": "ETH",
     "minPrincipal": 10,
     "maxPrincipal": 2000,

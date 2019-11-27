@@ -1,6 +1,7 @@
 const _ = require('lodash')
 const axios = require('axios')
 const asyncHandler = require('express-async-handler')
+const compareVersions = require('compare-versions')
 
 const LoanMarket = require('../../../../models/LoanMarket')
 const Fund = require('../../../../models/Fund')
@@ -145,7 +146,17 @@ function defineFundsRouter (router) {
     if (!(message === `Update ${principal} Fund with maxLoanDuration: ${maxLoanDuration} and fundExpiry ${fundExpiry} at timestamp ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
     if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
 
-    const { status, data } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/agentinfo/ticker/${principal}/BTC`)
+    let safePrincipal = principal
+    if (principal === 'SAI') {
+      const { data: versionData } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/version`)
+      const { version } = versionData
+
+      if (!compareVersions(version, '0.1.23', '>')) {
+        safePrincipal = 'DAI'
+      }
+    }
+
+    const { status, data } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/agentinfo/ticker/${safePrincipal}/BTC`)
 
     if (status === 200) {
       const { principalAddress: arbiter } = data

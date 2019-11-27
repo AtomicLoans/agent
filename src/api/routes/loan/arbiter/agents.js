@@ -64,8 +64,6 @@ function defineAgentsRouter (router) {
 
     // TODO: implement verify signature
     console.log('end /agents/new')
-
-    res.json({ message: 'notified' })
   }))
 
   router.get('/agents/:agentModelId', asyncHandler(async (req, res, next) => {

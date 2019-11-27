@@ -21,7 +21,7 @@
   },
   {
     "from": "BTC",
-    "to": "DAI",
+    "to": "SAI",
     "min": 0.001,
     "max": 0.05,
     "minConf": 1,

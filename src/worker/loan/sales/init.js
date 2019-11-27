@@ -1,5 +1,6 @@
 const axios = require('axios')
 const { sha256 } = require('@liquality/crypto')
+const compareVersions = require('compare-versions')
 const Sale = require('../../../models/Sale')
 const Loan = require('../../../models/Loan')
 const Secret = require('../../../models/Secret')
@@ -174,7 +175,17 @@ function defineSalesInitJobs (agenda) {
       const { saleId, principal } = sale
 
       if (!isArbiter() && !sale.initTxHash) {
-        const { data: arbiterSale } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${principal}/${saleId}`)
+        let safePrincipal = principal
+        if (principal === 'SAI') {
+          const { data: versionData } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/version`)
+          const { version } = versionData
+
+          if (!compareVersions(version, '0.1.23', '>')) {
+            safePrincipal = 'DAI'
+          }
+        }
+
+        const { data: arbiterSale } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${safePrincipal}/${saleId}`)
         sale.initTxHash = arbiterSale.initTxHash
       }
 

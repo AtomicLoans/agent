@@ -10,7 +10,7 @@ const currencies = {
     multiplier: 1e8,
     decimals: 8
   },
-  DAI: {
+  SAI: {
     multiplier: 1e18,
     unit: 'ether',
     chain: 'ETH',
