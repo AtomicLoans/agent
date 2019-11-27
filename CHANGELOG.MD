@@ -1,3 +1,7 @@
+## [0.1.25](https://github.com/AtomicLoans/agent/compare/v0.1.24...v0.1.25) - 2019-11-26
+
+- Fix [MongoDB connection timeout](https://github.com/Automattic/mongoose/issues/8180)
+
 ## [0.1.24](https://github.com/AtomicLoans/agent/compare/v0.1.23...v0.1.24) - 2019-11-26
 
 - Add improved error handling
