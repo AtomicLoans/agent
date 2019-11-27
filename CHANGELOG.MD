@@ -1,3 +1,7 @@
+## [0.1.29](https://github.com/AtomicLoans/agent/compare/v0.1.28...v0.1.29) - 2019-11-27
+
+- Remove unnecessary increase connection for MongoDB
+
 ## [0.1.28](https://github.com/AtomicLoans/agent/compare/v0.1.27...v0.1.28) - 2019-11-27
 
 - Add migrations to background job

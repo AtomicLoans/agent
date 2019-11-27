@@ -12,6 +12,10 @@ const mongodbURI = isArbiter() ? MONGODB_ARBITER_URI : MONGODB_URI
 const mongoUrl = mongodbURI.replace(regex, '')
 const mongoDBName = mongodbURI.replace(mongoUrl, '').replace('/', '')
 
+console.log('mongodbURI', mongodbURI)
+console.log('mongoUrl', mongoUrl)
+console.log('mongoDBName', mongoDBName)
+
 const config = {
   mongodb: {
     url: mongoUrl,
@@ -21,8 +25,8 @@ const config = {
     options: {
       useNewUrlParser: true, // removes a deprecation warning when connecting
       useUnifiedTopology: true, // removes a deprecating warning when connecting
-      connectTimeoutMS: 3600000, // increase connection timeout to 1 hour
-      socketTimeoutMS: 3600000, // increase socket timeout to 1 hour
+      // connectTimeoutMS: 3600000, // increase connection timeout to 1 hour
+      // socketTimeoutMS: 3600000, // increase socket timeout to 1 hour
     }
   },
 
