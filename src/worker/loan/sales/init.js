@@ -180,7 +180,7 @@ function defineSalesInitJobs (agenda) {
           const { data: versionData } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/version`)
           const { version } = versionData
 
-          if (!compareVersions(version, '0.1.23', '>')) {
+          if (!compareVersions(version, '0.1.31', '>')) {
             safePrincipal = 'DAI'
           }
         }

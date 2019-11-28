@@ -12,10 +12,6 @@ const mongodbURI = isArbiter() ? MONGODB_ARBITER_URI : MONGODB_URI
 const mongoUrl = mongodbURI.replace(regex, '')
 const mongoDBName = mongodbURI.replace(mongoUrl, '').replace('/', '')
 
-console.log('mongodbURI', mongodbURI)
-console.log('mongoUrl', mongoUrl)
-console.log('mongoDBName', mongoDBName)
-
 const config = {
   mongodb: {
     url: mongodbURI,
