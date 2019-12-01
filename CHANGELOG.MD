@@ -1,3 +1,7 @@
+## [0.1.34](https://github.com/AtomicLoans/agent/compare/v0.1.33...v0.1.34) - 2019-11-27
+
+- Ensure tx evm failure resolves in instance status failed
+
 ## [0.1.33](https://github.com/AtomicLoans/agent/compare/v0.1.32...v0.1.33) - 2019-11-27
 
 - Bump minimum lender agent to 0.1.31
