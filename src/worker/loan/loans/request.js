@@ -125,6 +125,11 @@ async function txSuccess (transactionHash, ethTx, instance, agenda) {
 
 async function txFailure (error, instance) {
   console.log('REQUEST LOAN FAIL')
+
+  const loan = instance
+
+  loan.status = 'FAILED'
+  await loan.save()
 }
 
 module.exports = {
