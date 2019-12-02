@@ -299,7 +299,17 @@ function defineLoanStatusJobs (agenda) {
 
                 const agent = await Agent.findOne({ principalAddress: lender }).exec()
 
-                const { status, data: lenderLoanModel } = await axios.get(`${agent.url}/loans/contract/${principal}/${loanId}`)
+                let safePrincipal = principal
+                if (principal === 'SAI') {
+                  const { data: versionData } = await axios.get(`${agent.url}/version`)
+                  const { version } = versionData
+
+                  if (!compareVersions(version, '0.1.31', '>')) {
+                    safePrincipal = 'DAI'
+                  }
+                }
+
+                const { status, data: lenderLoanModel } = await axios.get(`${agent.url}/loans/contract/${safePrincipal}/${loanId}`)
                 const { status: lenderLoanStatus } = lenderLoanModel
 
                 // if it can't be reached or status currently isn't ACCEPTING / ACCEPTED then do something
