@@ -64,20 +64,15 @@ function defineAgentStatusJobs (agenda) {
 
       // get agent principal address, and check if a fund exists for each loanmarket, if a fund does exist, update the balance
 
-      console.log('agent status Active')
-
       try {
         for (let i = 0; i < loanMarkets.length; i++) {
           const loanMarket = loanMarkets[i]
-          console.log('loanMarket', loanMarket)
           let { principal, collateral } = loanMarket
-          console.log('agentVersion', agentVersion)
           if (compareVersions(agentVersion, '0.1.31', '<')) {
             if (principal === 'DAI') {
               principal = 'SAI'
             }
           }
-          console.log('principal, collateral', principal, collateral)
           const multiplier = currencies[principal].multiplier
           const decimals = currencies[principal].decimals
 
@@ -92,8 +87,6 @@ function defineAgentStatusJobs (agenda) {
           const funds = getObject('funds', principal)
           const loans = getObject('loans', principal)
           const sales = getObject('sales', principal)
-
-          console.log('principal', principal)
 
           const fundId = await funds.methods.fundOwner(principalAddress).call()
           const marketLiquidity = await funds.methods.balance(fundId).call()
@@ -129,12 +122,8 @@ function defineAgentStatusJobs (agenda) {
           const borrowedFormatted = BN(borrowed).dividedBy(multiplier).toFixed(decimals)
           const suppliedFormatted = BN(supplied).dividedBy(multiplier).toFixed(decimals)
 
-          console.log('principal', principal)
-
           const agentFund = await AgentFund.findOne({ principal, collateral, principalAddress }).exec()
-          console.log('principal, collateral, principalAddress', principal, collateral, principalAddress)
           if (agentFund) {
-            console.log('agentfund found', agentFund)
             agentFund.utilizationRatio = utilizationRatio
             agentFund.marketLiquidity = marketLiquidityFormatted
             agentFund.borrowed = borrowedFormatted
@@ -155,7 +144,6 @@ function defineAgentStatusJobs (agenda) {
           }
         }
       } catch (e) {
-        console.log('error looking for: ', e)
         handleError(e)
       }
     } else {
