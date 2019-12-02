@@ -16,6 +16,12 @@ const currencies = {
     chain: 'ETH',
     decimals: 18
   },
+  DAI: {
+    multiplier: 1e18,
+    unit: 'ether',
+    chain: 'ETH',
+    decimals: 18
+  },
   USDC: {
     multiplier: 1e6,
     unit: 'mwei',

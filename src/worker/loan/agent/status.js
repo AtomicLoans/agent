@@ -1,5 +1,6 @@
 const axios = require('axios')
 const BN = require('bignumber.js')
+const compareVersions = require('compare-versions')
 const Agent = require('../../../models/Agent')
 const AgentFund = require('../../../models/AgentFund')
 const { getObject, getContract } = require('../../../utils/contracts')
@@ -28,8 +29,12 @@ function defineAgentStatusJobs (agenda) {
 
     const agent = await Agent.findOne({ _id: agentModelId }).exec()
 
-    let lenderStatus, loanMarkets
+    let lenderStatus, loanMarkets, agentVersion
     try {
+      const { data: versionData } = await axios.get(`${agent.url}/version`)
+      const { version } = versionData
+      agentVersion = version
+
       const { status, data } = await axios.get(`${agent.url}/loanmarketinfo`)
 
       console.log(`${agent.url} status:`, status)
@@ -48,11 +53,8 @@ function defineAgentStatusJobs (agenda) {
 
     if (lenderStatus === 200) {
       try {
-        const { status: versionStatus, data: versionData } = await axios.get(`${agent.url}/version`)
-        const { version } = versionData
-
         if (versionStatus === 200) {
-          agent.version = version
+          agent.version = agentVersion
         }
       } catch(e) {
         handleError(e)
@@ -62,10 +64,20 @@ function defineAgentStatusJobs (agenda) {
 
       // get agent principal address, and check if a fund exists for each loanmarket, if a fund does exist, update the balance
 
+      console.log('agent status Active')
+
       try {
         for (let i = 0; i < loanMarkets.length; i++) {
           const loanMarket = loanMarkets[i]
-          const { principal, collateral } = loanMarket
+          console.log('loanMarket', loanMarket)
+          let { principal, collateral } = loanMarket
+          console.log('agentVersion', agentVersion)
+          if (compareVersions(agentVersion, '0.1.31', '<')) {
+            if (principal === 'DAI') {
+              principal = 'SAI'
+            }
+          }
+          console.log('principal, collateral', principal, collateral)
           const multiplier = currencies[principal].multiplier
           const decimals = currencies[principal].decimals
 
@@ -80,6 +92,8 @@ function defineAgentStatusJobs (agenda) {
           const funds = getObject('funds', principal)
           const loans = getObject('loans', principal)
           const sales = getObject('sales', principal)
+
+          console.log('principal', principal)
 
           const fundId = await funds.methods.fundOwner(principalAddress).call()
           const marketLiquidity = await funds.methods.balance(fundId).call()
@@ -115,8 +129,12 @@ function defineAgentStatusJobs (agenda) {
           const borrowedFormatted = BN(borrowed).dividedBy(multiplier).toFixed(decimals)
           const suppliedFormatted = BN(supplied).dividedBy(multiplier).toFixed(decimals)
 
+          console.log('principal', principal)
+
           const agentFund = await AgentFund.findOne({ principal, collateral, principalAddress }).exec()
+          console.log('principal, collateral, principalAddress', principal, collateral, principalAddress)
           if (agentFund) {
+            console.log('agentfund found', agentFund)
             agentFund.utilizationRatio = utilizationRatio
             agentFund.marketLiquidity = marketLiquidityFormatted
             agentFund.borrowed = borrowedFormatted
@@ -137,6 +155,7 @@ function defineAgentStatusJobs (agenda) {
           }
         }
       } catch (e) {
+        console.log('error looking for: ', e)
         handleError(e)
       }
     } else {
