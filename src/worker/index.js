@@ -22,6 +22,8 @@ async function start () {
     await agenda.now('notify-arbiter')
   }
 
+  await agenda.every(getInterval('SANITIZE_TX_INTERVAL'), 'sanitize-eth-txs')
+
   agenda.define('restart', async (job, done) => {
     await start()
     done()
