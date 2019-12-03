@@ -304,7 +304,7 @@ function defineLoanStatusJobs (agenda) {
                   const { data: versionData } = await axios.get(`${agent.url}/version`)
                   const { version } = versionData
 
-                  if (!compareVersions(version, '0.1.31', '>')) {
+                  if (compareVersions(version, '0.1.31', '<')) {
                     safePrincipal = 'DAI'
                   }
                 }
