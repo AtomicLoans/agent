@@ -1,3 +1,7 @@
+## [0.1.35](https://github.com/AtomicLoans/agent/compare/v0.1.34...v0.1.35) - 2019-12-04
+
+- Improve error handling of transaction underpriced
+
 ## [0.1.34](https://github.com/AtomicLoans/agent/compare/v0.1.33...v0.1.34) - 2019-11-27
 
 - Ensure tx evm failure resolves in instance status failed
