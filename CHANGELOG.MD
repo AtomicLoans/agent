@@ -1,3 +1,7 @@
+## [0.1.36](https://github.com/AtomicLoans/agent/compare/v0.1.35...v0.1.36) - 2019-12-04
+
+- Set minimum tx fee to 5 gwei
+
 ## [0.1.35](https://github.com/AtomicLoans/agent/compare/v0.1.34...v0.1.35) - 2019-12-04
 
 - Improve error handling of transaction underpriced
