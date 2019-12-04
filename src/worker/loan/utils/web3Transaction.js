@@ -151,6 +151,12 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
           }
         } else if (String(error).indexOf('Transaction with the same hash was already imported') >= 0) {
           console.log('Transaction with the same hash was already imported')
+        } else if (String(error).indexOf('transaction underpriced') >= 0) {
+          console.log('transaction underpriced')
+          console.log('ethTx', ethTx)
+          ethTx.gasPrice = Math.ceil(ethTx.gasPrice * 1.51)
+          await ethTx.save()
+          await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
         } else {
           const agentUrl = getAgentUrl()
 
@@ -204,6 +210,12 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
       }
     } else if (String(error).indexOf('Transaction with the same hash was already imported') >= 0) {
       console.log('Transaction with the same hash was already imported')
+    } else if (String(error).indexOf('transaction underpriced') >= 0) {
+      console.log('transaction underpriced')
+      console.log('ethTx', ethTx)
+      ethTx.gasPrice = Math.ceil(ethTx.gasPrice * 1.51)
+      await ethTx.save()
+      await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
     } else {
       const agentUrl = getAgentUrl()
 
