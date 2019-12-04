@@ -58,6 +58,8 @@ async function setTxParams (data, from, to, instance) {
     txParams.gasPrice = gasPrice
   }
 
+  txParams.gasPrice = Math.max(txParams.gasPrice, toWei('5', 'gwei'))
+
   const ethTxs = await EthTx.find().sort({ nonce: 'descending' }).exec()
   if (ethTxs.length === 0) {
     txParams.nonce = txCount
