@@ -25,6 +25,10 @@ const EthTxSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
+  error: {
+    type: String,
+    index: true
+  },
   failed: {
     type: Boolean,
     index: true,

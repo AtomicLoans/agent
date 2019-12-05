@@ -5,6 +5,7 @@ const defineJobsRoutes = require('./jobs')
 const defineSalesRoutes = require('./sales')
 const defineLenderRoutes = require('./lender/index')
 const defineArbiterRoutes = require('./arbiter/index')
+const defineTxsRoutes = require('./txs')
 
 defineAgentRoutes(router)
 defineJobsRoutes(router)
@@ -14,5 +15,6 @@ if (isArbiter()) {
 } else {
   defineLenderRoutes(router)
 }
+defineTxsRoutes(router)
 
 module.exports = router
