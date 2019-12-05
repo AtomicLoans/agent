@@ -1,3 +1,7 @@
+## [0.1.37](https://github.com/AtomicLoans/agent/compare/v0.1.36...v0.1.37) - 2019-12-05
+
+- Create job for sanitizing transactions
+
 ## [0.1.36](https://github.com/AtomicLoans/agent/compare/v0.1.35...v0.1.36) - 2019-12-04
 
 - Set minimum tx fee to 5 gwei
