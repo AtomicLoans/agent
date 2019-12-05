@@ -1,3 +1,7 @@
+## [0.1.38](https://github.com/AtomicLoans/agent/compare/v0.1.37...v0.1.38) - 2019-12-05
+
+- Add route for eth txs (/api/loan/txs)
+
 ## [0.1.37](https://github.com/AtomicLoans/agent/compare/v0.1.36...v0.1.37) - 2019-12-05
 
 - Create job for sanitizing transactions
