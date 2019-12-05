@@ -119,6 +119,8 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
       .on('error', async (error) => {
         console.log('web3 tx error')
         console.log(error)
+        ethTx.error = error
+        await ethTx.save()
         if ((String(error).indexOf('nonce too low') >= 0) || (String(error).indexOf('There is another transaction with same nonce in the queue') >= 0)) {
           const ethTxsFailed = await EthTx.find({ failed: true, nonce: ethTx.nonce }).sort({ gasPrice: 'descending' }).exec()
           if (ethTxsFailed.length > 0) {
@@ -178,6 +180,8 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
   } catch(error) {
     console.log('web3 try catch error')
 
+    ethTx.error = error
+    await ethTx.save()
     if ((String(error).indexOf('nonce too low') >= 0) || (String(error).indexOf('There is another transaction with same nonce in the queue') >= 0)) {
       const ethTxsFailed = await EthTx.find({ failed: true, nonce: ethTx.nonce }).sort({ gasPrice: 'descending' }).exec()
       if (ethTxsFailed.length > 0) {
