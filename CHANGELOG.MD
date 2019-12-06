@@ -1,3 +1,7 @@
+## [0.1.40](https://github.com/AtomicLoans/agent/compare/v0.1.39...v0.1.40) - 2019-12-06
+
+- Fix issue with failed transaction overwriting query ordering
+
 ## [0.1.39](https://github.com/AtomicLoans/agent/compare/v0.1.38...v0.1.39) - 2019-12-05
 
 - Add route for resetting transactions
