@@ -65,7 +65,7 @@ async function setTxParams (data, from, to, instance) {
     txParams.nonce = txCount
   } else {
     // check to see if any txs have timed out
-    const ethTxsFailed = await EthTx.find({ failed: true, overWritten: false }).sort({ nonce: 'descending' }).exec()
+    const ethTxsFailed = await EthTx.find({ failed: true, overWritten: false }).sort({ nonce: 'ascending' }).exec()
     if (ethTxsFailed.length > 0) {
       const ethTxToReplace = ethTxsFailed[0]
       if (ethTxToReplace.nonce >= txCount) {
