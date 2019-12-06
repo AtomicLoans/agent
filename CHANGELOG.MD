@@ -1,3 +1,7 @@
+## [0.1.39](https://github.com/AtomicLoans/agent/compare/v0.1.38...v0.1.39) - 2019-12-05
+
+- Add route for resetting transactions
+
 ## [0.1.38](https://github.com/AtomicLoans/agent/compare/v0.1.37...v0.1.38) - 2019-12-05
 
 - Add route for eth txs (/api/loan/txs)
