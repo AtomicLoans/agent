@@ -1,3 +1,7 @@
+## [0.1.41](https://github.com/AtomicLoans/agent/compare/v0.1.40...v0.1.41) - 2019-12-07
+
+- Add DAI market for Kovan
+
 ## [0.1.40](https://github.com/AtomicLoans/agent/compare/v0.1.39...v0.1.40) - 2019-12-06
 
 - Fix issue with failed transaction overwriting query ordering
