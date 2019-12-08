@@ -1,3 +1,7 @@
+## [0.1.42](https://github.com/AtomicLoans/agent/compare/v0.1.41...v0.1.42) - 2019-12-08
+
+- Add DAI market for Mainnet
+
 ## [0.1.41](https://github.com/AtomicLoans/agent/compare/v0.1.40...v0.1.41) - 2019-12-07
 
 - Add DAI market for Kovan
