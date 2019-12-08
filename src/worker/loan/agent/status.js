@@ -68,7 +68,7 @@ function defineAgentStatusJobs (agenda) {
         for (let i = 0; i < loanMarkets.length; i++) {
           const loanMarket = loanMarkets[i]
           let { principal, collateral } = loanMarket
-          if (compareVersions(agentVersion, '0.1.31', '<') && (agentVersion !== '0.1.42')) {
+          if (compareVersions.compare(agentVersion, '0.1.31', '<')) {
             if (principal === 'DAI') {
               principal = 'SAI'
             }
