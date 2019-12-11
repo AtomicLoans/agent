@@ -81,6 +81,11 @@ function defineLoanRequestJobs (agenda) {
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')
       console.log('TX WAS MINED BUT TX FAILED')
+      const ethTx = await EthTx.findOne({ _id: loan.ethTxId }).exec()
+      if (!ethTx) return console.log('Error: EthTx not found')
+
+      ethTx.failed = false
+      await ethTx.save()
       done()
     } else {
       console.log('RECEIPT IS NOT NULL')

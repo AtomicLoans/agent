@@ -153,6 +153,9 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
             ethTx.failed = true
             await ethTx.save()
           }
+        } else if (String(error).indexOf('Transaction has been reverted by the EVM') >= 0) {
+          console.log('Transaction has been reverted by the EVM')
+          ethTx.failed = false
         } else if (String(error).indexOf('Transaction with the same hash was already imported') >= 0) {
           console.log('Transaction with the same hash was already imported')
         } else if (String(error).indexOf('transaction underpriced') >= 0) {
@@ -214,6 +217,9 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
         ethTx.failed = true
         await ethTx.save()
       }
+    } else if (String(error).indexOf('Transaction has been reverted by the EVM') >= 0) {
+      console.log('Transaction has been reverted by the EVM')
+      ethTx.failed = false
     } else if (String(error).indexOf('Transaction with the same hash was already imported') >= 0) {
       console.log('Transaction with the same hash was already imported')
     } else if (String(error).indexOf('transaction underpriced') >= 0) {
