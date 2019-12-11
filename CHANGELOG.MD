@@ -1,3 +1,7 @@
+## [0.1.43](https://github.com/AtomicLoans/agent/compare/v0.1.42...v0.1.43) - 2019-12-10
+
+- Add Tx error case for being reverted by EVM
+
 ## [0.1.42](https://github.com/AtomicLoans/agent/compare/v0.1.41...v0.1.42) - 2019-12-08
 
 - Add DAI market for Mainnet
