@@ -309,11 +309,15 @@ function defineLoanStatusJobs (agenda) {
                   }
                 }
 
-                const { status, data: lenderLoanModel } = await axios.get(`${agent.url}/loans/contract/${safePrincipal}/${loanId}`)
-                const { status: lenderLoanStatus } = lenderLoanModel
+                try {
+                  const { status, data: lenderLoanModel } = await axios.get(`${agent.url}/loans/contract/${safePrincipal}/${loanId}`)
+                  const { status: lenderLoanStatus } = lenderLoanModel
 
-                // if it can't be reached or status currently isn't ACCEPTING / ACCEPTED then do something
-                if (!(status === 200 && (lenderLoanStatus === 'ACCEPTING' || lenderLoanStatus === 'ACCEPTED'))) {
+                  // if it can't be reached or status currently isn't ACCEPTING / ACCEPTED then do something
+                  if (!(status === 200 && (lenderLoanStatus === 'ACCEPTING' || lenderLoanStatus === 'ACCEPTED'))) {
+                    await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
+                  }
+                } catch(e) {
                   await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
                 }
               } else {
