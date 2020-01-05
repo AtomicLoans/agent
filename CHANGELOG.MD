@@ -1,3 +1,7 @@
+## [0.1.45](https://github.com/AtomicLoans/agent/compare/v0.1.44...v0.1.45) - 2020-01-04
+
+- Update Kovan Contract Addresses
+
 ## [0.1.44](https://github.com/AtomicLoans/agent/compare/v0.1.43...v0.1.44) - 2019-12-10
 
 - Ensure loan updates when Tx reverted by EVM
