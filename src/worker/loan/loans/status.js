@@ -106,7 +106,8 @@ function defineLoanStatusJobs (agenda) {
                   const loanIdBytes32 = await loans.methods.lenderLoans(principalAddress, i).call()
                   const loanId = hexToNumber(loanIdBytes32)
 
-                  const { borrower, lender, arbiter, principal: principalAmount, collateral: collateralAmount, createdAt, loanExpiration, requestTimestamp } = await loans.methods.loans(numToBytes32(loanId)).call()
+                  const { borrower, lender, arbiter, principal: principalAmount, createdAt, loanExpiration, requestTimestamp } = await loans.methods.loans(numToBytes32(loanId)).call()
+                  const collateralAmount = await loans.methods.collateral(numToBytes32(loanId)).call()
                   const minCollateralAmount = BN(collateralAmount).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
 
                   const params = { principal, collateral, principalAmount: BN(principalAmount).dividedBy(multiplier).toFixed(decimals), requestLoanDuration: loanExpiration - createdAt }
