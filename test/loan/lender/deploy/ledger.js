@@ -15,7 +15,8 @@ function importLedger (btcChain, btcNode) {
     it('should import ledger addresses and fund unusedAddress', async () => {
       await importBitcoinAddresses(btcChain)
       await fundUnusedBitcoinAddress(btcChain)
-      await btcNode.client.getMethod('jsonrpc')('generate', 1)
+      const newAddress = await btcNode.client.getMethod('jsonrpc')('getnewaddress')
+      await btcNode.client.getMethod('jsonrpc')('generatetoaddress', 1, newAddress)
     })
   })
 }
