@@ -23,7 +23,7 @@ const Market = require('../models/Market')
 const { migrate } = require('../migrate/migrate')
 
 const {
-  PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY, DASH_PASS, BUGSNAG_API, RUN_SINGLE_PROCESS, HEROKU_APP
+  PORT, MONGODB_URI, MONGODB_ARBITER_URI, PARTY, DASH_PASS, BUGSNAG_API, RUN_SINGLE_PROCESS, HEROKU_APP, NODE_ENV
 } = process.env
 
 if (RUN_SINGLE_PROCESS || (HEROKU_APP !== undefined && HEROKU_APP !== 'undefined')) {
@@ -89,7 +89,7 @@ app.get('/verify', require('./viewRoutes').verify);
 app.get('/key', require('./viewRoutes').key);
 app.get('/success', require('./viewRoutes').success);
 
-if (process.env.NODE_ENV === 'production') {
+if (NODE_ENV === 'production') {
   app.use(Sentry.Handlers.errorHandler())
 }
 

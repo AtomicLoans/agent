@@ -113,7 +113,7 @@ function defineArbiterLoanJobs (agenda) {
           const lockArgs = await getLockArgs(numToBytes32(currentIndex), principal, collateral)
           const addresses = await loan.collateralClient().loan.collateral.getLockAddresses(...lockArgs)
 
-          const { collateral: collateralAmountInSats } = await loansContract.methods.loans(numToBytes32(currentIndex)).call()
+          const collateralAmountInSats = await loansContract.methods.collateral(numToBytes32(currentIndex)).call()
           loan.collateralAmount = BN(collateralAmountInSats).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
           const amounts = await getCollateralAmounts(numToBytes32(currentIndex), loan, rate)
           loan.setCollateralAddressValues(addresses, amounts)

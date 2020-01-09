@@ -8,8 +8,14 @@ const { getInterval } = require('../utils/intervals')
 const { defineSwapJobs } = require('./swap/index')
 const { defineLoanJobs } = require('./loan/index')
 
+const { fundAgent } = require('../../test/loan/loanCommon')
+
 async function start () {
   await agenda.start()
+
+  if (process.env.NODE_ENV === 'test') {
+    await agenda.now('fund')
+  }
 
   await agenda.every('2 minutes', 'update-market-data')
 
@@ -28,6 +34,13 @@ async function start () {
     await start()
     done()
   })
+
+  if (process.env.NODE_ENV === 'test') {
+    agenda.define('fund', async (job, done) => {
+      await fundAgent(`http://localhost:${process.env.PORT}/api/loan`)
+      done()
+    })
+  }
 }
 
 async function stop () {
