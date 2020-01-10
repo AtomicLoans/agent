@@ -4,7 +4,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 const { MONGOOSE_DEBUG, MONGODB_ARBITER_URI, MONGODB_URI, HEROKU_APP, NODE_ENV, MNEMONIC, MNEMONIC_ARBITER, PARTY } = process.env
 
-const { isArbiter, rewriteEnv } = require('./utils/env')
+const { isArbiter, rewriteEnv, getEnvTestValue } = require('./utils/env')
 const mongoose = require('mongoose')
 const { generateMnemonic } = require('bip39')
 
@@ -41,6 +41,26 @@ async function start() {
         rewriteEnv('.env', 'MNEMONIC', `"${mnemonic}"`)
         process.env.MNEMONIC = mnemonic
       }
+    }
+
+    if (getEnvTestValue('ETH_SIGNER_MNEMONIC').toString() === '') {
+      rewriteEnv('test/env/.env.test', 'ETH_SIGNER_MNEMONIC', `"${generateMnemonic(128)}"`)
+    }
+
+    if (getEnvTestValue('LENDER_MNEMONIC').toString() === '') {
+      rewriteEnv('test/env/.env.test', 'LENDER_MNEMONIC', `"${generateMnemonic(128)}"`)
+    }
+
+    if (getEnvTestValue('BORROWER_MNEMONIC').toString() === '') {
+      rewriteEnv('test/env/.env.test', 'BORROWER_MNEMONIC', `"${generateMnemonic(128)}"`)
+    }
+
+    if (getEnvTestValue('ARBITER_MNEMONIC').toString() === '') {
+      rewriteEnv('test/env/.env.test', 'ARBITER_MNEMONIC', `"${generateMnemonic(128)}"`)
+    }
+
+    if (getEnvTestValue('LIQUIDATOR_MNEMONIC').toString() === '') {
+      rewriteEnv('test/env/.env.test', 'LIQUIDATOR_MNEMONIC', `"${generateMnemonic(128)}"`)
     }
   }
 

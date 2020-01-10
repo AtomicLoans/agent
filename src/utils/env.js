@@ -17,7 +17,15 @@ function rewriteEnv (envFile, key, value) {
   }
 }
 
+function getEnvTestValue (key) {
+  const env = fs.readFileSync(path.resolve(process.cwd(), 'test/env/.env.test'), 'utf-8')
+  const regex = new RegExp(`${key}=("(.*?)"|([0-9a-zA-Z])\\w+)`, 'g')
+  const value = env.match(regex)
+  return value.toString().replace(`${key}=`, '').replace('"', '').replace('"', '')
+}
+
 module.exports = {
   isArbiter,
-  rewriteEnv
+  rewriteEnv,
+  getEnvTestValue
 }
