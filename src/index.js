@@ -7,6 +7,7 @@ const { MONGOOSE_DEBUG, MONGODB_ARBITER_URI, MONGODB_URI, HEROKU_APP, NODE_ENV, 
 const { isArbiter, rewriteEnv, getEnvTestValue } = require('./utils/env')
 const mongoose = require('mongoose')
 const { generateMnemonic } = require('bip39')
+var isCI = require('is-ci')
 
 if (MONGOOSE_DEBUG === 'true') {
   mongoose.set('debug', true)
@@ -34,12 +35,16 @@ async function start() {
         const mnemonic = generateMnemonic(128)
         rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${mnemonic}"`)
         process.env.MNEMONIC_ARBITER = mnemonic
+      } else if (isCI) {
+        rewriteEnv('.env', 'MNEMONIC_ARBITER', MNEMONIC_ARBITER)
       }
     } else if (PARTY === 'lender') {
       if (MNEMONIC === 'undefined' || MNEMONIC === undefined || MNEMONIC === '') {
         const mnemonic = generateMnemonic(128)
         rewriteEnv('.env', 'MNEMONIC', `"${mnemonic}"`)
         process.env.MNEMONIC = mnemonic
+      } else if (isCI) {
+        rewriteEnv('.env', 'MNEMONIC', MNEMONIC)
       }
     }
 
