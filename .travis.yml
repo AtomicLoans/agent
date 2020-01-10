@@ -25,8 +25,8 @@ before_script:
   - cp test/env/.env.test.example test/env/.env.test
   - CI=false npm run setup:test_json
   - CI=false npm run deploy:contracts
-  - CI=false npm run arbiter:test > /dev/null &
   - CI=false npm run lender:test > /dev/null &
+  - CI=false npm run arbiter:test > /dev/null &
 
 jobs:
   include:
