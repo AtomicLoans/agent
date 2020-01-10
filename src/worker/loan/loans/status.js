@@ -383,7 +383,6 @@ function defineLoanStatusJobs (agenda) {
               
               loan.status = 'APPROVED'
               await loan.save()
-
             }
           }
         }
