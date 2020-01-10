@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 
-const EthAddress = require('../../../../models/EthAddress');
+const AddressEmail = require('../../../../models/AddressEmail');
 const Email = require('../../../../models/Email');
 
 function defineMailerRouter(router) {
@@ -12,7 +12,7 @@ function defineMailerRouter(router) {
       } = req;
       const emailRecord = await Email.findOneAndUpdate({email}, {}, {upsert: true, new: true}).exec()
 
-      await EthAddress.findOneAndUpdate({address}, {$addToSet: {emails: emailRecord}}, {upsert: true, new: true}).exec()
+      await AddressEmail.findOneAndUpdate({address}, {$addToSet: {emails: emailRecord}}, {upsert: true, new: true}).exec()
 
       res.json({message: 'success'})
     })
