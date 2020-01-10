@@ -39,6 +39,7 @@
     "deploy:ledger": "mocha test/loan/lender/deploy/ledger $npm_package_options_mocha",
     "deploy:send_ether": "mocha test/loan/lender/deploy/send_ether $npm_package_options_mocha",
     "deploy:contracts": "cd node_modules/@atomicloans/eth-contracts && truffle migrate && mv addresses.json ../../../src/config/addresses/test.json && cd -",
+    "setup:test_json": "cp src/config/bitcoin/test.example.json src/config/bitcoin/test.json && cp src/config/endpoints/test.example.json src/config/endpoints/test.json && cp src/config/intervals/test.example.json src/config/intervals/test.json",
     "reset:jobs": "mocha test/loan/lender/reset/jobs $npm_package_options_mocha",
     "reset:mnemonic": "mocha test/loan/lender/reset/mnemonic $npm_package_options_mocha",
     "new:version": "gh-release"
