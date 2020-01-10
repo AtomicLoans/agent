@@ -97,6 +97,8 @@ function testFunds (web3Chain, ethNode) {
 
       await ethNode.client.getMethod('jsonrpc')('miner_stop')
 
+      console.log('fundParams', fundParams)
+
       const { body } = await chai.request(server).post('/funds/new').send(fundParams)
       const { id: fundModelId } = body
 
