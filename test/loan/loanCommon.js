@@ -72,7 +72,9 @@ async function getAgentAddresses (server) {
 }
 
 async function generateSecretHashesArbiter (principal) {
+  console.log('generateSecretHashesArbiter')
   const address = (await chains.web3WithArbiter.client.currentProvider.getAddresses())[0]
+  console.log('address', address)
   const { publicKey } = await chains.bitcoinArbiter.client.wallet.getUnusedAddress()
 
   const secrets = await chains.bitcoinWithJs.client.loan.secrets.generateSecrets('test', 160)

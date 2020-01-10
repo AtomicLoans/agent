@@ -36,7 +36,6 @@ async function start() {
         rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${mnemonic}"`)
         process.env.MNEMONIC_ARBITER = mnemonic
       } else if (isCI) {
-        console.log('IS CI MNEMONIC', MNEMONIC_ARBITER)
         rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${MNEMONIC_ARBITER}"`)
       }
     } else if (PARTY === 'lender') {
