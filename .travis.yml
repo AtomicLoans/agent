@@ -21,6 +21,7 @@ before_script:
   - bitcoind -reindex -txindex -regtest -daemon -rpcport=18443 -rpcuser=bitcoin -rpcpassword=local321 -deprecatedrpc=signrawtransaction
   - CI=false ganache-cli -k petersburg > /dev/null &
   - export NODE_OPTIONS="--max-old-space-size=8192"
+  - cp .env.example .env
   - CI=false npm run deploy:contracts
   - CI=false npm run arbiter:test
   - CI=false npm run lender:test
