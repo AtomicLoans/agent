@@ -7,8 +7,8 @@ const EmailSchema = new mongoose.Schema({
       required: true,
       index: true,
   },
-  ethAddresses: [{
-    type: mongoose.Schema.Types.ObjectId, ref: 'EthAddress'
+  addressEmails: [{
+    type: mongoose.Schema.Types.ObjectId, ref: 'AddressEmail'
   }],
 })
 

@@ -3,9 +3,6 @@ const axios = require('axios');
 const BASE_URL = 'https://api.sendgrid.com/v3';
 const MAIL_SEND_ENDPOINT = '/mail/send';
 
-const COLLATERAL_LOCKED_TEMPLATE_ID = 'd-9bdd7a9d5e3f4982befb564ed5393e1b';
-const UNSUBSCRIBE_ID = 13544;
-
 function defineMailerJobs(agenda) {
   agenda.define('mail-collateral-locked', async (job, done) => {
     const client = getHTTPClient();
@@ -31,9 +28,9 @@ function defineMailerJobs(agenda) {
           name: 'Atomic Loans'
         },
         asm: {
-            group_id: UNSUBSCRIBE_ID
+            group_id: process.env.SENDGRID_UNSUBSCRIBE_ID
         },
-        template_id: COLLATERAL_LOCKED_TEMPLATE_ID
+        template_id: process.env.SENDGRID_COLLATERAL_LOCKED_TEMPLATE_ID
       }
     });
 
