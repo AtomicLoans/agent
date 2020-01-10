@@ -371,6 +371,11 @@ function defineLoanStatusJobs (agenda) {
                 }
               }
             } else if (off) {
+              if (!paid) {
+                mailer.notify(loan.borrowerPrincipalAddress, 'loan-cancelled', {
+                  loanId: loan.loanId
+                })
+              }
               loan.status = 'ACCEPTED'
               await loan.save()
               console.log('LOAN IS ACCEPTED, CANCELLED, OR REFUNDED')

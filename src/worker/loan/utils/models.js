@@ -17,7 +17,7 @@ async function getEmails(addressEmail) {
   console.log("Finding emails for ", addressEmail)
   const res = await AddressEmail.findOne({address: addressEmail}).populate({path: 'emails', model: 'Email'}).exec()
   console.log(res)
-  return res ? res.emails : {}
+  return res ? res.emails : []
 }
 
 module.exports = {
