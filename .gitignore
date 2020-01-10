@@ -8,3 +8,4 @@ worker.log
 tmp/*
 !tmp/*.txt
 *.zip
+.DS_Store
