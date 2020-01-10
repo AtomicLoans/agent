@@ -36,7 +36,8 @@ async function start() {
         rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${mnemonic}"`)
         process.env.MNEMONIC_ARBITER = mnemonic
       } else if (isCI) {
-        rewriteEnv('.env', 'MNEMONIC_ARBITER', MNEMONIC_ARBITER)
+        console.log('IS CI MNEMONIC', MNEMONIC_ARBITER)
+        rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${MNEMONIC_ARBITER}"`)
       }
     } else if (PARTY === 'lender') {
       if (MNEMONIC === 'undefined' || MNEMONIC === undefined || MNEMONIC === '') {
@@ -44,7 +45,7 @@ async function start() {
         rewriteEnv('.env', 'MNEMONIC', `"${mnemonic}"`)
         process.env.MNEMONIC = mnemonic
       } else if (isCI) {
-        rewriteEnv('.env', 'MNEMONIC', MNEMONIC)
+        rewriteEnv('.env', 'MNEMONIC', `"${MNEMONIC}"`)
       }
     }
 
