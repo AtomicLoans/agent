@@ -9,6 +9,7 @@ before_install:
   - sudo apt-add-repository ppa:bitcoin/bitcoin -y
   - sudo apt-get update
   - sudo apt-get install bitcoind -y
+
 apt_packages:
   - bitcoind
 
