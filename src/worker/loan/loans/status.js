@@ -19,12 +19,14 @@ const { isArbiter } = require('../../../utils/env')
 const { currencies } = require('../../../utils/fx')
 const { getEndpoint } = require('../../../utils/endpoints')
 const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
+const getMailer =  require('../utils/mailer')
 const handleError = require('../../../utils/handleError')
 
 const web3 = require('../../../utils/web3')
 const { hexToNumber, fromWei } = web3().utils
 
 function defineLoanStatusJobs (agenda) {
+  const mailer = getMailer(agenda);
   agenda.define('check-loan-statuses-and-update', async (job, done) => {
     console.log('check-loan-statuses-and-update')
 
@@ -372,6 +374,15 @@ function defineLoanStatusJobs (agenda) {
               loan.status = 'ACCEPTED'
               await loan.save()
               console.log('LOAN IS ACCEPTED, CANCELLED, OR REFUNDED')
+            } else if (approved && loan.status === "AWAITING_COLLATERAL") {
+              mailer.notify(loan.borrowerPrincipalAddress, 'collateral-locked', {
+                amount: loan.principalAmount,
+                asset: loan.principal.toLowerCase(),
+                loanId: loan.loanId                    
+              })
+              
+              loan.status = 'APPROVED'
+              await loan.save()
             }
           }
         }

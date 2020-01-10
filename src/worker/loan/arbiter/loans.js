@@ -53,7 +53,7 @@ function defineArbiterLoanJobs (agenda) {
       ])
 
       const { approved, withdrawn, sale, paid, off } = bools
-      const { loanExpiration, arbiter } = loans
+      const { loanExpiration, arbiter, borrower } = loans
 
       if (checksumEncode(arbiterAddress) === arbiter) {
         const currentTime = await getCurrentTime()
@@ -117,6 +117,7 @@ function defineArbiterLoanJobs (agenda) {
           loan.collateralAmount = BN(collateralAmountInSats).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
           const amounts = await getCollateralAmounts(numToBytes32(currentIndex), loan, rate)
           loan.setCollateralAddressValues(addresses, amounts)
+          loan.borrowerPrincipalAddress = borrower
 
           await loan.save()
         }
