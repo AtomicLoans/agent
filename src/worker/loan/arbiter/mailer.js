@@ -27,6 +27,18 @@ function defineMailerJobs(agenda) {
 
     done();
   });
+  
+  agenda.define('mail-liquidated', async (job, done) => {
+    const { data } = job.attrs;
+    const { emails } = data;
+
+    const subject = `Your loan was liquidated because the minimum collateralization was not met`;
+    const templateId = process.env.SENDGRID_LIQUIDATED_MIN_COLLAT_TEMPLATE_ID
+
+    sendEmail(emails, subject, data, templateId);
+
+    done();
+  })
 }
 
 function sendEmail(emails, subject, data, templateId) {
