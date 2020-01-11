@@ -48,25 +48,25 @@ async function start() {
       }
     }
 
-    if (getEnvTestValue('ETH_SIGNER_MNEMONIC').toString() === '') {
-      rewriteEnv('test/env/.env.test', 'ETH_SIGNER_MNEMONIC', `"${generateMnemonic(128)}"`)
-    }
+    // if (getEnvTestValue('ETH_SIGNER_MNEMONIC').toString() === '') {
+    //   rewriteEnv('test/env/.env.test', 'ETH_SIGNER_MNEMONIC', `"${generateMnemonic(128)}"`)
+    // }
 
-    if (getEnvTestValue('LENDER_MNEMONIC').toString() === '') {
-      rewriteEnv('test/env/.env.test', 'LENDER_MNEMONIC', `"${generateMnemonic(128)}"`)
-    }
+    // if (getEnvTestValue('LENDER_MNEMONIC').toString() === '') {
+    //   rewriteEnv('test/env/.env.test', 'LENDER_MNEMONIC', `"${generateMnemonic(128)}"`)
+    // }
 
-    if (getEnvTestValue('BORROWER_MNEMONIC').toString() === '') {
-      rewriteEnv('test/env/.env.test', 'BORROWER_MNEMONIC', `"${generateMnemonic(128)}"`)
-    }
+    // if (getEnvTestValue('BORROWER_MNEMONIC').toString() === '') {
+    //   rewriteEnv('test/env/.env.test', 'BORROWER_MNEMONIC', `"${generateMnemonic(128)}"`)
+    // }
 
-    if (getEnvTestValue('ARBITER_MNEMONIC').toString() === '') {
-      rewriteEnv('test/env/.env.test', 'ARBITER_MNEMONIC', `"${generateMnemonic(128)}"`)
-    }
+    // if (getEnvTestValue('ARBITER_MNEMONIC').toString() === '') {
+    //   rewriteEnv('test/env/.env.test', 'ARBITER_MNEMONIC', `"${generateMnemonic(128)}"`)
+    // }
 
-    if (getEnvTestValue('LIQUIDATOR_MNEMONIC').toString() === '') {
-      rewriteEnv('test/env/.env.test', 'LIQUIDATOR_MNEMONIC', `"${generateMnemonic(128)}"`)
-    }
+    // if (getEnvTestValue('LIQUIDATOR_MNEMONIC').toString() === '') {
+    //   rewriteEnv('test/env/.env.test', 'LIQUIDATOR_MNEMONIC', `"${generateMnemonic(128)}"`)
+    // }
   }
 
   switch (process.env.PROCESS_TYPE) {
