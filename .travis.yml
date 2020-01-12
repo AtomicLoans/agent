@@ -39,6 +39,7 @@ jobs:
         - CI=false npm run test:lender:agent
         - CI=false npm run test:lender:loan_market
         - CI=false npm run test:lender:withdraw
+        - CI=false npm run test:lender:tx
     - stage: Test Funds
       script:
         - CI=false npm run test:lender:funds
