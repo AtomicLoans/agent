@@ -180,6 +180,11 @@ async function getLoanStatus (loanId) {
 }
 
 async function testSetup (web3Chain, ethNode, btcChain) {
+  const blockHeight = await btcChain.client.chain.getBlockHeight()
+  if (blockHeight < 101) {
+    await btcChain.client.chain.generateBlock(101)
+  }
+
   await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
