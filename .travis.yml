@@ -37,3 +37,6 @@ jobs:
     - stage: Test Loans
       script:
         - CI=false npm run test:lender:loans
+    - stage: Test Sales
+      script:
+        - CI=false npm run test:lender:sales

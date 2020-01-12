@@ -45,7 +45,7 @@
     "new:version": "gh-release"
   },
   "options": {
-    "mocha": "--timeout 200000 --recursive --exit"
+    "mocha": "--timeout 500000 --recursive --exit"
   },
   "standard": {
     "ignore": [

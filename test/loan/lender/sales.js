@@ -136,12 +136,12 @@ function testSales (web3Chain, ethNode, btcChain) {
       console.log('Mine BTC Block')
       await chains.bitcoinWithNode.client.chain.generateBlock(1)
 
-      await secondsCountDown(25)
+      await secondsCountDown(45)
 
       const approvedAfter = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedAfter).to.equal(true)
 
-      await loans.methods.withdraw(numToBytes32(loanId), ensure0x(secrets[0])).send({ gas: 100000 })
+      await loans.methods.withdraw(numToBytes32(loanId), ensure0x(secrets[0])).send({ gas: 2000000 })
       const withdrawn = await loans.methods.withdrawn(numToBytes32(loanId)).call()
       expect(withdrawn).to.equal(true)
 
@@ -306,6 +306,11 @@ async function getLoanStatus (loanId) {
 }
 
 async function testSetup (web3Chain, ethNode, btcChain) {
+  const blockHeight = await btcChain.client.chain.getBlockHeight()
+  if (blockHeight < 101) {
+    await btcChain.client.chain.generateBlock(101)
+  }
+
   await increaseTime(3600)
   await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
