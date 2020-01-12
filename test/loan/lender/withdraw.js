@@ -43,7 +43,7 @@ function testWithdraw (chain) {
 }
 
 describe('Lender Agent - Withdraw', () => {
-  describe('Web3HDWallet', () => {
+  describe.only('Web3HDWallet', () => {
     before(async function () {
       await fundWeb3Address(chains.web3WithHDWallet)
       const address = await getWeb3Address(chains.web3WithHDWallet)
