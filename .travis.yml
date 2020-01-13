@@ -16,7 +16,7 @@ apt_packages:
   - bitcoind
 
 before_script:
-  - yarn global add ganache-cli
+  - yarn global add ganache-cli@6.4.3
   - mkdir -p /home/travis/.bitcoin && cp bitcoin.conf /home/travis/.bitcoin/bitcoin.conf
   - bitcoind -reindex -txindex -regtest -daemon -rpcport=18443 -rpcuser=bitcoin -rpcpassword=local321 -deprecatedrpc=signrawtransaction
   - CI=false ganache-cli -k petersburg > /dev/null &
@@ -27,7 +27,7 @@ before_script:
   - CI=false npm run deploy:contracts
   - CI=false npm run lender:test &
   - CI=false npm run arbiter:test &
-  - sleep 120
+  - sleep 200
 
 jobs:
   include:
