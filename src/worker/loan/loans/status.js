@@ -254,9 +254,10 @@ function defineLoanStatusJobs (agenda) {
               getCurrentTime()
             ])
 
-            // Cancel loan if not withdrawn within an hour after approveExpiration
+            // Cancel loan if not withdrawn within 22 hours after approveExpiration
             if ((currentTime > (parseInt(approveExpiration) + 79200)) && !withdrawn) {
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
+              console.log('accept or cancel 4')
             }
 
             if (!approved && !withdrawn && !paid && !sale && !off) {
@@ -266,6 +267,7 @@ function defineLoanStatusJobs (agenda) {
               if ((currentTime > parseInt(approveExpiration)) && !approved) {
                 // TODO: arbiter should check if lender agent has already tried cancelling
                 await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
+                console.log('accept or cancel 5')
               } else {
                 const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress, refundableCollateralAmount, seizableCollateralAmount } = loan
 
@@ -319,12 +321,15 @@ function defineLoanStatusJobs (agenda) {
                   // if it can't be reached or status currently isn't ACCEPTING / ACCEPTED then do something
                   if (!(status === 200 && (lenderLoanStatus === 'ACCEPTING' || lenderLoanStatus === 'ACCEPTED'))) {
                     await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
+                    console.log('accept or cancel 1')
                   }
                 } catch(e) {
                   await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
+                  console.log('accept or cancel 2')
                 }
               } else {
                 await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
+                console.log('accept or cancel 3')
               }
             } else if (sale) {
               const saleModel = await Sale.findOne({ loanModelId: loan.id }).exec()

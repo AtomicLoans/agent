@@ -9,9 +9,10 @@ const { ensure0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
 const { sha256 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
+const isCI = require('is-ci')
 
-const { chains, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
-const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans } = require('../loanCommon')
+const { chains, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv, connectMetaMask } = require('../../common')
+const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans, increaseTime } = require('../loanCommon')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
 const { numToBytes32 } = require('../../../src/utils/finance')
@@ -28,6 +29,7 @@ chai.use(chaiHttp)
 chai.use(chaiAsPromised)
 
 const server = 'http://localhost:3030/api/loan'
+const arbiterServer = 'http://localhost:3032/api/loan'
 
 const arbiterChain = chains.web3WithArbiter
 
@@ -138,7 +140,7 @@ function testE2E (web3Chain, ethNode, btcChain) {
       const approvedAfter = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedAfter).to.equal(true)
 
-      await loans.methods.withdraw(numToBytes32(loanId), ensure0x(secrets[0])).send({ gas: 100000 })
+      await loans.methods.withdraw(numToBytes32(loanId), ensure0x(secrets[0])).send({ gas: 2000000 })
       const withdrawn = await loans.methods.withdrawn(numToBytes32(loanId)).call()
       expect(withdrawn).to.equal(true)
 
@@ -153,7 +155,7 @@ function testE2E (web3Chain, ethNode, btcChain) {
       const testToken = await getTestObject(web3Chain, 'erc20', principal)
       await testToken.methods.approve(getTestContract('loans', principal), toWei(owedForLoan, 'wei')).send({ gas: 100000 })
 
-      await loans.methods.repay(numToBytes32(loanId), owedForLoan).send({ gas: 100000 })
+      await loans.methods.repay(numToBytes32(loanId), owedForLoan).send({ gas: 2000000 })
 
       const paid = await loans.methods.paid(numToBytes32(loanId)).call()
       expect(paid).to.equal(true)
@@ -180,13 +182,19 @@ async function getLoanStatus (loanId) {
 }
 
 async function testSetup (web3Chain, ethNode, btcChain) {
+  const blockHeight = await btcChain.client.chain.getBlockHeight()
+  if (blockHeight < 101) {
+    await btcChain.client.chain.generateBlock(101)
+  }
+
+  await increaseTime(3600)
   await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
   await cancelLoans(web3Chain)
   await cancelJobs(server)
+  await cancelJobs(arbiterServer)
   rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
-  console.log('reset worker')
   await removeFunds()
   await removeLoans()
   await fundAgent(server)
@@ -196,6 +204,7 @@ async function testSetup (web3Chain, ethNode, btcChain) {
   await importBitcoinAddresses(btcChain)
   await fundUnusedBitcoinAddress(btcChain)
   await restartJobs(server)
+  await restartJobs(arbiterServer)
 }
 
 function testSetupArbiter () {
@@ -209,12 +218,7 @@ function testAfterArbiter () {
 }
 
 describe('Lender Agent - Funds', () => {
-  // describe('Web3HDWallet / BitcoinJs', () => {
-  //   before(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs) })
-  //   testE2E(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
-  // })
-
-  describe.only('Web3HDWallet / BitcoinJs', () => {
+  describe('Web3HDWallet / BitcoinJs', () => {
     before(async function () {
       await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
       testSetupArbiter()
@@ -225,15 +229,17 @@ describe('Lender Agent - Funds', () => {
     testE2E(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
 
-  // describe('MetaMask / BitcoinJs', () => {
-  //   connectMetaMask()
-  //   before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
-  //   testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
-  // })
+  if (!isCI) {
+    describe('MetaMask / BitcoinJs', () => {
+      connectMetaMask()
+      before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
+      testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
+    })
 
-  // describe('MetaMask / Ledger', () => {
-  //   connectMetaMask()
-  //   before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
-  //   testE2E(chains.web3WithMetaMask, chains.bitcoinWithLedger)
-  // })
+    describe('MetaMask / Ledger', () => {
+      connectMetaMask()
+      before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
+      testE2E(chains.web3WithMetaMask, chains.bitcoinWithLedger)
+    })
+  }
 })

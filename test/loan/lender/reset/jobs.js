@@ -1,9 +1,12 @@
 const { sleep } = require('@liquality/utils')
+const isCI = require('is-ci')
 const { cancelJobs } = require('../../loanCommon')
 
-describe('Cancel all jobs', () => {
-  it('should cancel all jobs', async () => {
-    await cancelJobs()
-    await sleep(2000)
+if (!isCI) {
+  describe('Cancel all jobs', () => {
+    it('should cancel all jobs', async () => {
+      await cancelJobs()
+      await sleep(2000)
+    })
   })
-})
+}

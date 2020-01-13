@@ -88,6 +88,10 @@ function defineSalesInitJobs (agenda) {
         const sale = Sale.fromParams(saleParams)
         sale.loan = loan
 
+        await sale.save()
+
+        console.log('STARTING INIT')
+
         const multisigSendTx = await loan.collateralClient().getMethod('decodeRawTransaction')(multisigSendTxRaw)
         const multisigSendVouts = multisigSendTx._raw.data.vout
 
@@ -102,6 +106,7 @@ function defineSalesInitJobs (agenda) {
 
         sale.collateralSwapRefundableAmount = refundableAmount
         sale.collateralSwapSeizableAmount = seizableAmount
+        await sale.save()
 
         if (isArbiter()) {
           try {
@@ -131,11 +136,14 @@ function defineSalesInitJobs (agenda) {
             sale.status = 'COLLATERAL_SENDING'
           }
         } else {
+          console.log(`${getEndpoint('ARBITER_ENDPOINT')}/sales/new`)
+          console.log({ principal, loanId, lenderSigs: agentSigs, refundableAmount, seizableAmount })
           await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/sales/new`, { principal, loanId, lenderSigs: agentSigs, refundableAmount, seizableAmount })
         }
 
         const latestCollateralBlock = await loan.collateralClient().getMethod('getBlockHeight')()
         sale.latestCollateralBlock = latestCollateralBlock
+        await sale.save()
 
         console.log('saving sale', sale)
 

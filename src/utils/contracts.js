@@ -1,15 +1,16 @@
 const getWeb3 = require('./web3')
-const { contractAddresses } = require('../networks/index')
+const { contractAddresses, versions } = require('../networks/index')
+
+const addresses = contractAddresses(process.env.NETWORK)
+const version = versions(process.env.NETWORK)['VERSION']
 
 const schema = {}
 
-schema.funds = require('../abi/funds')
-schema.loans = require('../abi/loans')
-schema.sales = require('../abi/sales')
+schema.funds = require(`../abi/${version}/funds`)
+schema.loans = require(`../abi/${version}/loans`)
+schema.sales = require(`../abi/${version}/sales`)
 schema.erc20 = require('../abi/erc20')
 schema.ctoken = require('../abi/ctoken')
-
-const addresses = contractAddresses(process.env.NETWORK)
 
 function loadObject (type, address) {
   const web3 = getWeb3()

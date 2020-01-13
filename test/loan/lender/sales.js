@@ -9,6 +9,7 @@ const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
 const { sha256, hash160 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
+const isCI = require('is-ci')
 
 const { chains, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans, fundTokens, increaseTime } = require('../loanCommon')
@@ -136,12 +137,12 @@ function testSales (web3Chain, ethNode, btcChain) {
       console.log('Mine BTC Block')
       await chains.bitcoinWithNode.client.chain.generateBlock(1)
 
-      await secondsCountDown(25)
+      await secondsCountDown(45)
 
       const approvedAfter = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedAfter).to.equal(true)
 
-      await loans.methods.withdraw(numToBytes32(loanId), ensure0x(secrets[0])).send({ gas: 100000 })
+      await loans.methods.withdraw(numToBytes32(loanId), ensure0x(secrets[0])).send({ gas: 2000000 })
       const withdrawn = await loans.methods.withdrawn(numToBytes32(loanId)).call()
       expect(withdrawn).to.equal(true)
 
@@ -306,6 +307,11 @@ async function getLoanStatus (loanId) {
 }
 
 async function testSetup (web3Chain, ethNode, btcChain) {
+  const blockHeight = await btcChain.client.chain.getBlockHeight()
+  if (blockHeight < 101) {
+    await btcChain.client.chain.generateBlock(101)
+  }
+
   await increaseTime(3600)
   await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
@@ -338,30 +344,37 @@ function testAfterArbiter () {
 
 describe('Lender Agent - Funds', () => {
   describe('Web3HDWallet / BitcoinJs', () => {
-    before(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs) })
+    before(async function () {
+      await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
+      testSetupArbiter()
+    })
+    after(function () {
+      testAfterArbiter()
+    })
     testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
 
-  // describe.only('Web3HDWallet / BitcoinJs', () => {
-  //   before(async function () {
-  //     await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
-  //     testSetupArbiter()
-  //   })
-  //   after(function() {
-  //     testAfterArbiter()
-  //   })
-  //   testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
-  // })
+  if (!isCI) {
+    describe('MetaMask / BitcoinJs', () => {
+      before(async function () {
+        await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)
+        testSetupArbiter()
+      })
+      after(function () {
+        testAfterArbiter()
+      })
+      testSales(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)
+    })
 
-  // describe('MetaMask / BitcoinJs', () => {
-  //   connectMetaMask()
-  //   before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
-  //   testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
-  // })
-
-  // describe('MetaMask / Ledger', () => {
-  //   connectMetaMask()
-  //   before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
-  //   testE2E(chains.web3WithMetaMask, chains.bitcoinWithLedger)
-  // })
+    describe('MetaMask / Ledger', () => {
+      before(async function () {
+        await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithLedger)
+        testSetupArbiter()
+      })
+      after(function () {
+        testAfterArbiter()
+      })
+      testSales(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithLedger)
+    })
+  }
 })

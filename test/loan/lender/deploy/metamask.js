@@ -2,6 +2,7 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
+const isCI = require('is-ci')
 
 const { chains, connectMetaMask } = require('../../../common')
 const { fundWeb3Address, fundTokens } = require('../../loanCommon')
@@ -30,7 +31,9 @@ function fundMetaMask (web3Chain) {
   })
 }
 
-describe('Fund MetaMask', () => {
-  connectMetaMask()
-  fundMetaMask(chains.web3WithMetaMask)
-})
+if (!isCI) {
+  describe('Fund MetaMask', () => {
+    connectMetaMask()
+    fundMetaMask(chains.web3WithMetaMask)
+  })
+}

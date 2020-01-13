@@ -2,6 +2,7 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
+const isCI = require('is-ci')
 
 chai.should()
 const expect = chai.expect
@@ -33,7 +34,9 @@ async function testSetup () {
   await fundAgent(server)
 }
 
-describe('Arbiter Agent - Agents', () => {
-  beforeEach(async function () { await testSetup() })
-  testArbiterAgents()
-})
+if (!isCI) {
+  describe('Arbiter Agent - Agents', () => {
+    beforeEach(async function () { await testSetup() })
+    testArbiterAgents()
+  })
+}

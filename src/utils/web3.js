@@ -1,9 +1,15 @@
+const fs = require('fs')
+const path = require('path')
+
 const Web3 = require('web3')
 const HDWalletProvider = require('@truffle/hdwallet-provider')
-const { updateEnvValue } = require('./test')
+const { updateEnvValue, getEnvValue } = require('./test')
 const { isArbiter } = require('./env')
 
 const { MNEMONIC, MNEMONIC_ARBITER, ETH_RPC } = process.env
+
+console.log('MNEMONIC', MNEMONIC)
+console.log('MNEMONIC_ARBITER', MNEMONIC_ARBITER)
 
 const httpProvider = new Web3.providers.HttpProvider(ETH_RPC)
 const provider = new HDWalletProvider(isArbiter() ? MNEMONIC_ARBITER : MNEMONIC, httpProvider, 0, 1, false)

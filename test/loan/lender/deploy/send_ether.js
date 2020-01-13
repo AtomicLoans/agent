@@ -2,6 +2,7 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
+const isCI = require('is-ci')
 
 const { chains } = require('../../../common')
 const { fundAgent } = require('../../loanCommon')
@@ -22,8 +23,10 @@ function sendEther (web3Chain) {
   })
 }
 
-describe('Lender Agent', () => {
-  describe('Web3HDWallet / BitcoinJs', () => {
-    sendEther(chains.web3WithHDWallet)
+if (!isCI) {
+  describe('Lender Agent', () => {
+    describe('Web3HDWallet / BitcoinJs', () => {
+      sendEther(chains.web3WithHDWallet)
+    })
   })
-})
+}

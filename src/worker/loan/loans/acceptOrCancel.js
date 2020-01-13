@@ -74,6 +74,8 @@ function defineLoanAcceptOrCancelJobs (agenda) {
 
           txData = loans.methods.accept(numToBytes32(loanId), ensure0x(secretModel.secret)).encodeABI()
         } else {
+          const { secretHashB1 } = await loans.methods.secretHashes(numToBytes32(loanId)).call()
+
           txData = loans.methods.accept(numToBytes32(loanId), ensure0x(lenderSecrets[0])).encodeABI()
         }
         const ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('loans', principal), loan)
