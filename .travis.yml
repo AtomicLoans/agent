@@ -27,7 +27,7 @@ before_script:
   - CI=false npm run deploy:contracts
   - CI=false npm run lender:test &
   - CI=false npm run arbiter:test &
-  - sleep 200
+  - sleep 20
 
 jobs:
   include:

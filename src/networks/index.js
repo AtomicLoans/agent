@@ -2,11 +2,13 @@ const mainnetAddresses = require('../config/addresses/mainnet.json')
 const mainnetEndpoints = require('../config/endpoints/mainnet.json')
 const mainnetIntervals = require('../config/intervals/mainnet.json')
 const mainnetBitcoin = require('../config/bitcoin/mainnet.json')
+const mainnetVersion = require('../config/versions/mainnet.json')
 
 const kovanAddresses = require('../config/addresses/kovan.json')
 const kovanEndpoints = require('../config/endpoints/kovan.json')
 const kovanIntervals = require('../config/intervals/kovan.json')
 const kovanBitcoin = require('../config/bitcoin/kovan.json')
+const kovanVersion = require('../config/versions/kovan.json')
 
 function contractAddresses (network) {
   if (network === 'mainnet') {
@@ -52,9 +54,21 @@ function bitcoinNetworks (network) {
   }
 }
 
+function versions (network) {
+  if (network === 'mainnet') {
+    return mainnetVersion
+  } else if (network === 'kovan') {
+    return kovanVersion
+  } else if (network === 'test') {
+    const testVersion = require('../config/versions/test.json')
+    return testVersion
+  }
+}
+
 module.exports = {
   contractAddresses,
   endpoints,
   intervals,
-  bitcoinNetworks
+  bitcoinNetworks,
+  versions
 }

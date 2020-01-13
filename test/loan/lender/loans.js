@@ -88,17 +88,17 @@ describe('Lender Agent - Loans', () => {
     testLoans(chains.web3WithHDWallet, chains.bitcoinWithJs)
   })
 
-  if (!isCI) {
-    describe('MetaMask / BitcoinJs', () => {
-      connectMetaMask()
-      before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithJs) })
-      testLoans(chains.web3WithMetaMask, chains.bitcoinWithJs)
-    })
+  // if (!isCI) {
+  //   describe('MetaMask / BitcoinJs', () => {
+  //     connectMetaMask()
+  //     before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithJs) })
+  //     testLoans(chains.web3WithMetaMask, chains.bitcoinWithJs)
+  //   })
 
-    describe('MetaMask / Ledger', () => {
-      connectMetaMask()
-      before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
-      testLoans(chains.web3WithMetaMask, chains.bitcoinWithLedger)
-    })
-  }
+  //   describe('MetaMask / Ledger', () => {
+  //     connectMetaMask()
+  //     before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
+  //     testLoans(chains.web3WithMetaMask, chains.bitcoinWithLedger)
+  //   })
+  // }
 })
