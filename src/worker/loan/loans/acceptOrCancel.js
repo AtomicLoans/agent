@@ -122,10 +122,16 @@ function defineLoanAcceptOrCancelJobs (agenda) {
       if (paid) {
         console.log('ACCEPTED')
         loan.status = 'ACCEPTED'
+        mailer.notify(loan.borrowerPrincipalAddress, 'loan-accepted', {
+          loanId: loan.loanId
+        })
         await loan.save()
       } else {
         console.log('CANCELLED')
         loan.status = 'CANCELLED'
+        mailer.notify(loan.borrowerPrincipalAddress, 'loan-cancelled', {
+          loanId: loan.loanId
+        })
         await loan.save()
       }
     }

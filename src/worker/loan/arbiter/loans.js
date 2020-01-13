@@ -118,6 +118,7 @@ function defineArbiterLoanJobs (agenda) {
           const amounts = await getCollateralAmounts(numToBytes32(currentIndex), loan, rate)
           loan.setCollateralAddressValues(addresses, amounts)
           loan.borrowerPrincipalAddress = borrower
+          loan.loanExpiration = loanExpiration
 
           await loan.save()
         }
