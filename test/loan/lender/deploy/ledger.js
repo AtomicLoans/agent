@@ -2,6 +2,7 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
+const isCI = require('is-ci')
 
 const { chains, importBitcoinAddresses, fundUnusedBitcoinAddress } = require('../../../common')
 
@@ -21,6 +22,8 @@ function importLedger (btcChain, btcNode) {
   })
 }
 
-describe('Lender Agent - Import Ledger', () => {
-  importLedger(chains.bitcoinWithLedger, chains.bitcoinWithNode)
-})
+if (!isCI) {
+  describe('Lender Agent - Import Ledger', () => {
+    importLedger(chains.bitcoinWithLedger, chains.bitcoinWithNode)
+  })
+}

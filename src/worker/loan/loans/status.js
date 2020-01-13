@@ -254,7 +254,7 @@ function defineLoanStatusJobs (agenda) {
               getCurrentTime()
             ])
 
-            // Cancel loan if not withdrawn within an hour after approveExpiration
+            // Cancel loan if not withdrawn within 22 hours after approveExpiration
             if ((currentTime > (parseInt(approveExpiration) + 79200)) && !withdrawn) {
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
             }

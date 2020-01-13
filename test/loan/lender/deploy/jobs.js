@@ -2,6 +2,7 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
+const isCI = require('is-ci')
 
 const { cancelJobs } = require('../../loanCommon')
 
@@ -22,6 +23,8 @@ function stopJobs (web3Chain) {
   })
 }
 
-describe('Agent Jobs', () => {
-  stopJobs()
-})
+if (!isCI) {
+  describe('Agent Jobs', () => {
+    stopJobs()
+  })
+}
