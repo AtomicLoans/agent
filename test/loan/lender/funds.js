@@ -374,6 +374,11 @@ async function createFundFromFixture (web3Chain, fixture, principal_, amount, me
 }
 
 async function testSetup (web3Chain, ethNode, btcChain) {
+  const blockHeight = await btcChain.client.chain.getBlockHeight()
+  if (blockHeight < 101) {
+    await btcChain.client.chain.generateBlock(101)
+  }
+
   await increaseTime(3600)
   await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
