@@ -25,6 +25,7 @@ chai.use(chaiHttp)
 chai.use(chaiAsPromised)
 
 const server = 'http://localhost:3030/api/loan'
+const arbiterServer = 'http://localhost:3032/api/loan'
 
 const arbiterChain = chains.web3WithArbiter
 
