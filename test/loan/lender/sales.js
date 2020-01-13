@@ -354,7 +354,7 @@ describe('Lender Agent - Funds', () => {
         await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
         testSetupArbiter()
       })
-      after(function() {
+      after(function () {
         testAfterArbiter()
       })
       testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
@@ -365,7 +365,7 @@ describe('Lender Agent - Funds', () => {
         await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)
         testSetupArbiter()
       })
-      after(function() {
+      after(function () {
         testAfterArbiter()
       })
       testSales(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)
@@ -376,7 +376,7 @@ describe('Lender Agent - Funds', () => {
         await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithLedger)
         testSetupArbiter()
       })
-      after(function() {
+      after(function () {
         testAfterArbiter()
       })
       testSales(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithLedger)

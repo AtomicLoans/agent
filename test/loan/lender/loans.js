@@ -24,7 +24,7 @@ const arbiterServer = 'http://localhost:3032/api/loan'
 
 const arbiterChain = chains.web3WithArbiter
 
-async function getCurrentTime(web3) {
+async function getCurrentTime (web3) {
   const latestBlockNumber = await web3.eth.getBlockNumber()
   const latestBlockTimestamp = (await web3.eth.getBlock(latestBlockNumber)).timestamp
   return latestBlockTimestamp
@@ -63,7 +63,6 @@ async function testSetup (web3Chain, btcChain) {
   }
 
   await increaseTime(3600)
-  await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
   await cancelLoans(web3Chain)
