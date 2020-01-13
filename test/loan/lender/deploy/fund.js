@@ -4,6 +4,7 @@ const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
 const BN = require('bignumber.js')
 const { generateMnemonic } = require('bip39')
+const isCI = require('is-ci')
 
 const { chains, rewriteEnv } = require('../../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, fundWeb3Address, getAgentAddress, getTestContract, getTestObjects, removeFunds } = require('../../loanCommon')
@@ -54,9 +55,11 @@ async function testSetup (web3Chain) {
   await fundWeb3Address(web3Chain)
 }
 
-describe('Lender Agent - Deploy - Fund', () => {
-  describe('Web3HDWallet / BitcoinJs', () => {
-    beforeEach(async function () { await testSetup(chains.web3WithHDWallet) })
-    deployFund(chains.web3WithHDWallet)
+if (!isCI) {
+  describe('Lender Agent - Deploy - Fund', () => {
+    describe('Web3HDWallet / BitcoinJs', () => {
+      beforeEach(async function () { await testSetup(chains.web3WithHDWallet) })
+      deployFund(chains.web3WithHDWallet)
+    })
   })
-})
+}

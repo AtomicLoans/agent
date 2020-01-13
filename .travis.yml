@@ -31,21 +31,6 @@ before_script:
 
 jobs:
   include:
-    - stage: Test E2E
+    - stage: Test
       script:
-        - CI=false npm run test:lender:e2e
-    - stage: Test Main
-      script:
-        - CI=false npm run test:lender:agent
-        - CI=false npm run test:lender:loan_market
-        - CI=false npm run test:lender:withdraw
-        - CI=false npm run test:lender:tx
-    - stage: Test Funds
-      script:
-        - CI=false npm run test:lender:funds
-    - stage: Test Loans
-      script:
-        - CI=false npm run test:lender:loans
-    - stage: Test Sales
-      script:
-        - CI=false npm run test:lender:sales
+        - CI=false npm run test

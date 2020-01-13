@@ -9,6 +9,7 @@ const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
 const { sha256, hash160 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
+const isCI = require('is-ci')
 
 const { chains, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans, fundTokens, increaseTime } = require('../loanCommon')
@@ -347,26 +348,28 @@ describe('Lender Agent - Funds', () => {
     testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
 
-  // describe.only('Web3HDWallet / BitcoinJs', () => {
-  //   before(async function () {
-  //     await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
-  //     testSetupArbiter()
-  //   })
-  //   after(function() {
-  //     testAfterArbiter()
-  //   })
-  //   testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
-  // })
+  if (!isCI) {
+    describe('Web3HDWallet / BitcoinJs', () => {
+      before(async function () {
+        await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
+        testSetupArbiter()
+      })
+      after(function() {
+        testAfterArbiter()
+      })
+      testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
+    })
 
-  // describe('MetaMask / BitcoinJs', () => {
-  //   connectMetaMask()
-  //   before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
-  //   testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
-  // })
+    describe('MetaMask / BitcoinJs', () => {
+      connectMetaMask()
+      before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
+      testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
+    })
 
-  // describe('MetaMask / Ledger', () => {
-  //   connectMetaMask()
-  //   before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
-  //   testE2E(chains.web3WithMetaMask, chains.bitcoinWithLedger)
-  // })
+    describe('MetaMask / Ledger', () => {
+      connectMetaMask()
+      before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
+      testE2E(chains.web3WithMetaMask, chains.bitcoinWithLedger)
+    })
+  }
 })

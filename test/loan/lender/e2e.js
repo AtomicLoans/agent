@@ -9,6 +9,7 @@ const { ensure0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
 const { sha256 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
+const isCI = require('is-ci')
 
 const { chains, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans, increaseTime } = require('../loanCommon')
@@ -217,12 +218,7 @@ function testAfterArbiter () {
 }
 
 describe('Lender Agent - Funds', () => {
-  // describe('Web3HDWallet / BitcoinJs', () => {
-  //   before(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs) })
-  //   testE2E(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
-  // })
-
-  describe.only('Web3HDWallet / BitcoinJs', () => {
+  describe('Web3HDWallet / BitcoinJs', () => {
     before(async function () {
       await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
       testSetupArbiter()
@@ -233,15 +229,17 @@ describe('Lender Agent - Funds', () => {
     testE2E(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
 
-  // describe('MetaMask / BitcoinJs', () => {
-  //   connectMetaMask()
-  //   before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
-  //   testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
-  // })
+  if (!isCI) {
+    describe('MetaMask / BitcoinJs', () => {
+      connectMetaMask()
+      before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
+      testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
+    })
 
-  // describe('MetaMask / Ledger', () => {
-  //   connectMetaMask()
-  //   before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
-  //   testE2E(chains.web3WithMetaMask, chains.bitcoinWithLedger)
-  // })
+    describe('MetaMask / Ledger', () => {
+      connectMetaMask()
+      before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
+      testE2E(chains.web3WithMetaMask, chains.bitcoinWithLedger)
+    })
+  }
 })

@@ -6,6 +6,7 @@ const BN = require('bignumber.js')
 const { checksumEncode } = require('@liquality/ethereum-utils')
 const { sleep } = require('@liquality/utils')
 const { generateMnemonic } = require('bip39')
+const isCI = require('is-ci')
 
 const { chains, rewriteEnv } = require('../../common')
 const { fundArbiter, fundAgent, fundTokens, getAgentAddress, generateSecretHashesArbiter, getTestContract, getTestObjects, cancelLoans, removeFunds, cancelJobs, fundWeb3Address } = require('../loanCommon')
@@ -372,17 +373,24 @@ async function createFundFromFixture (web3Chain, fixture, principal_, amount, me
 }
 
 async function testSetup (web3Chain, ethNode) {
+  await increaseTime(3600)
   await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
   await cancelLoans(web3Chain)
   await cancelJobs(server)
+  await cancelJobs(arbiterServer)
   rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
   await removeFunds()
+  await removeLoans()
   await fundAgent(server)
   await fundArbiter()
   await generateSecretHashesArbiter('SAI')
   await fundWeb3Address(web3Chain)
+  await importBitcoinAddresses(btcChain)
+  await fundUnusedBitcoinAddress(btcChain)
+  await restartJobs(server)
+  await restartJobs(arbiterServer)
 }
 
 describe('Lender Agent - Funds', () => {
@@ -391,15 +399,17 @@ describe('Lender Agent - Funds', () => {
     testFunds(chains.web3WithHDWallet, chains.ethereumWithNode)
   })
 
-  // describe('MetaMask / Ledger', () => {
-  //   connectMetaMask()
-  //   beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
-  //   testFunds(chains.web3WithMetaMask, chains.bitcoinWithLedger)
-  // })
+  if (!isCI) {
+    describe('MetaMask / Ledger', () => {
+      connectMetaMask()
+      beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
+      testFunds(chains.web3WithMetaMask, chains.bitcoinWithLedger)
+    })
 
-  // describe('MetaMask / BitcoinJs', () => {
-  //   connectMetaMask()
-  //   beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode) })
-  //   testFunds(chains.web3WithMetaMask, chains.ethereumWithNode)
-  // })
+    describe('MetaMask / BitcoinJs', () => {
+      connectMetaMask()
+      beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode) })
+      testFunds(chains.web3WithMetaMask, chains.ethereumWithNode)
+    })
+  }
 })

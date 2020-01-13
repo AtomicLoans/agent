@@ -4,6 +4,7 @@ const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
 const BN = require('bignumber.js')
 const { generateMnemonic } = require('bip39')
+const isCI = require('is-ci')
 
 const { chains, connectMetaMask, rewriteEnv } = require('../../common')
 const { fundWeb3Address } = require('../loanCommon')
@@ -43,7 +44,7 @@ function testWithdraw (chain) {
 }
 
 describe('Lender Agent - Withdraw', () => {
-  describe.only('Web3HDWallet', () => {
+  describe('Web3HDWallet', () => {
     before(async function () {
       await fundWeb3Address(chains.web3WithHDWallet)
       const address = await getWeb3Address(chains.web3WithHDWallet)
@@ -53,14 +54,16 @@ describe('Lender Agent - Withdraw', () => {
     testWithdraw(chains.web3WithHDWallet)
   })
 
-  describe('MetaMask', () => {
-    connectMetaMask()
-    before(async function () {
-      await fundWeb3Address(chains.web3WithMetaMask)
-      const address = await getWeb3Address(chains.web3WithMetaMask)
-      rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
-      rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
+  if (!isCI){
+    describe('MetaMask', () => {
+      connectMetaMask()
+      before(async function () {
+        await fundWeb3Address(chains.web3WithMetaMask)
+        const address = await getWeb3Address(chains.web3WithMetaMask)
+        rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
+        rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
+      })
+      testWithdraw(chains.web3WithMetaMask)
     })
-    testWithdraw(chains.web3WithMetaMask)
-  })
+  }
 })
