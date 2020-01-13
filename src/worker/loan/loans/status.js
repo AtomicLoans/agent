@@ -245,7 +245,7 @@ function defineLoanStatusJobs (agenda) {
 
           for (let j = 0; j < loanModels.length; j++) {
             const loan = loanModels[j]
-            const { loanId } = loan
+            const { loanId, loanExpiration, lastWarningSent } = loan
 
             const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
 
@@ -258,6 +258,17 @@ function defineLoanStatusJobs (agenda) {
             if ((currentTime > (parseInt(approveExpiration) + 79200)) && !withdrawn) {
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
               console.log('accept or cancel 4')
+            }
+
+            if (isArbiter()) {
+              // Warn if loan is about to expire in a day
+              if ( ((Date.now() / 1000) - (lastWarningSent || 0) > 86400) && (currentTime > (parseInt(loanExpiration) - 86400))) {
+                mailer.notify(loan.borrowerPrincipalAddress, 'loan-expiring', {
+                  loanId: loan.loanId                    
+                })
+                loan.lastWarningSent = Date.now()
+                await loan.save()
+              }
             }
 
             if (!approved && !withdrawn && !paid && !sale && !off) {
@@ -294,6 +305,18 @@ function defineLoanStatusJobs (agenda) {
               }
             } else if (withdrawn && !paid && !sale && !off) {
               loan.status = 'WITHDRAWN'
+
+              const alertCollateralAmount = loan.minimumCollateralAmount * 1.1
+              
+              if (isArbiter()) {
+                if ( ((Date.now() / 1000) - (lastWarningSent || 0) > 86400) && loan.collateralAmount < alertCollateralAmount) {
+                  mailer.notify(loan.borrowerPrincipalAddress, 'loan-near-liquidation', {
+                    loanId: loan.loanId                    
+                  })
+                  loan.lastWarningSent = Date.now()
+                }
+              }
+
               await loan.save()
             } else if (withdrawn && paid && !sale && !off) {
               loan.status = 'REPAID'
@@ -382,6 +405,9 @@ function defineLoanStatusJobs (agenda) {
                 })
                 loan.status = 'CANCELLED'
               } else {
+                mailer.notify(loan.borrowerPrincipalAddress, 'loan-accepted', {
+                  loanId: loan.loanId
+                })
                 loan.status = 'ACCEPTED'
               }
               await loan.save()
