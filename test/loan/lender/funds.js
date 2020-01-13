@@ -380,7 +380,6 @@ async function testSetup (web3Chain, ethNode, btcChain) {
   }
 
   await increaseTime(3600)
-  await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
   await cancelLoans(web3Chain)
