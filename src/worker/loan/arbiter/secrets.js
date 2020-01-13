@@ -9,6 +9,7 @@ const Secrets = require('../../../models/Secrets')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
+const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 
 function defineArbiterSecretsJobs (agenda) {
@@ -115,6 +116,8 @@ async function txFailure (error, instance) {
   console.log('FAILED TO GENERATE')
   secretsModel.status = 'FAILED'
   await secretsModel.save()
+
+  handleError(error)
 }
 
 module.exports = {

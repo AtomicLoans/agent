@@ -8,7 +8,7 @@ const { sleep } = require('@liquality/utils')
 const { generateMnemonic } = require('bip39')
 const isCI = require('is-ci')
 
-const { chains, rewriteEnv, connectMetaMask, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress } = require('../../common')
+const { chains, rewriteEnv, connectMetaMask, importBitcoinAddresses, fundUnusedBitcoinAddress } = require('../../common')
 const { fundArbiter, fundAgent, fundTokens, getAgentAddress, generateSecretHashesArbiter, getTestContract, getTestObjects, cancelLoans, removeFunds, removeLoans, cancelJobs, restartJobs, fundWeb3Address, increaseTime } = require('../loanCommon')
 const fundFixtures = require('../fixtures/fundFixtures')
 const { getWeb3Address } = require('../util/web3Helpers')
@@ -297,7 +297,7 @@ function testFunds (web3Chain, ethNode) {
 
       const signature = await web3Chain.client.eth.personal.sign(message, address)
 
-      const { fundId, fundModelId, amountDeposited, agentAddress } = await createFundFromFixture(web3Chain, fixture, principal, amount, message, signature)
+      const { fundId, amountDeposited, agentAddress } = await createFundFromFixture(web3Chain, fixture, principal, amount, message, signature)
 
       const { lender, maxLoanDur, fundExpiry: actualFundExpiry, cBalance } = await funds.methods.funds(numToBytes32(fundId)).call()
 

@@ -4,7 +4,6 @@ const express = require('express')
 const helmet = require('helmet')
 const compression = require('compression')
 const bodyParser = require('body-parser')
-const mongoose = require('mongoose')
 const Agenda = require('agenda')
 const Agendash = require('agendash')
 const path = require('path')
@@ -17,8 +16,6 @@ const bugsnagExpress = require('@bugsnag/plugin-express')
 const cors = require('../middlewares/cors')
 const httpHelpers = require('../middlewares/httpHelpers')
 const handleError = require('../middlewares/handleError')
-
-const Market = require('../models/Market')
 
 const { migrate } = require('../migrate/migrate')
 
@@ -34,9 +31,9 @@ const bugsnagClient = bugsnag(BUGSNAG_API)
 
 let agenda
 if (PARTY !== 'arbiter') {
-  agenda = new Agenda({ db: { address: MONGODB_URI }})
+  agenda = new Agenda({ db: { address: MONGODB_URI } })
 } else {
-  agenda = new Agenda({ db: { address: MONGODB_ARBITER_URI }})
+  agenda = new Agenda({ db: { address: MONGODB_ARBITER_URI } })
 }
 
 migrate()
@@ -65,12 +62,12 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '5mb' }))
 app.set('etag', false)
 app.set('agenda', agenda)
 
-app.use('/dash', 
+app.use('/dash',
   basicAuth({
     users: {
-      admin: dashPass,
+      admin: dashPass
     },
-    challenge: true,
+    challenge: true
   }),
   Agendash(agenda)
 )
@@ -78,16 +75,16 @@ app.use('/dash',
 app.use('/api/swap', require('./routes/swap'))
 app.use('/api/loan', require('./routes/loan/index'))
 
-app.set('views', __dirname + '/views');
-app.set('view engine', 'js');
-app.engine('js', reactViews.createEngine());
+app.set('views', path.join(__dirname, '/views'))
+app.set('view engine', 'js')
+app.engine('js', reactViews.createEngine())
 
-app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/public', express.static(path.join(__dirname, 'public')))
 
-app.get('/', require('./viewRoutes').index);
-app.get('/verify', require('./viewRoutes').verify);
-app.get('/key', require('./viewRoutes').key);
-app.get('/success', require('./viewRoutes').success);
+app.get('/', require('./viewRoutes').index)
+app.get('/verify', require('./viewRoutes').verify)
+app.get('/key', require('./viewRoutes').key)
+app.get('/success', require('./viewRoutes').success)
 
 if (NODE_ENV === 'production') {
   app.use(Sentry.Handlers.errorHandler())

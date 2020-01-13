@@ -8,11 +8,12 @@ const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
+const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
-const getMailer =  require('../utils/mailer')
+const getMailer = require('../utils/mailer')
 
 function defineSalesAcceptJobs (agenda) {
-  const mailer = getMailer(agenda);
+  const mailer = getMailer(agenda)
   agenda.define('accept-sale', async (job, done) => {
     const { data } = job.attrs
     const { saleModelId } = data
@@ -108,7 +109,13 @@ async function txSuccess (transactionHash, ethTx, instance, agenda) {
 }
 
 async function txFailure (error, instance) {
+  const accept = instance
+
   console.log('FAILED TO ACCEPT')
+  accept.status = 'FAILED'
+  await accept.save()
+
+  handleError(error)
 }
 
 module.exports = {

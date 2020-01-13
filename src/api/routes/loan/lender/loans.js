@@ -76,7 +76,7 @@ function defineLoansRouter (router) {
       const loan = await Loan.findOne({ _id: params.loanModelId }).exec()
       if (!loan) return next(res.createError(401, 'Loan not found'))
       const {
-        principal, collateral, principalAmount, minimumCollateralAmount, requestExpiresAt, requestCreatedAt, lenderCollateralPublicKey
+        collateral, principalAmount, minimumCollateralAmount, requestExpiresAt, requestCreatedAt
       } = loan
 
       ;['borrowerSecretHashes', 'borrowerCollateralPublicKey', 'borrowerPrincipalAddress'].forEach(key => {

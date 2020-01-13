@@ -1,5 +1,5 @@
 module.exports = {
-  async up(db, client) {
+  async up (db, client) {
     await db.collection('agentfunds').updateMany({ principal: 'DAI' }, { $set: { principal: 'SAI' } })
     await db.collection('approves').updateMany({ principal: 'DAI' }, { $set: { principal: 'SAI' } })
     await db.collection('funds').updateMany({ principal: 'DAI' }, { $set: { principal: 'SAI' } })
@@ -10,7 +10,7 @@ module.exports = {
     await db.collection('secrets').updateMany({ principal: 'DAI' }, { $set: { principal: 'SAI', oldPrincipal: 'DAI' } })
   },
 
-  async down(db, client) {
+  async down (db, client) {
     await db.collection('agentfunds').updateMany({ principal: 'SAI' }, { $set: { principal: 'DAI' } })
     await db.collection('approves').updateMany({ principal: 'SAI' }, { $set: { principal: 'DAI' } })
     await db.collection('funds').updateMany({ principal: 'SAI' }, { $set: { principal: 'DAI' } })
@@ -20,4 +20,4 @@ module.exports = {
     await db.collection('sales').updateMany({ principal: 'SAI' }, { $set: { principal: 'DAI' } })
     await db.collection('secrets').updateMany({ principal: 'SAI' }, { $set: { principal: 'DAI', oldPrincipal: '' } })
   }
-};
+}

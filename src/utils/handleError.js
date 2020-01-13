@@ -1,10 +1,9 @@
 const bugsnag = require('@bugsnag/js')
 const bugsnagClient = bugsnag(process.env.BUGSNAG_API)
 const { getAgentUrl } = require('./url')
-const { getEndpoint } = require('./endpoints')
 
 function handleError (e) {
-  agentUrl = getAgentUrl()
+  const agentUrl = getAgentUrl()
 
   bugsnagClient.metaData = {
     agentUrl

@@ -1,15 +1,15 @@
 const mongoose = require('mongoose')
-require('mongoose-type-email');
+require('mongoose-type-email')
 
 const EmailSchema = new mongoose.Schema({
   email: {
-      type: mongoose.SchemaTypes.Email,
-      required: true,
-      index: true,
+    type: mongoose.SchemaTypes.Email,
+    required: true,
+    index: true
   },
   addressEmails: [{
     type: mongoose.Schema.Types.ObjectId, ref: 'AddressEmail'
-  }],
+  }]
 })
 
 EmailSchema.methods.json = function () {

@@ -1,11 +1,7 @@
-const React = require('react');
+const React = require('react')
 
 class App extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
-  render() {
+  render () {
     var initScript = `
       document.getElementById('submit').onclick = function() {
         var apiKey = document.getElementById("apikey").value;
@@ -35,34 +31,34 @@ class App extends React.Component {
           })
         })
       }
-    `;
+    `
 
     return (
       <>
         <head>
-          <link rel="stylesheet" href="/public/css/main.css" />
+          <link rel='stylesheet' href='/public/css/main.css' />
         </head>
         <body>
-          <div className="text-center thin homedashboard">
+          <div className='text-center thin homedashboard'>
 
             <h1>
-              Enter Heroku API <span className="theme">Key</span>
+              Enter Heroku API <span className='theme'>Key</span>
             </h1>
-            <p>To find your Heroku API Key, go to <a href="https://dashboard.heroku.com/account" target="_blank">https://dashboard.heroku.com/account</a></p>
+            <p>To find your Heroku API Key, go to <a href='https://dashboard.heroku.com/account' target='_blank'>https://dashboard.heroku.com/account</a></p>
             <p>This will allow you to update your autopilot agent by authenticating using your metamask account.</p>
-            <br/>
-            <div className="field">
-              <input placeholder="Heroku API Key" label="Heroku API Key" value="" id="apikey"/>
-              <div className="field_aside click theme1" id="submit">Submit</div>
+            <br />
+            <div className='field'>
+              <input placeholder='Heroku API Key' label='Heroku API Key' value='' id='apikey' />
+              <div className='field_aside click theme1' id='submit'>Submit</div>
             </div>
 
           </div>
 
-          <script dangerouslySetInnerHTML={{__html: initScript}} />
+          <script dangerouslySetInnerHTML={{ __html: initScript }} />
         </body>
       </>
     )
   }
 }
 
-module.exports = App;
+module.exports = App

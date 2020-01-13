@@ -4,7 +4,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 const { MONGOOSE_DEBUG, MONGODB_ARBITER_URI, MONGODB_URI, HEROKU_APP, NODE_ENV, MNEMONIC, MNEMONIC_ARBITER, PARTY } = process.env
 
-const { isArbiter, rewriteEnv, getEnvTestValue } = require('./utils/env')
+const { isArbiter, rewriteEnv } = require('./utils/env')
 const mongoose = require('mongoose')
 const { generateMnemonic } = require('bip39')
 var isCI = require('is-ci')
@@ -15,7 +15,7 @@ if (MONGOOSE_DEBUG === 'true') {
 
 mongoose.connect(isArbiter() ? MONGODB_ARBITER_URI : MONGODB_URI, { useNewUrlParser: true, useCreateIndex: true })
 
-async function start() {
+async function start () {
   if (HEROKU_APP !== undefined && HEROKU_APP !== 'undefined') {
     const Mnemonic = require('./models/Mnemonic')
 

@@ -3,10 +3,8 @@ const chai = require('chai')
 const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
 const { generateMnemonic } = require('bip39')
-const BN = require('bignumber.js')
-const isCI = require('is-ci')
 
-const { chains, connectMetaMask, importBitcoinAddresses, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
+const { chains, importBitcoinAddresses, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, removeFunds, removeLoans, increaseTime, restartJobs, secondsCountDown } = require('../loanCommon')
 const { providePofAndRequest } = require('./common')
 const { getWeb3Address } = require('../util/web3Helpers')
@@ -24,12 +22,6 @@ const arbiterServer = 'http://localhost:3032/api/loan'
 
 const arbiterChain = chains.web3WithArbiter
 
-async function getCurrentTime (web3) {
-  const latestBlockNumber = await web3.eth.getBlockNumber()
-  const latestBlockTimestamp = (await web3.eth.getBlock(latestBlockNumber)).timestamp
-  return latestBlockTimestamp
-}
-
 function testLoans (web3Chain, btcChain) {
   describe('Cancel Loan', () => {
     it('should cancel loan if after approveExpiration', async () => {
@@ -38,9 +30,6 @@ function testLoans (web3Chain, btcChain) {
       const loans = await getTestObject(web3Chain, 'loans', principal)
 
       const loanId = await providePofAndRequest(web3Chain, btcChain, principal, collateral)
-
-      const approveExpiration = await loans.methods.approveExpiration(numToBytes32(loanId)).call()
-      const currentTime = getCurrentTime(web3Chain.client)
 
       await increaseTime(86400 + 30)
 

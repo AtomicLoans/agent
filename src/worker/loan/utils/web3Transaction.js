@@ -30,7 +30,7 @@ async function setTxParams (data, from, to, instance) {
           gasLimit = gasLimit + 100000
         }
       }
-    } catch(e) {
+    } catch (e) {
       gasLimit = 2000000
     }
   } catch (e) {
@@ -133,8 +133,11 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
         } else if (String(error).indexOf('account has nonce of') >= 0) {
           const [accountNonce, txNonce] = String(error)
             .split("Error: the tx doesn't have the correct nonce. account has nonce of: ")[1]
-            .split(" tx has nonce of: ")
+            .split(' tx has nonce of: ')
             .map(x => parseInt(x))
+
+          console.log(`Account Nonce: ${accountNonce}`)
+          console.log(`Tx Nonce: ${txNonce}`)
 
           ethTx.nonce = accountNonce
           await ethTx.save()
@@ -180,7 +183,7 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
           done(error)
         }
       })
-  } catch(error) {
+  } catch (error) {
     console.log('web3 try catch error')
 
     ethTx.error = error
@@ -197,8 +200,11 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
     } else if (String(error).indexOf('account has nonce of') >= 0) {
       const [accountNonce, txNonce] = String(error)
         .split("Error: the tx doesn't have the correct nonce. account has nonce of: ")[1]
-        .split(" tx has nonce of: ")
+        .split(' tx has nonce of: ')
         .map(x => parseInt(x))
+
+      console.log(`Account Nonce: ${accountNonce}`)
+      console.log(`Tx Nonce: ${txNonce}`)
 
       ethTx.nonce = accountNonce
       await ethTx.save()

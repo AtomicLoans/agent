@@ -11,6 +11,7 @@ const BN = require('bignumber.js')
 const { getMarketModels } = require('../utils/models')
 const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
+const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 const { hexToNumber } = web3().utils
 const date = require('date.js')
@@ -140,6 +141,8 @@ async function txFailure (error, instance) {
 
   loan.status = 'FAILED'
   await loan.save()
+
+  handleError(error)
 }
 
 module.exports = {

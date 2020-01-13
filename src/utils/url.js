@@ -1,6 +1,6 @@
 const { getEndpoint } = require('./endpoints')
 
-const { NETWORK, HEROKU_APP, PARTY } = process.env
+const { NETWORK, HEROKU_APP, PARTY, AL_APP } = process.env
 
 function getAgentUrl () {
   if (PARTY === 'arbiter') {
@@ -12,6 +12,8 @@ function getAgentUrl () {
   } else if (AL_APP === 'true') {
     return 'https://atomicloans.io/lender-agent/api/loan/'
   }
+
+  // TODO: should be able to specify agent url
 }
 
 module.exports = {

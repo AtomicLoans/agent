@@ -1,7 +1,3 @@
-const axios = require('axios')
-const { sha256 } = require('@liquality/crypto')
-const compareVersions = require('compare-versions')
-
 const web3 = require('../../../utils/web3')
 const EthTx = require('../../../models/EthTx')
 const LoanMarket = require('../../../models/LoanMarket')
@@ -13,7 +9,7 @@ function defineTxEthJobs (agenda) {
     let timePeriod
     if (data) { timePeriod = data.timePeriod }
 
-    let sanitizedTimePeriod = 60*60*1000
+    let sanitizedTimePeriod = 60 * 60 * 1000
     if (timePeriod) { sanitizedTimePeriod = timePeriod }
 
     const loanMarket = await LoanMarket.findOne().exec()

@@ -1,11 +1,7 @@
-const React = require('react');
+const React = require('react')
 
 class App extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
-  render() {
+  render () {
     var initScript = `
       window.ethereum.enable().then(() => {
         const currentTime = Math.floor(new Date().getTime() / 1000)
@@ -31,38 +27,38 @@ class App extends React.Component {
           })
         })
       })
-    `;
+    `
 
     return (
       <>
         <head>
-           <link rel="stylesheet" href="/public/css/main.css" />
+          <link rel='stylesheet' href='/public/css/main.css' />
         </head>
         <body>
-          <div className="text-center thin homedashboard">
+          <div className='text-center thin homedashboard'>
             <h1>
-              Secret Backup <span className="theme">Phrase</span>
+              Secret Backup <span className='theme'>Phrase</span>
             </h1>
             <p>Your secret backup phrase makes it easy to back up and restore your autopilot agent.</p>
             <p>Never disclose your backup phrase. Anyone with this phrase can steal your Ether and stablecoins.</p>
-            <br/>
-            <div id="mnemonic">Sign message on MetaMask to reveal Secret Backup Phrase</div>
+            <br />
+            <div id='mnemonic'>Sign message on MetaMask to reveal Secret Backup Phrase</div>
 
-            <br/>
-            <br/>
+            <br />
+            <br />
 
-            <a href="/key" className="MuiButtonBase-root MuiButton-root borrow-selected app-btn MuiButton-text" id="finish-btn" tabindex="0" type="button" style={{ cursor: 'pointer', display: 'none' }}>
-              <span className="MuiButton-label">Finish Setup</span>
-              <span className="MuiTouchRipple-root"></span>
+            <a href='/key' className='MuiButtonBase-root MuiButton-root borrow-selected app-btn MuiButton-text' id='finish-btn' tabindex='0' type='button' style={{ cursor: 'pointer', display: 'none' }}>
+              <span className='MuiButton-label'>Finish Setup</span>
+              <span className='MuiTouchRipple-root' />
             </a>
 
           </div>
 
-          <script dangerouslySetInnerHTML={{__html: initScript}} />
+          <script dangerouslySetInnerHTML={{ __html: initScript }} />
         </body>
-     </>
+      </>
     )
   }
 }
 
-module.exports = App;
+module.exports = App

@@ -3,11 +3,11 @@ const EthTx = require('../../../models/EthTx')
 const Deposit = require('../../../models/Deposit')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { getEthSigner } = require('../../../utils/address')
 const { numToBytes32 } = require('../../../utils/finance')
 const { currencies } = require('../../../utils/fx')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const { getFundParams } = require('../utils/fundParams')
+const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 const { toWei } = web3().utils
 
@@ -97,6 +97,8 @@ async function txFailure (error, instance) {
   console.log('DEPOSIT FAILED')
   deposit.status = 'FAILED'
   await deposit.save()
+
+  handleError(error)
 }
 
 module.exports = {

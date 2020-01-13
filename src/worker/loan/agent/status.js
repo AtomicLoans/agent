@@ -3,8 +3,7 @@ const BN = require('bignumber.js')
 const compareVersions = require('compare-versions')
 const Agent = require('../../../models/Agent')
 const AgentFund = require('../../../models/AgentFund')
-const { getObject, getContract } = require('../../../utils/contracts')
-const { numToBytes32 } = require('../../../utils/finance')
+const { getObject } = require('../../../utils/contracts')
 const { currencies } = require('../../../utils/fx')
 const { getCurrentTime } = require('../../../utils/time')
 const handleError = require('../../../utils/handleError')
@@ -29,11 +28,12 @@ function defineAgentStatusJobs (agenda) {
 
     const agent = await Agent.findOne({ _id: agentModelId }).exec()
 
-    let lenderStatus, loanMarkets, agentVersion
+    let lenderStatus, loanMarkets, agentVersion, versionStatus
     try {
-      const { data: versionData } = await axios.get(`${agent.url}/version`)
+      const { data: versionData, status: versionStatusInternal } = await axios.get(`${agent.url}/version`)
       const { version } = versionData
       agentVersion = version
+      versionStatus = versionStatusInternal
 
       const { status, data } = await axios.get(`${agent.url}/loanmarketinfo`)
 
@@ -46,7 +46,7 @@ function defineAgentStatusJobs (agenda) {
       }
 
       lenderStatus = status
-    } catch(e) {
+    } catch (e) {
       console.log(`Agent ${agent.url} not active`)
       lenderStatus = 401
     }
@@ -56,7 +56,7 @@ function defineAgentStatusJobs (agenda) {
         if (versionStatus === 200) {
           agent.version = agentVersion
         }
-      } catch(e) {
+      } catch (e) {
         handleError(e)
       }
 
@@ -136,8 +136,17 @@ function defineAgentStatusJobs (agenda) {
             await agentFund.save()
           } else {
             const params = {
-              principal, collateral, principalAddress, utilizationRatio, fundId: hexToNumber(fundId), url: agent.url, ethBalance: fromWei(ethBalance.toString(), 'ether'),
-              marketLiquidity: marketLiquidityFormatted, borrowed: borrowedFormatted, supplied: suppliedFormatted, maxLoanLengthTimestamp
+              principal,
+              collateral,
+              principalAddress,
+              utilizationRatio,
+              fundId: hexToNumber(fundId),
+              url: agent.url,
+              ethBalance: fromWei(ethBalance.toString(), 'ether'),
+              marketLiquidity: marketLiquidityFormatted,
+              borrowed: borrowedFormatted,
+              supplied: suppliedFormatted,
+              maxLoanLengthTimestamp
             }
             const newAgentFund = AgentFund.fromAgentFundParams(params)
             await newAgentFund.save()
