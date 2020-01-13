@@ -371,7 +371,14 @@ function defineLoanStatusJobs (agenda) {
                 }
               }
             } else if (off) {
-              loan.status = 'ACCEPTED'
+              if (!paid) {
+                mailer.notify(loan.borrowerPrincipalAddress, 'loan-cancelled', {
+                  loanId: loan.loanId
+                })
+                loan.status = 'CANCELLED'
+              } else {
+                loan.status = 'ACCEPTED'
+              }
               await loan.save()
               console.log('LOAN IS ACCEPTED, CANCELLED, OR REFUNDED')
             } else if (approved && loan.status === "AWAITING_COLLATERAL") {

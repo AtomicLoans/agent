@@ -9,8 +9,10 @@ const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const web3 = require('../../../utils/web3')
+const getMailer =  require('../utils/mailer')
 
 function defineSalesAcceptJobs (agenda) {
+  const mailer = getMailer(agenda);
   agenda.define('accept-sale', async (job, done) => {
     const { data } = job.attrs
     const { saleModelId } = data
@@ -81,6 +83,10 @@ function defineSalesAcceptJobs (agenda) {
 
       const loan = await Loan.findOne({ _id: sale.loanModelId }).exec()
       if (!loan) return console.log('Error: Loan not found')
+
+      mailer.notify(loan.borrowerPrincipalAddress, 'loan-liquidated', {
+        loanId: loan.loanId
+      })
 
       loan.status = 'LIQUIDATED'
       await loan.save()
