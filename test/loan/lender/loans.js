@@ -7,7 +7,7 @@ const BN = require('bignumber.js')
 const isCI = require('is-ci')
 
 const { chains, connectMetaMask, importBitcoinAddresses, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
-const { fundArbiter, fundAgent, generateSecretHashesArbiter, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, removeFunds, increaseTime, secondsCountDown } = require('../loanCommon')
+const { fundArbiter, fundAgent, generateSecretHashesArbiter, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, removeFunds, removeLoans, increaseTime, restartJobs, secondsCountDown } = require('../loanCommon')
 const { providePofAndRequest } = require('./common')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { numToBytes32 } = require('../../../src/utils/finance')
