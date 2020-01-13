@@ -31,6 +31,6 @@ before_script:
 
 jobs:
   include:
-    - stage: Test
+    - stage: Test Loan
       script:
-        - CI=false npm run test
+        - npm run test:loan

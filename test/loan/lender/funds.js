@@ -8,7 +8,7 @@ const { sleep } = require('@liquality/utils')
 const { generateMnemonic } = require('bip39')
 const isCI = require('is-ci')
 
-const { chains, rewriteEnv } = require('../../common')
+const { chains, rewriteEnv, connectMetaMask } = require('../../common')
 const { fundArbiter, fundAgent, fundTokens, getAgentAddress, generateSecretHashesArbiter, getTestContract, getTestObjects, cancelLoans, removeFunds, cancelJobs, fundWeb3Address } = require('../loanCommon')
 const fundFixtures = require('../fixtures/fundFixtures')
 const { getWeb3Address } = require('../util/web3Helpers')

@@ -361,15 +361,25 @@ describe('Lender Agent - Funds', () => {
     })
 
     describe('MetaMask / BitcoinJs', () => {
-      connectMetaMask()
-      before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
-      testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
+      before(async function () {
+        await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)
+        testSetupArbiter()
+      })
+      after(function() {
+        testAfterArbiter()
+      })
+      testSales(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)
     })
 
     describe('MetaMask / Ledger', () => {
-      connectMetaMask()
-      before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
-      testE2E(chains.web3WithMetaMask, chains.bitcoinWithLedger)
+      before(async function () {
+        await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithLedger)
+        testSetupArbiter()
+      })
+      after(function() {
+        testAfterArbiter()
+      })
+      testSales(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithLedger)
     })
   }
 })

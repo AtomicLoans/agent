@@ -11,7 +11,7 @@ const { sha256 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
 const isCI = require('is-ci')
 
-const { chains, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
+const { chains, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv, connectMetaMask } = require('../../common')
 const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans, increaseTime } = require('../loanCommon')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
