@@ -173,6 +173,8 @@ function defineFundsRouter (router) {
 
   if (process.env.NODE_ENV === 'test') {
     router.post('/remove_funds', asyncHandler(async (req, res, next) => {
+      console.log('remove_funds')
+
       await Fund.deleteMany()
 
       res.json({ message: 'Removed all funds' })
