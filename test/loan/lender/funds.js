@@ -161,7 +161,7 @@ function testFunds (web3Chain, ethNode) {
   })
 
   describe('Create fund with different principal', () => {
-    it('should succeed in creating two funds with different principal', async () => {
+    it.skip('should succeed in creating two funds with different principal', async () => {
       const currentTime = Math.floor(new Date().getTime() / 1000)
 
       await createCustomFund(web3Chain, arbiterChain, 200, 'USDC')
