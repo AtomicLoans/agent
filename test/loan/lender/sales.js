@@ -344,22 +344,17 @@ function testAfterArbiter () {
 
 describe('Lender Agent - Funds', () => {
   describe('Web3HDWallet / BitcoinJs', () => {
-    before(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs) })
+    before(async function () {
+      await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
+      testSetupArbiter()
+    })
+    after(function () {
+      testAfterArbiter()
+    })
     testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
 
   if (!isCI) {
-    describe('Web3HDWallet / BitcoinJs', () => {
-      before(async function () {
-        await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
-        testSetupArbiter()
-      })
-      after(function () {
-        testAfterArbiter()
-      })
-      testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
-    })
-
     describe('MetaMask / BitcoinJs', () => {
       before(async function () {
         await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)

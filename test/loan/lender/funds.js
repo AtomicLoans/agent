@@ -373,7 +373,7 @@ async function createFundFromFixture (web3Chain, fixture, principal_, amount, me
   return { fundId, fundParams, agentAddress: agentPrincipalAddress, amountDeposited: amountToDeposit, fundModelId }
 }
 
-async function testSetup (web3Chain, ethNode) {
+async function testSetup (web3Chain, ethNode, btcChain) {
   await increaseTime(3600)
   await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
@@ -396,20 +396,20 @@ async function testSetup (web3Chain, ethNode) {
 
 describe('Lender Agent - Funds', () => {
   describe('Web3HDWallet / BitcoinJs', () => {
-    beforeEach(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode) })
+    beforeEach(async function () { await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs) })
     testFunds(chains.web3WithHDWallet, chains.ethereumWithNode)
   })
 
   if (!isCI) {
     describe('MetaMask / Ledger', () => {
       connectMetaMask()
-      beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
+      beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger, chains.bitcoinWithJs) })
       testFunds(chains.web3WithMetaMask, chains.bitcoinWithLedger)
     })
 
     describe('MetaMask / BitcoinJs', () => {
       connectMetaMask()
-      beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode) })
+      beforeEach(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
       testFunds(chains.web3WithMetaMask, chains.ethereumWithNode)
     })
   }
