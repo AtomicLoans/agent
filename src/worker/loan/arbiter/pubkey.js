@@ -7,6 +7,7 @@ const PubKey = require('../../../models/PubKey')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
+const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 
 function defineArbiterPubKeyJobs (agenda) {
@@ -94,6 +95,8 @@ async function txFailure (error, instance) {
   console.log('FAILED TO SET PUBKEY')
   pubKey.status = 'FAILED'
   await pubKey.save()
+
+  handleError(error)
 }
 
 module.exports = {

@@ -8,6 +8,7 @@ const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const { getFundParams } = require('../utils/fundParams')
+const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 const { hexToNumber } = web3().utils
 
@@ -120,6 +121,8 @@ async function txFailure (error, instance) {
   console.log(`${fund.principal} FUND CREATION FAILED`)
   fund.status = 'FAILED'
   await fund.save()
+
+  handleError(error)
 }
 
 module.exports = {

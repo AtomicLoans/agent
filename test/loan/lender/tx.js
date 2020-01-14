@@ -2,15 +2,12 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
-const BN = require('bignumber.js')
 const { generateMnemonic } = require('bip39')
 const isCI = require('is-ci')
 
 const { chains, connectMetaMask, rewriteEnv } = require('../../common')
 const { fundWeb3Address } = require('../loanCommon')
 const { getWeb3Address } = require('../util/web3Helpers')
-const web3 = require('web3')
-const { toWei } = web3.utils
 
 chai.should()
 const expect = chai.expect

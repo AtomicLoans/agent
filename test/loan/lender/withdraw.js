@@ -54,7 +54,7 @@ describe('Lender Agent - Withdraw', () => {
     testWithdraw(chains.web3WithHDWallet)
   })
 
-  if (!isCI){
+  if (!isCI) {
     describe('MetaMask', () => {
       connectMetaMask()
       before(async function () {

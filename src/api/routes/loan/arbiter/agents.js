@@ -2,7 +2,6 @@ const axios = require('axios')
 const asyncHandler = require('express-async-handler')
 const requestIp = require('request-ip')
 
-const { verifySignature } = require('../../../../utils/signatures')
 const { getCurrentTime } = require('../../../../utils/time')
 const web3 = require('../../../../utils/web3')
 const { fromWei } = web3().utils
@@ -27,7 +26,6 @@ function defineAgentsRouter (router) {
       if (status === 200) {
         const { data: agent } = await axios.get(`${url}/agentinfo/${loanMarkets[0].id}`)
         console.log('agent', agent)
-        const { principalAddress: principalAddressResponse, collateralPublicKey: collateralPublicKeyResponse } = agent
 
         const agentWithUrlExists = await Agent.findOne({ url }).exec()
         const agentWithEthSignerExists = await Agent.findOne({ ethSigner }).exec()
@@ -58,7 +56,7 @@ function defineAgentsRouter (router) {
           res.json(agentWithUrlExists.json())
         }
       } else { return next(res.createError(401, 'Url Invalid or Lender Agent offline')) }
-    } catch(e) {
+    } catch (e) {
       console.log('Error:', e)
     }
 
@@ -102,7 +100,7 @@ function defineAgentsRouter (router) {
     res.json(result.map(r => r.json()))
   }))
 
-  router.get('/agents/matchfunds/:principal/:collateral', asyncHandler(async (req, res) => {
+  router.get('/agents/matchfunds/:principal/:collateral', asyncHandler(async (req, res, next) => {
     const { params, query } = req
     const { principal, collateral } = params
     let { amount, maxAmount, length, maxLength } = query

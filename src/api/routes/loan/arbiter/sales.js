@@ -1,5 +1,4 @@
 const asyncHandler = require('express-async-handler')
-const { verifySignature } = require('../../../../utils/signatures')
 
 const Loan = require('../../../../models/Loan')
 

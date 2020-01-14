@@ -1,20 +1,16 @@
-const React = require('react');
+const React = require('react')
 
 class App extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
-  render() {
+  render () {
     return (
       <>
         <head>
-          <link rel="stylesheet" href="/public/css/main.css" />
+          <link rel='stylesheet' href='/public/css/main.css' />
         </head>
         <body>
-          <div className="text-center thin homedashboard">
+          <div className='text-center thin homedashboard'>
             <h1>
-              Setup <span className="theme">Complete</span>
+              Setup <span className='theme'>Complete</span>
             </h1>
             <p>You can now go back to the Atomic Loans tab</p>
           </div>
@@ -24,4 +20,4 @@ class App extends React.Component {
   }
 }
 
-module.exports = App;
+module.exports = App

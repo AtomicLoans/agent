@@ -1,9 +1,6 @@
-const fs = require('fs')
-const path = require('path')
-
 const Web3 = require('web3')
 const HDWalletProvider = require('@truffle/hdwallet-provider')
-const { updateEnvValue, getEnvValue } = require('./test')
+const { updateEnvValue } = require('./test')
 const { isArbiter } = require('./env')
 
 const { MNEMONIC, MNEMONIC_ARBITER, ETH_RPC } = process.env

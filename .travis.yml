@@ -34,6 +34,7 @@ jobs:
   include:
     - stage: Test Main
       script:
+        - CI=false npm run lint
         - CI=false npm run test:lender:agent
         - CI=false npm run test:lender:loan_market
         - CI=false npm run test:lender:withdraw

@@ -8,6 +8,7 @@ const { numToBytes32 } = require('../../../utils/finance')
 const { currencies } = require('../../../utils/fx')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const { getFundParams } = require('../utils/fundParams')
+const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 const { toWei } = web3().utils
 
@@ -97,6 +98,8 @@ async function txFailure (error, instance) {
   console.log('WITHDRAW FAILED')
   withdraw.status = 'FAILED'
   await withdraw.save()
+
+  handleError(error)
 }
 
 module.exports = {

@@ -36,7 +36,7 @@ function defineSalesClaimJobs (agenda) {
             sale.status = 'COLLATERAL_CLAIMED'
           }
         }
-      } catch(e) {
+      } catch (e) {
         handleError(e)
       }
     } else {

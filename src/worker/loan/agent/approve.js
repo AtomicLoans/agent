@@ -6,6 +6,7 @@ const Approve = require('../../../models/Approve')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
+const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 
 const date = require('date.js')
@@ -112,6 +113,8 @@ async function txFailure (error, instance) {
 
   approve.status = 'FAILED'
   await approve.save()
+
+  handleError(error)
 }
 
 module.exports = {

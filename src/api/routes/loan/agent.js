@@ -1,13 +1,10 @@
 const _ = require('lodash')
 const axios = require('axios')
 const asyncHandler = require('express-async-handler')
-const { checksumEncode } = require('@liquality/ethereum-utils')
 const { getEthSigner } = require('../../../utils/address')
 const { verifySignature } = require('../../../utils/signatures')
 const LoanMarket = require('../../../models/LoanMarket')
 const { version } = require('../../../../package.json')
-const wget = require('node-wget')
-const extract = require('extract-zip')
 
 const ncp = require('ncp').ncp
 ncp.limit = 16
@@ -124,12 +121,12 @@ function defineAgentRoutes (router) {
           if (status === 200) {
             const { name } = release
 
-            const params = { 'source_blob': { 'url': `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
+            const params = { source_blob: { url: `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
             const config = {
               headers: {
-                'Accept': 'application/vnd.heroku+json; version=3',
+                Accept: 'application/vnd.heroku+json; version=3',
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                Authorization: `Bearer ${token}`
               }
             }
 

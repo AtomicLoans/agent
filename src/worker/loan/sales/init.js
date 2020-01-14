@@ -166,7 +166,7 @@ function defineSalesInitJobs (agenda) {
         console.log('CANNOT START LIQUIDATION BECAUSE COLLATERAL DOESN\'T EXIST')
       }
       done()
-    } catch(e) {
+    } catch (e) {
       handleError(e)
       console.log(e)
       done()

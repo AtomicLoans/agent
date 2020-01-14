@@ -4,7 +4,6 @@ const { remove0x } = require('@liquality/ethereum-utils')
 const { sha256 } = require('@liquality/crypto')
 const compareVersions = require('compare-versions')
 const Agent = require('../../../models/Agent')
-const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
 const Loan = require('../../../models/Loan')
 const Sale = require('../../../models/Sale')
@@ -19,14 +18,14 @@ const { isArbiter } = require('../../../utils/env')
 const { currencies } = require('../../../utils/fx')
 const { getEndpoint } = require('../../../utils/endpoints')
 const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
-const getMailer =  require('../utils/mailer')
+const getMailer = require('../utils/mailer')
 const handleError = require('../../../utils/handleError')
 
 const web3 = require('../../../utils/web3')
 const { hexToNumber, fromWei } = web3().utils
 
 function defineLoanStatusJobs (agenda) {
-  const mailer = getMailer(agenda);
+  const mailer = getMailer(agenda)
   agenda.define('check-loan-statuses-and-update', async (job, done) => {
     console.log('check-loan-statuses-and-update')
 
@@ -85,8 +84,17 @@ function defineLoanStatusJobs (agenda) {
                   const { liquidationRatio, interest, penalty, fee } = await funds.methods.funds(numToBytes32(fundId)).call()
 
                   const params = {
-                    principal, collateral, custom, maxLoanDuration: maxLoanDur, fundExpiry, compoundEnabled, 
-                    liquidationRatio, interest, penalty, fee, amount: 0
+                    principal,
+                    collateral,
+                    custom,
+                    maxLoanDuration: maxLoanDur,
+                    fundExpiry,
+                    compoundEnabled,
+                    liquidationRatio,
+                    interest,
+                    penalty,
+                    fee,
+                    amount: 0
                   }
                   const fund = Fund.fromCustomFundParams(params)
                   fund.status = 'CREATED'
@@ -101,14 +109,13 @@ function defineLoanStatusJobs (agenda) {
               const loanModels = await Loan.find({ principal }).exec()
               if (loanModels.length === 0) {
                 console.log('Repopulate Loans')
-                const unit = currencies[principal].unit
                 const decimals = currencies[principal].decimals
                 const multiplier = currencies[principal].multiplier
                 for (let i = 0; i < lenderLoanCount; i++) {
                   const loanIdBytes32 = await loans.methods.lenderLoans(principalAddress, i).call()
                   const loanId = hexToNumber(loanIdBytes32)
 
-                  const { borrower, lender, arbiter, principal: principalAmount, createdAt, loanExpiration, requestTimestamp } = await loans.methods.loans(numToBytes32(loanId)).call()
+                  const { borrower, principal: principalAmount, createdAt, loanExpiration, requestTimestamp } = await loans.methods.loans(numToBytes32(loanId)).call()
                   const collateralAmount = await loans.methods.collateral(numToBytes32(loanId)).call()
                   const minCollateralAmount = BN(collateralAmount).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
 
@@ -193,7 +200,6 @@ function defineLoanStatusJobs (agenda) {
                             const { chain_stats: sezChainStats } = seizableAddressInfo
 
                             if (refChainStats.funded_txo_sum > 0 && sezChainStats.funded_txo_sum > 0) {
-
                               const refDif = refChainStats.funded_txo_sum - refChainStats.spent_txo_sum
                               const sezDif = sezChainStats.funded_txo_sum - sezChainStats.spent_txo_sum
 
@@ -208,7 +214,7 @@ function defineLoanStatusJobs (agenda) {
                               }
                             }
                           }
-                        } catch(e) {
+                        } catch (e) {
                           handleError(e)
                         }
                       }
@@ -346,7 +352,7 @@ function defineLoanStatusJobs (agenda) {
                     await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
                     console.log('accept or cancel 1')
                   }
-                } catch(e) {
+                } catch (e) {
                   await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
                   console.log('accept or cancel 2')
                 }
@@ -374,7 +380,7 @@ function defineLoanStatusJobs (agenda) {
 
                 const sales = getObject('sales', principal)
                 const token = getObject('erc20', principal)
-                const { accepted, createdAt } = await sales.methods.sales(numToBytes32(saleModel.saleId)).call()
+                const { accepted } = await sales.methods.sales(numToBytes32(saleModel.saleId)).call()
                 if (accepted) {
                   saleModel.status = 'ACCEPTED'
                   await saleModel.save()
@@ -412,13 +418,13 @@ function defineLoanStatusJobs (agenda) {
               }
               await loan.save()
               console.log('LOAN IS ACCEPTED, CANCELLED, OR REFUNDED')
-            } else if (approved && loan.status === "AWAITING_COLLATERAL") {
+            } else if (approved && loan.status === 'AWAITING_COLLATERAL') {
               mailer.notify(loan.borrowerPrincipalAddress, 'collateral-locked', {
                 amount: loan.principalAmount,
                 asset: loan.principal.toLowerCase(),
-                loanId: loan.loanId                    
+                loanId: loan.loanId
               })
-              
+
               loan.status = 'APPROVED'
               await loan.save()
             }

@@ -1,4 +1,5 @@
 const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
+const axios = require('axios')
 const date = require('date.js')
 const compareVersions = require('compare-versions')
 const Agent = require('../../../models/Agent')
@@ -11,6 +12,7 @@ const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const { isArbiter } = require('../../../utils/env')
+const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 
 function defineLoanAcceptOrCancelJobs (agenda) {
@@ -59,7 +61,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
                 lenderAccepting = true
               }
             }
-          } catch(e) {
+          } catch (e) {
             console.log(`Agent ${agent.url} not active`)
           }
         }
@@ -74,8 +76,6 @@ function defineLoanAcceptOrCancelJobs (agenda) {
 
           txData = loans.methods.accept(numToBytes32(loanId), ensure0x(secretModel.secret)).encodeABI()
         } else {
-          const { secretHashB1 } = await loans.methods.secretHashes(numToBytes32(loanId)).call()
-
           txData = loans.methods.accept(numToBytes32(loanId), ensure0x(lenderSecrets[0])).encodeABI()
         }
         const ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('loans', principal), loan)
@@ -160,7 +160,13 @@ async function txSuccess (transactionHash, ethTx, instance, agenda) {
 }
 
 async function txFailure (error, instance) {
+  const accept = instance
+
   console.log('FAILED TO ACCEPT OR CANCEL')
+  accept.status = 'FAILED'
+  await accept.save()
+
+  handleError(error)
 }
 
 module.exports = {
