@@ -136,8 +136,7 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
             .split(' tx has nonce of: ')
             .map(x => parseInt(x))
 
-          console.log(`Account Nonce: ${accountNonce}`)
-          console.log(`Tx Nonce: ${txNonce}`)
+          console.log(`Account Nonce: ${accountNonce} | Tx Nonce: ${txNonce}`)
 
           ethTx.nonce = accountNonce
           await ethTx.save()
@@ -203,8 +202,7 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
         .split(' tx has nonce of: ')
         .map(x => parseInt(x))
 
-      console.log(`Account Nonce: ${accountNonce}`)
-      console.log(`Tx Nonce: ${txNonce}`)
+      console.log(`Account Nonce: ${accountNonce} | Tx Nonce: ${txNonce}`)
 
       ethTx.nonce = accountNonce
       await ethTx.save()

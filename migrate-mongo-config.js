@@ -5,7 +5,7 @@ if (process.env.NODE_ENV !== 'production') {
 const { MONGODB_ARBITER_URI, MONGODB_URI } = process.env
 const { isArbiter } = require('./src/utils/env')
 
-const regex = new RegExp(`([A-Z0-9a-z])*$`, 'g')
+const regex = new RegExp(`\/([A-Z0-9a-z\_])*$`, 'g') // eslint-disable-line
 
 const mongodbURI = isArbiter() ? MONGODB_ARBITER_URI : MONGODB_URI
 
