@@ -268,9 +268,9 @@ function defineLoanStatusJobs (agenda) {
 
             if (isArbiter()) {
               // Warn if loan is about to expire in a day
-              if ( ((Date.now() / 1000) - (lastWarningSent || 0) > 86400) && (currentTime > (parseInt(loanExpiration) - 86400))) {
+              if (((Date.now() / 1000) - (lastWarningSent || 0) > 86400) && (currentTime > (parseInt(loanExpiration) - 86400))) {
                 mailer.notify(loan.borrowerPrincipalAddress, 'loan-expiring', {
-                  loanId: loan.loanId                    
+                  loanId: loan.loanId
                 })
                 loan.lastWarningSent = Date.now()
                 await loan.save()
@@ -313,11 +313,11 @@ function defineLoanStatusJobs (agenda) {
               loan.status = 'WITHDRAWN'
 
               const alertCollateralAmount = loan.minimumCollateralAmount * 1.1
-              
+
               if (isArbiter()) {
-                if ( ((Date.now() / 1000) - (lastWarningSent || 0) > 86400) && loan.collateralAmount < alertCollateralAmount) {
+                if (((Date.now() / 1000) - (lastWarningSent || 0) > 86400) && loan.collateralAmount < alertCollateralAmount) {
                   mailer.notify(loan.borrowerPrincipalAddress, 'loan-near-liquidation', {
-                    loanId: loan.loanId                    
+                    loanId: loan.loanId
                   })
                   loan.lastWarningSent = Date.now()
                 }

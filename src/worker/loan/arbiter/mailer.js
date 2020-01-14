@@ -41,41 +41,40 @@ function defineMailerJobs (agenda) {
   })
 
   agenda.define('mail-loan-accepted', async (job, done) => {
-    const { data } = job.attrs;
-    const { emails } = data;
+    const { data } = job.attrs
+    const { emails } = data
 
-    const subject = `Loan repayment accepted. Withdraw your collateral.`;
+    const subject = `Loan repayment accepted. Withdraw your collateral.`
     const templateId = process.env.SENDGRID_LOAN_ACCEPTED_TEMPLATE_ID
 
-    sendEmail(emails, subject, data, templateId);
+    sendEmail(emails, subject, data, templateId)
 
-    done();
+    done()
   })
 
   agenda.define('mail-loan-expiring', async (job, done) => {
-    const { data } = job.attrs;
-    const { emails } = data;
+    const { data } = job.attrs
+    const { emails } = data
 
-    const subject = `Your loan is about to expire.`;
+    const subject = `Your loan is about to expire.`
     const templateId = process.env.SENDGRID_LOAN_EXPIRING_TEMPLATE_ID
 
-    sendEmail(emails, subject, data, templateId);
+    sendEmail(emails, subject, data, templateId)
 
-    done();
+    done()
   })
 
   agenda.define('mail-loan-near-liquidation', async (job, done) => {
-    const { data } = job.attrs;
-    const { emails } = data;
+    const { data } = job.attrs
+    const { emails } = data
 
-    const subject = `Your loan is close to liquidation. Repay or add collateral soon.`;
+    const subject = `Your loan is close to liquidation. Repay or add collateral soon.`
     const templateId = process.env.SENDGRID_LOAN_NEAR_LIQUIDATION_TEMPLATE_ID
 
-    sendEmail(emails, subject, data, templateId);
+    sendEmail(emails, subject, data, templateId)
 
-    done();
+    done()
   })
-  
 }
 
 function sendEmail (emails, subject, data, templateId) {

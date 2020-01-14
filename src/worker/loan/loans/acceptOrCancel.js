@@ -12,10 +12,12 @@ const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const { isArbiter } = require('../../../utils/env')
+const getMailer = require('../utils/mailer')
 const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 
 function defineLoanAcceptOrCancelJobs (agenda) {
+  const mailer = getMailer(agenda)
   agenda.define('accept-or-cancel-loan', async (job, done) => {
     const { data } = job.attrs
     const { loanModelId } = data
