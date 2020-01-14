@@ -155,6 +155,9 @@ function testE2E (web3Chain, ethNode, btcChain) {
       const testToken = await getTestObject(web3Chain, 'erc20', principal)
       await testToken.methods.approve(getTestContract('loans', principal), toWei(owedForLoan, 'wei')).send({ gas: 100000 })
 
+      console.log('About to repay')
+      await secondsCountDown(10)
+
       await loans.methods.repay(numToBytes32(loanId), owedForLoan).send({ gas: 2000000 })
 
       const paid = await loans.methods.paid(numToBytes32(loanId)).call()

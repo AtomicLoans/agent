@@ -103,7 +103,7 @@ function getTestContract (contract, principal) {
   if (contract === 'erc20' || contract === 'ctoken') {
     const cPrefix = contract === 'ctoken' ? 'C' : ''
     return addresses[`${cPrefix}${principal}`]
-  } else if (contract === 'medianizer') {
+  } else if (contract === 'medianizer' || contract === 'ondemandspv') {
     return addresses[`${contract.toUpperCase()}`]
   } else {
     return addresses[`${principal}_${contract.toUpperCase()}`]
