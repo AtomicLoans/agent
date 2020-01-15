@@ -59,6 +59,9 @@
     "type": "git",
     "url": "https://github.com/AtomicLoans/agent.git"
   },
+  "engines": {
+    "node": "8.12.0"
+  },
   "license": "ISC",
   "dependencies": {
     "@atomicloans/bitcoin-collateral-provider": "^0.3.5",
