@@ -1,3 +1,9 @@
+## [0.1.46](https://github.com/AtomicLoans/agent/compare/v0.1.45...v0.1.46) - 2020-01-14
+
+- Set Travis CI
+- Add opt in email notifications to Arbiter
+- Improve tests for Funds, Loans, and Sales contracts
+
 ## [0.1.45](https://github.com/AtomicLoans/agent/compare/v0.1.44...v0.1.45) - 2020-01-04
 
 - Update Kovan Contract Addresses
