@@ -1,3 +1,7 @@
+## [0.1.48](https://github.com/AtomicLoans/agent/compare/v0.1.47...v0.1.48) - 2020-01-14
+
+- Fix worker imports
+
 ## [0.1.47](https://github.com/AtomicLoans/agent/compare/v0.1.46...v0.1.47) - 2020-01-14
 
 - Update npm packages
