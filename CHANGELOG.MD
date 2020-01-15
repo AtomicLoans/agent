@@ -1,3 +1,7 @@
+## [0.1.50](https://github.com/AtomicLoans/agent/compare/v0.1.49...v0.1.50) - 2020-01-15
+
+- Fix fund withdraw route not specifying currency
+
 ## [0.1.49](https://github.com/AtomicLoans/agent/compare/v0.1.48...v0.1.49) - 2020-01-15
 
 - Update kovan contract addresses
