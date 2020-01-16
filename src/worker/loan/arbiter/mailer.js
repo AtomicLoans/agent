@@ -20,7 +20,7 @@ function defineMailerJobs (agenda) {
     const { data } = job.attrs
     const { emails } = data
 
-    const subject = `Your loan has been cancelled.`
+    const subject = 'Your loan has been cancelled.'
     const templateId = process.env.SENDGRID_LOAN_CANCELLED_TEMPLATE_ID
 
     sendEmail(emails, subject, data, templateId)
@@ -32,7 +32,7 @@ function defineMailerJobs (agenda) {
     const { data } = job.attrs
     const { emails } = data
 
-    const subject = `Your loan was liquidated because the minimum collateralization was not met`
+    const subject = 'Your loan was liquidated because the minimum collateralization was not met'
     const templateId = process.env.SENDGRID_LIQUIDATED_MIN_COLLAT_TEMPLATE_ID
 
     sendEmail(emails, subject, data, templateId)
@@ -44,7 +44,7 @@ function defineMailerJobs (agenda) {
     const { data } = job.attrs
     const { emails } = data
 
-    const subject = `Loan repayment accepted. Withdraw your collateral.`
+    const subject = 'Loan repayment accepted. Withdraw your collateral.'
     const templateId = process.env.SENDGRID_LOAN_ACCEPTED_TEMPLATE_ID
 
     sendEmail(emails, subject, data, templateId)
@@ -56,7 +56,7 @@ function defineMailerJobs (agenda) {
     const { data } = job.attrs
     const { emails } = data
 
-    const subject = `Your loan is about to expire.`
+    const subject = 'Your loan is about to expire.'
     const templateId = process.env.SENDGRID_LOAN_EXPIRING_TEMPLATE_ID
 
     sendEmail(emails, subject, data, templateId)
@@ -68,7 +68,7 @@ function defineMailerJobs (agenda) {
     const { data } = job.attrs
     const { emails } = data
 
-    const subject = `Your loan is close to liquidation. Repay or add collateral soon.`
+    const subject = 'Your loan is close to liquidation. Repay or add collateral soon.'
     const templateId = process.env.SENDGRID_LOAN_NEAR_LIQUIDATION_TEMPLATE_ID
 
     sendEmail(emails, subject, data, templateId)
@@ -109,9 +109,7 @@ function getHTTPClient () {
     baseURL: BASE_URL
   })
 
-  instance.defaults.headers.common[
-    'Authorization'
-  ] = `Bearer ${process.env.SENDGRID_KEY}`
+  instance.defaults.headers.common.Authorization = `Bearer ${process.env.SENDGRID_KEY}`
   instance.defaults.headers.post['Content-Type'] = 'application/json'
 
   return instance

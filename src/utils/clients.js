@@ -22,7 +22,7 @@ const EthereumSwapProvider = require('@liquality/ethereum-swap-provider')
 const EthereumErc20Provider = require('@liquality/ethereum-erc20-provider')
 
 const addresses = contractAddresses(NETWORK)
-const bitcoinNetwork = bitcoinNetworks(NETWORK)['NETWORK']
+const bitcoinNetwork = bitcoinNetworks(NETWORK).NETWORK
 
 const BTC = new Client()
 const BTCLoan = new LoanClient(BTC)

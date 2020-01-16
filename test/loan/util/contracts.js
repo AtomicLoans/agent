@@ -1,4 +1,4 @@
-const version = require('../../../src/config/versions/test.json')['VERSION']
+const version = require('../../../src/config/versions/test.json').VERSION
 
 const schema = {}
 
