@@ -1,5 +1,6 @@
 const LoanMarket = require('../../../models/LoanMarket')
 const Market = require('../../../models/Market')
+require('../../../models/Email')
 const AddressEmail = require('../../../models/AddressEmail')
 
 async function getMarketModels (principal, collateral) {
