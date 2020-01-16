@@ -137,9 +137,8 @@ function defineFundsRouter (router) {
     const address = getEthSigner()
     const { params, body } = req
     const { amountToWithdraw, signature, message, timestamp } = body
-    const { principal, fundId } = params
 
-    const fund = await Fund.findOne({ principal, fundId }).exec()
+    const fund = await Fund.findOne({ principal: params.principal, fundId: params.fundId }).exec()
     if (!fund) return next(res.createError(401, 'Fund not found'))
 
     const { principal } = fund
