@@ -46,7 +46,20 @@
     "new:version": "gh-release"
   },
   "options": {
+    "coverage": "--reporter=text-lcov",
     "mocha": "--timeout 500000 --recursive --exit"
+  },
+  "nyc": {
+    "exclude": [
+      "**/bin/**",
+      "**/coverage/**",
+      "**/dist/**",
+      "**/test/**"
+    ],
+    "reporter": [
+      "text",
+      "lcov"
+    ]
   },
   "standard": {
     "ignore": [
@@ -143,8 +156,10 @@
     "@mblackmblack/bitcoinjs-lib": "^5.1.6",
     "chai": "^4.2.0",
     "chai-http": "^4.3.0",
+    "coveralls": "^3.0.9",
     "mocha": "^7.0.0",
     "nodemon": "^2.0.2",
+    "nyc": "^15.0.0",
     "should": "^13.2.3",
     "standard": "^14.3.1"
   }
