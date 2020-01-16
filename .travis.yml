@@ -30,6 +30,8 @@ before_script:
   - CI=false npm run lender:test &
   - sleep 30
 
+after_success: npm run coverage
+
 jobs:
   include:
     - stage: Test Main
