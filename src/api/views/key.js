@@ -44,7 +44,7 @@ class App extends React.Component {
             <h1>
               Enter Heroku API <span className='theme'>Key</span>
             </h1>
-            <p>To find your Heroku API Key, go to <a href='https://dashboard.heroku.com/account' target='_blank'>https://dashboard.heroku.com/account</a></p>
+            <p>To find your Heroku API Key, go to <a href='https://dashboard.heroku.com/account' target='_blank' rel='noopener noreferrer'>https://dashboard.heroku.com/account</a></p>
             <p>This will allow you to update your autopilot agent by authenticating using your metamask account.</p>
             <br />
             <div className='field'>

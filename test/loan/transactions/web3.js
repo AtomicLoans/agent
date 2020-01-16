@@ -8,7 +8,7 @@ const { checksumEncode } = require('@liquality/ethereum-utils')
 
 const { chains } = require('../../common')
 // const { setTxParams, bumpTxFee, sendTransaction } = require('../../../src/worker/loan/utils/web3Transaction')
-const { setTxParams } = require('../../../src/worker/loan/utils/web3Transaction')
+const { setTxParams, bumpTxFee } = require('../../../src/worker/loan/utils/web3Transaction')
 const { getObject } = require('../../../src/utils/contracts')
 const { numToBytes32 } = require('../../../src/utils/finance')
 const { getWeb3Address } = require('../util/web3Helpers')
@@ -69,17 +69,35 @@ describe('Web3 Transaction', () => {
     })
   })
 
-  // describe('bumpTxFee', () => {
-  //   it('should', async () => {
+  describe('bumpTxFee', () => {
+    it('should increase gasPrice by 1.51', async () => {
+      const principal = 'DAI'
+      const loanId = 1
 
-  //   })
-  // })
+      const loans = getObject('loans', principal)
 
-  // describe('sendTransaction', () => {
-  //   it('should', async () => {
+      const txData = loans.methods.approve(numToBytes32(loanId)).encodeABI()
+      const params = { principal: 'DAI', collateral: 'BTC', principalAmount: BN(10).pow(18).toFixed(), loanDuration: toSecs({ days: 2 }) }
+      const loanMarket = new LoanMarket({ minConf: 1, requestExpiresIn: 600000 })
+      const minCollateralAmount = BN(10).pow(8).toFixed()
 
-  //   })
-  // })
+      const loan = Loan.fromLoanMarket(loanMarket, params, minCollateralAmount)
+      await loan.save()
+
+      const address = await getWeb3Address(web3)
+
+      const from = address
+      const to = '0x0000000000000000000000000000000000000000'
+
+      const ethTx = await setTxParams(txData, from, to, loan)
+
+      const { gasPrice: gasPriceBefore } = ethTx
+      await bumpTxFee(ethTx)
+      const { gasPrice: gasPriceAfter } = ethTx
+
+      expect(gasPriceAfter).to.equal(gasPriceBefore * 1.51)
+    })
+  })
 
   after(function (done) {
     mongoose.connection.db.dropDatabase(function () {

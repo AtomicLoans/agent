@@ -2,7 +2,7 @@ const getWeb3 = require('./web3')
 const { contractAddresses, versions } = require('../networks/index')
 
 const addresses = contractAddresses(process.env.NETWORK)
-const version = versions(process.env.NETWORK)['VERSION']
+const version = versions(process.env.NETWORK).VERSION
 
 const schema = {}
 
