@@ -1,3 +1,7 @@
+## [0.1.51](https://github.com/AtomicLoans/agent/compare/v0.1.50...v0.1.51) - 2020-01-15
+
+- Fix issue with fund withdraw route syntax
+
 ## [0.1.50](https://github.com/AtomicLoans/agent/compare/v0.1.49...v0.1.50) - 2020-01-15
 
 - Fix fund withdraw route not specifying currency
