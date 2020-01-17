@@ -30,8 +30,6 @@ before_script:
   - CI=false npm run lender:test &
   - sleep 30
 
-after_success: npm run coverage
-
 jobs:
   include:
     - stage: Test Main
@@ -42,6 +40,7 @@ jobs:
         - CI=false npm run test:lender:withdraw
         - CI=false npm run test:lender:tx
         - CI=false npm run test:transactions
+        - CI=false npm run coverage
     - stage: Test Funds
       script:
         - CI=false npm run test:lender:funds
