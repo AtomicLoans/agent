@@ -22,15 +22,15 @@ const CONFIG_ENV_MAP = {
 
 function rewriteEnv (envFile, key, value) {
   if (fs.existsSync(path.resolve(process.cwd(), envFile))) {
-      const env = fs.readFileSync(path.resolve(process.cwd(), envFile), 'utf-8')
-      const regex = new RegExp(`${key}=("(.*?)"|([0-9a-zA-Z])\\w+)`, 'g')
-      let newEnv = '';
-      if (!getEnvValue(envFile, key)) {
-        newEnv = env + `\n${key}=${value}`
-      } else {
-        newEnv = env.replace(regex, `${key}=${value}`)
-      }
-      fs.writeFileSync(path.resolve(process.cwd(), envFile), newEnv, 'utf-8')
+    const env = fs.readFileSync(path.resolve(process.cwd(), envFile), 'utf-8')
+    const regex = new RegExp(`${key}=("(.*?)"|([0-9a-zA-Z])\\w+)`, 'g')
+    let newEnv = ''
+    if (!getEnvValue(envFile, key)) {
+      newEnv = env + `\n${key}=${value}`
+    } else {
+      newEnv = env.replace(regex, `${key}=${value}`)
+    }
+    fs.writeFileSync(path.resolve(process.cwd(), envFile), newEnv, 'utf-8')
   } else {
     const newEnv = `${key}=${value}`
     fs.writeFileSync(path.resolve(process.cwd(), envFile), newEnv, 'utf-8')
@@ -79,14 +79,13 @@ module.exports.loadVariables = (config = {}) => {
   }
 }
 
-function loadMnemonic(envKey) {
+function loadMnemonic (envKey) {
   if (process.env[envKey] !== 'undefined') {
     process.env[envKey] = process.env[envKey].replace(/"/g, '')
     if (!(fs.existsSync(path.resolve(process.cwd(), '.env')) && getEnvValue('.env', envKey))) {
       rewriteEnv('.env', envKey, `"${process.env[envKey]}"`)
     }
-  }
-  else if (fs.existsSync(path.resolve(process.cwd(), '.env')) && getEnvValue('.env', envKey)) {
+  } else if (fs.existsSync(path.resolve(process.cwd(), '.env')) && getEnvValue('.env', envKey)) {
     process.env[envKey] = getEnvValue('.env', envKey)
   } else {
     const mnemonic = generateMnemonic(128)
