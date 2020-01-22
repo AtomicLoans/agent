@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const Agenda = require('agenda')
+const express = require('express')
 
 const agenda = new Agenda({ mongo: mongoose.connection, maxConcurrency: 1000, defaultConcurrency: 1000, defaultLockLifetime: 500 })
 
@@ -42,6 +43,10 @@ async function start () {
     })
   }
 }
+
+const app = express();
+app.get('/ping', (_, res) => res.send('pong'))
+app.listen(process.env.WORKER_PORT || process.env.PORT)
 
 async function stop () {
   await agenda.stop()

@@ -4,6 +4,7 @@ const { remove0x } = require('@liquality/ethereum-utils')
 const { sha256 } = require('@liquality/crypto')
 const compareVersions = require('compare-versions')
 const Agent = require('../../../models/Agent')
+const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
 const Loan = require('../../../models/Loan')
 const Sale = require('../../../models/Sale')
@@ -50,8 +51,9 @@ function defineLoanStatusJobs (agenda) {
             const fundsAddress = getContract('funds', principal)
 
             const allowance = await token.methods.allowance(principalAddress, fundsAddress).call()
+            const approve = await Approve.findOne({ principal, status: { $nin: ['FAILED'] } }).exec()
 
-            if (parseInt(allowance) === 0) {
+            if (parseInt(allowance) === 0 || !approve) {
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-tokens', { loanMarketModelId: loanMarket.id })
             } else {
               const fundModels = await Fund.find({ status: 'WAITING_FOR_APPROVE', principal }).exec()

@@ -11,4 +11,4 @@ RUN npm ci
 
 ADD . /app
 
-EXPOSE 3030 3031
+EXPOSE 3030 3032

@@ -22,10 +22,15 @@ const CONFIG_ENV_MAP = {
 
 function rewriteEnv (envFile, key, value) {
   if (fs.existsSync(path.resolve(process.cwd(), envFile))) {
-    const env = fs.readFileSync(path.resolve(process.cwd(), envFile), 'utf-8')
-    const regex = new RegExp(`${key}=("(.*?)"|([0-9a-zA-Z])\\w+)`, 'g')
-    const newEnv = env.replace(regex, `${key}=${value}`)
-    fs.writeFileSync(path.resolve(process.cwd(), envFile), newEnv, 'utf-8')
+      const env = fs.readFileSync(path.resolve(process.cwd(), envFile), 'utf-8')
+      const regex = new RegExp(`${key}=("(.*?)"|([0-9a-zA-Z])\\w+)`, 'g')
+      let newEnv = '';
+      if (!getEnvValue(envFile, key)) {
+        newEnv = env + `\n${key}=${value}`
+      } else {
+        newEnv = env.replace(regex, `${key}=${value}`)
+      }
+      fs.writeFileSync(path.resolve(process.cwd(), envFile), newEnv, 'utf-8')
   } else {
     const newEnv = `${key}=${value}`
     fs.writeFileSync(path.resolve(process.cwd(), envFile), newEnv, 'utf-8')
@@ -36,6 +41,7 @@ function getEnvValue (envFile, key) {
   const env = fs.readFileSync(path.resolve(process.cwd(), envFile), 'utf-8')
   const regex = new RegExp(`${key}=("(.*?)"|([0-9a-zA-Z])\\w+)`, 'g')
   const value = env.match(regex)
+  if (!value) return null
   return value.toString().replace(`${key}=`, '').replace('"', '').replace('"', '')
 }
 
@@ -66,29 +72,25 @@ module.exports.loadVariables = (config = {}) => {
 
   process.env.PROCESS_TYPE = config.processType
 
-  if (process.env.MNEMONIC !== 'undefined') {
-    rewriteEnv('.env', 'MNEMONIC', `"${process.env.MNEMONIC}"`)
-  } else {
-    if (fs.existsSync(path.resolve(process.cwd(), '.env'))) {
-      process.env.MNEMONIC = getEnvValue('.env', 'MNEMONIC')
-    } else {
-      const mnemonic = generateMnemonic(128)
-      rewriteEnv('.env', 'MNEMONIC', `"${mnemonic}"`)
-      process.env.MNEMONIC = mnemonic
-    }
-  }
+  loadMnemonic('MNEMONIC')
 
   if (process.env.PARTY === 'arbiter') {
-    if (process.env.MNEMONIC_ARBITER !== undefined) {
-      rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${process.env.MNEMONIC_ARBITER}"`)
-    } else {
-      if (fs.existsSync(path.resolve(process.cwd(), '.env'))) {
-        process.env.MNEMONIC_ARBITER = getEnvValue('.env', 'MNEMONIC_ARBITER')
-      } else {
-        const mnemonic = generateMnemonic(128)
-        rewriteEnv('.env', 'MNEMONIC_ARBITER', `"${mnemonic}"`)
-        process.env.MNEMONIC_ARBITER = mnemonic
-      }
+    loadMnemonic('MNEMONIC_ARBITER')
+  }
+}
+
+function loadMnemonic(envKey) {
+  if (process.env[envKey] !== 'undefined') {
+    process.env[envKey] = process.env[envKey].replace(/"/g, '')
+    if (!(fs.existsSync(path.resolve(process.cwd(), '.env')) && getEnvValue('.env', envKey))) {
+      rewriteEnv('.env', envKey, `"${process.env[envKey]}"`)
     }
+  }
+  else if (fs.existsSync(path.resolve(process.cwd(), '.env')) && getEnvValue('.env', envKey)) {
+    process.env[envKey] = getEnvValue('.env', envKey)
+  } else {
+    const mnemonic = generateMnemonic(128)
+    rewriteEnv('.env', envKey, `"${mnemonic}"`)
+    process.env[envKey] = mnemonic
   }
 }

@@ -9,3 +9,8 @@ tmp/*
 !tmp/*.txt
 *.zip
 .DS_Store
+deploy
+.vscode
+.env*
+!.env.example
+deploy-lender
