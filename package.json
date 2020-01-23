@@ -81,10 +81,10 @@
   },
   "license": "ISC",
   "dependencies": {
-    "@atomicloans/bitcoin-collateral-provider": "^0.3.5",
-    "@atomicloans/bitcoin-collateral-swap-provider": "^0.3.5",
+    "@atomicloans/bitcoin-collateral-provider": "^0.4.0",
+    "@atomicloans/bitcoin-collateral-swap-provider": "^0.4.0",
     "@atomicloans/eth-contracts": "^0.1.1",
-    "@atomicloans/loan-client": "^0.3.5",
+    "@atomicloans/loan-client": "^0.4.0",
     "@bugsnag/js": "^6.4.2",
     "@bugsnag/plugin-express": "^6.4.1",
     "@liquality/bitcoin-esplora-api-provider": "^0.4.3",
