@@ -33,8 +33,8 @@ const arbiterServer = 'http://localhost:3032/api/loan'
 
 const arbiterChain = chains.web3WithArbiter
 
-function testE2E (web3Chain, ethNode, btcChain) {
-  describe('E2E Tests', () => {
+function testCollateral (web3Chain, ethNode, btcChain) {
+  describe('Collateral Tests', () => {
     it('should POST loanMarket details and return loan details', async () => {
       await createCustomFund(web3Chain, arbiterChain, 200, 'SAI') // Create Custom Loan Fund with 200 SAI
 
@@ -136,6 +136,11 @@ function testE2E (web3Chain, ethNode, btcChain) {
 
       await secondsCountDown(60)
 
+      const { body: loanMarketsAfterLocking } = await chai.request(server).get('/loanmarketinfo')
+      const loanMarketAfterLocking = loanMarketsAfterLocking.find(loanMarket => loanMarket.principal === principal)
+      const { totalCollateralValue: totalCollateralValueAfterLocking } = loanMarketAfterLocking
+      expect(totalCollateralValueAfterLocking).to.equal(values.refundableValue + values.seizableValue)
+
       const approvedAfter = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedAfter).to.equal(true)
 
@@ -173,6 +178,16 @@ function testE2E (web3Chain, ethNode, btcChain) {
       const refundParams = [lockTxHash, lockParams[1], remove0x(acceptSecret), lockParams[2], lockParams[3]]
       const refundTxHash = await btcChain.client.loan.collateral.refund(...refundParams)
       console.log('refundTxHash', refundTxHash)
+
+      console.log('Mine BTC Block')
+      await chains.bitcoinWithNode.client.chain.generateBlock(1)
+
+      await secondsCountDown(60)
+
+      const { body: loanMarketsAfterUnlocking } = await chai.request(server).get('/loanmarketinfo')
+      const loanMarketAfterUnlocking = loanMarketsAfterUnlocking.find(loanMarket => loanMarket.principal === principal)
+      const { totalCollateralValue: totalCollateralValueAfterUnlocking } = loanMarketAfterUnlocking
+      expect(totalCollateralValueAfterUnlocking).to.equal(0)
     })
   })
 }
@@ -234,20 +249,20 @@ describe('Lender Agent - Funds', () => {
     after(function () {
       testAfterArbiter()
     })
-    testE2E(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
+    testCollateral(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
 
   if (!isCI) {
     describe('MetaMask / BitcoinJs', () => {
       connectMetaMask()
       before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
-      testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
+      testCollateral(chains.web3WithMetaMask, chains.bitcoinWithJs)
     })
 
     describe('MetaMask / Ledger', () => {
       connectMetaMask()
       before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
-      testE2E(chains.web3WithMetaMask, chains.bitcoinWithLedger)
+      testCollateral(chains.web3WithMetaMask, chains.bitcoinWithLedger)
     })
   }
 })

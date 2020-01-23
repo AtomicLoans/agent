@@ -28,13 +28,30 @@ const LoanSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
+  collateralLocked: {
+    type: Boolean,
+    index: true,
+    default: false
+  },
   refundableCollateralAmount: {
     type: Number,
-    index: true
+    index: true,
+    default: 0
   },
   seizableCollateralAmount: {
     type: Number,
-    index: true
+    index: true,
+    default: 0
+  },
+  refundableCollateralValue: {
+    type: Number,
+    index: true,
+    default: 0
+  },
+  seizableCollateralValue: {
+    type: Number,
+    index: true,
+    default: 0
   },
   rate: {
     type: Number,
@@ -65,10 +82,12 @@ const LoanSchema = new mongoose.Schema({
     index: true
   },
   collateralRefundableP2SHAddress: {
-    type: String
+    type: String,
+    index: true
   },
   collateralSeizableP2SHAddress: {
-    type: String
+    type: String,
+    index: true
   },
   minConf: {
     type: Number,
