@@ -33,8 +33,8 @@ const arbiterServer = 'http://localhost:3032/api/loan'
 
 const arbiterChain = chains.web3WithArbiter
 
-function testE2E (web3Chain, ethNode, btcChain) {
-  describe('E2E Tests', () => {
+function testCollateral (web3Chain, ethNode, btcChain) {
+  describe('Collateral Tests', () => {
     it('should POST loanMarket details and return loan details', async () => {
       await createCustomFund(web3Chain, arbiterChain, 200, 'SAI') // Create Custom Loan Fund with 200 SAI
 
@@ -234,20 +234,20 @@ describe('Lender Agent - Funds', () => {
     after(function () {
       testAfterArbiter()
     })
-    testE2E(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
+    testCollateral(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
 
   if (!isCI) {
     describe('MetaMask / BitcoinJs', () => {
       connectMetaMask()
       before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
-      testE2E(chains.web3WithMetaMask, chains.bitcoinWithJs)
+      testCollateral(chains.web3WithMetaMask, chains.bitcoinWithJs)
     })
 
     describe('MetaMask / Ledger', () => {
       connectMetaMask()
       before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
-      testE2E(chains.web3WithMetaMask, chains.bitcoinWithLedger)
+      testCollateral(chains.web3WithMetaMask, chains.bitcoinWithLedger)
     })
   }
 })

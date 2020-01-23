@@ -32,7 +32,7 @@
     "test:lender:e2e": "mocha test/loan/lender/e2e $npm_package_options_mocha",
     "test:lender:tx": "mocha test/loan/lender/tx $npm_package_options_mocha",
     "test:arbiter:agents": "mocha test/loan/arbiter/agents $npm_package_options_mocha",
-    "test:transactions": "nyc mocha test/loan/transactions $npm_package_options_mocha",
+    "test:modules": "nyc mocha test/loan/modules $npm_package_options_mocha",
     "deploy:fund": "mocha test/loan/lender/deploy/fund $npm_package_options_mocha",
     "deploy:deposit": "mocha test/loan/lender/deploy/deposit $npm_package_options_mocha",
     "deploy:kill_jobs": "mocha test/loan/lender/deploy/jobs $npm_package_options_mocha",

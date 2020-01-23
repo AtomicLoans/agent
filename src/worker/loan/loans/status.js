@@ -40,76 +40,22 @@ function defineLoanStatusJobs (agenda) {
 
         if (ethBalance > 0) {
           const { principal, collateral } = loanMarket
-          const funds = getObject('funds', principal)
+
           const loans = getObject('loans', principal)
           const sales = getObject('sales', principal)
 
           if (!isArbiter()) {
-            // change to use allowance
-            const token = getObject('erc20', principal)
-            const fundsAddress = getContract('funds', principal)
+            await approveTokens(loanMarket, agenda)
 
-            const allowance = await token.methods.allowance(principalAddress, fundsAddress).call()
-
-            if (parseInt(allowance) === 0) {
-              await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-tokens', { loanMarketModelId: loanMarket.id })
-            } else {
-              const fundModels = await Fund.find({ status: 'WAITING_FOR_APPROVE', principal }).exec()
-
-              if (fundModels.length > 0) {
-                const fund = fundModels[0]
-                await agenda.schedule(getInterval('ACTION_INTERVAL'), 'create-fund-ish', { fundModelId: fund.id })
-              }
-            }
-          }
-
-          if (!isArbiter()) {
             const fundModel = await Fund.findOne({ principal }).exec()
             if (!fundModel) {
-              const fundIdBytes32 = await funds.methods.fundOwner(principalAddress).call()
-              const fundId = hexToNumber(fundIdBytes32)
-              if (fundId > 0) {
-                console.log('principal', principal)
-                console.log('Repopulate Funds')
-                const { maxLoanDur, fundExpiry } = await funds.methods.funds(numToBytes32(fundId)).call()
-                const { custom, compoundEnabled } = await funds.methods.bools(numToBytes32(fundId)).call()
-
-                if (!custom) {
-                  const params = { principal, collateral, custom, maxLoanDuration: maxLoanDur, fundExpiry, compoundEnabled, amount: 0 }
-                  const fund = Fund.fromFundParams(params)
-                  fund.status = 'CREATED'
-                  fund.fundId = fundId
-                  await fund.save()
-                } else {
-                  const { liquidationRatio, interest, penalty, fee } = await funds.methods.funds(numToBytes32(fundId)).call()
-
-                  const params = {
-                    principal,
-                    collateral,
-                    custom,
-                    maxLoanDuration: maxLoanDur,
-                    fundExpiry,
-                    compoundEnabled,
-                    liquidationRatio,
-                    interest,
-                    penalty,
-                    fee,
-                    amount: 0
-                  }
-                  const fund = Fund.fromCustomFundParams(params)
-                  fund.status = 'CREATED'
-                  fund.fundId = fundId
-                  await fund.save()
-                }
-              }
+              await repopulateLenderFund(loanMarket)
             }
 
             const lenderLoanCount = await loans.methods.lenderLoanCount(principalAddress).call()
-            if (lenderLoanCount > 0) {
-              const loanModels = await Loan.find({ principal }).exec()
-              if (loanModels.length === 0) {
-                await repopulateLoans(loanMarket, principal, principalAddress, collateral, lenderLoanCount, loans, sales)
-              }
+            const loanModels = await Loan.find({ principal }).exec()
+            if (lenderLoanCount > 0 && loanModels.length === 0) {
+              await repopulateLenderLoans(loanMarket, principal, principalAddress, collateral, lenderLoanCount, loans, sales)
             }
           }
 
@@ -165,7 +111,7 @@ function defineLoanStatusJobs (agenda) {
                 const refundableConfirmationRequirementsMet = refundableUnspent.length === 0 ? false : refundableUnspent[0].confirmations > 0
                 const seizableConfirmationRequirementsMet = seizableUnspent.length === 0 ? false : seizableUnspent[0].confirmations > 0
 
-                if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet) {
+                if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet && !loan.collateralLocked) {
                   console.log('COLLATERAL LOCKED')
 
                   if (!isArbiter()) {
@@ -295,6 +241,8 @@ function defineLoanStatusJobs (agenda) {
               await loan.save()
             }
           }
+
+          await checkCollateralLocked(loanMarket)
         }
       }
 
@@ -308,7 +256,7 @@ function defineLoanStatusJobs (agenda) {
   })
 }
 
-async function repopulateLoans (loanMarket, principal, principalAddress, collateral, lenderLoanCount, loans, sales) {
+async function repopulateLenderLoans (loanMarket, principal, principalAddress, collateral, lenderLoanCount, loans, sales) {
   console.log('Repopulate Loans')
   const decimals = currencies[principal].decimals
   const multiplier = currencies[principal].multiplier
@@ -442,6 +390,115 @@ async function repopulateLoans (loanMarket, principal, principalAddress, collate
         saleModel.loanModelId = loan.id
         await saleModel.save()
       }
+    }
+  }
+}
+
+async function repopulateLenderFund (loanMarket) {
+  const { principalAddress } = await loanMarket.getAgentAddresses()
+  const { principal, collateral } = loanMarket
+  const funds = getObject('funds', principal)
+
+  const fundIdBytes32 = await funds.methods.fundOwner(principalAddress).call()
+  const fundId = hexToNumber(fundIdBytes32)
+  if (fundId > 0) {
+    console.log('principal', principal)
+    console.log('Repopulate Funds')
+    const { maxLoanDur, fundExpiry } = await funds.methods.funds(numToBytes32(fundId)).call()
+    const { custom, compoundEnabled } = await funds.methods.bools(numToBytes32(fundId)).call()
+
+    if (!custom) {
+      const params = { principal, collateral, custom, maxLoanDuration: maxLoanDur, fundExpiry, compoundEnabled, amount: 0 }
+      const fund = Fund.fromFundParams(params)
+      fund.status = 'CREATED'
+      fund.fundId = fundId
+      await fund.save()
+    } else {
+      const { liquidationRatio, interest, penalty, fee } = await funds.methods.funds(numToBytes32(fundId)).call()
+
+      const params = {
+        principal,
+        collateral,
+        custom,
+        maxLoanDuration: maxLoanDur,
+        fundExpiry,
+        compoundEnabled,
+        liquidationRatio,
+        interest,
+        penalty,
+        fee,
+        amount: 0
+      }
+      const fund = Fund.fromCustomFundParams(params)
+      fund.status = 'CREATED'
+      fund.fundId = fundId
+      await fund.save()
+    }
+  }
+}
+
+async function checkCollateralLocked (loanMarket) {
+  const { principal } = loanMarket
+  const finalLoanModels = await Loan.find({ principal, status: { $in: ['CANCELLED', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] }, collateralLocked: true }).exec()
+  const onGoingLoanModels = await Loan.find({ principal, status: { $nin: ['QUOTE', 'REQUESTING', 'CANCELLED', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] } }).exec()
+
+  await updateCollateralValues(finalLoanModels, loanMarket)
+  await updateCollateralValues(onGoingLoanModels, loanMarket)
+}
+
+async function updateCollateralValues (loanModels, loanMarket) {
+  for (let k = 0; k < loanModels.length; k++) {
+    const loan = loanModels[k]
+
+    const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress } = loan
+
+    const [refundableBalance, seizableBalance] = await Promise.all([
+      loan.collateralClient().chain.getBalance([collateralRefundableP2SHAddress]),
+      loan.collateralClient().chain.getBalance([collateralSeizableP2SHAddress])
+    ])
+
+    if (loan.refundableCollateralValue !== refundableBalance.toNumber()) {
+      const deltaRefundableValue = loan.refundableCollateralValue - refundableBalance.toNumber()
+
+      loanMarket.totalCollateralValue -= deltaRefundableValue
+      loan.refundableCollateralValue = refundableBalance.toNumber()
+    }
+
+    if (loan.seizableCollateralValue !== seizableBalance.toNumber()) {
+      const deltaSeizableValue = loan.seizableCollateralValue - seizableBalance.toNumber()
+
+      loanMarket.totalCollateralValue -= deltaSeizableValue
+      loan.seizableCollateralValue = seizableBalance.toNumber()
+    }
+
+    if (refundableBalance.toNumber() === 0 && seizableBalance.toNumber() === 0) {
+      loan.collateralLocked = false
+    } else {
+      loan.collateralLocked = true
+    }
+
+    await loan.save()
+    await loanMarket.save()
+  }
+}
+
+async function approveTokens (loanMarket, agenda) {
+  const { principalAddress } = await loanMarket.getAgentAddresses()
+  const { principal } = loanMarket
+
+  const token = getObject('erc20', principal)
+  const fundsAddress = getContract('funds', principal)
+
+  const allowance = await token.methods.allowance(principalAddress, fundsAddress).call()
+
+  if (parseInt(allowance) === 0) {
+    await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-tokens', { loanMarketModelId: loanMarket.id })
+  } else {
+    const fundModels = await Fund.find({ status: 'WAITING_FOR_APPROVE', principal }).exec()
+
+    if (fundModels.length > 0) {
+      const fund = fundModels[0]
+      await agenda.schedule(getInterval('ACTION_INTERVAL'), 'create-fund-ish', { fundModelId: fund.id })
     }
   }
 }

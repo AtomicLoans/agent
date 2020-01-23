@@ -13,6 +13,11 @@ const LoanMarketSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  totalCollateralValue: {
+    type: Number,
+    index: true,
+    default: 0
+  },
   chain: {
     type: String,
     index: true
