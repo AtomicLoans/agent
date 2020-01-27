@@ -93,6 +93,10 @@ const FundSchema = new mongoose.Schema({
     type: String,
     enum: ['INITIATED', 'WAITING_FOR_APPROVE', 'CREATING', 'CREATED', 'FAILED'],
     index: true
+  },
+  netDeposit: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -119,6 +123,7 @@ FundSchema.static('fromCustomFundParams', function (params) {
     penalty: params.penalty,
     fee: params.fee,
     amountToDepositOnCreate: params.amount,
+    netDeposit: params.amount,
     status: 'INITIATED'
   })
 })
@@ -132,6 +137,7 @@ FundSchema.static('fromFundParams', function (params) {
     fundExpiry: params.fundExpiry,
     compoundEnabled: params.compoundEnabled,
     amountToDepositOnCreate: params.amount,
+    netDeposit: params.amount,
     status: 'INITIATED'
   })
 })

@@ -10,6 +10,7 @@ const { getFundParams } = require('../utils/fundParams')
 const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 const { toWei } = web3().utils
+const BN = require('bignumber.js')
 
 const date = require('date.js')
 
@@ -72,6 +73,10 @@ function defineFundDepositJobs (agenda) {
 
       deposit.status = 'DEPOSITED'
       await deposit.save()
+      const fund = await Fund.findOne({_id: deposit.fundModelId }).exec()
+      fund.netDeposit = BN(fund.netDeposit).minus(deposit.amount).toFixed(18);
+      
+      await fund.save()
 
       console.log('DEPOSIT SUCCESSFUL')
     }
