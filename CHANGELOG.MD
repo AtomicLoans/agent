@@ -2,6 +2,7 @@
 
 - Setup containerization
 - Update kovan addresses which fixes Min Seizable Collateral calculation [atomicloans-eth-contracts/pull/117](https://github.com/AtomicLoans/atomicloans-eth-contracts/pull/117)
+- Fix migrate-mongo
 
 ## [0.1.51](https://github.com/AtomicLoans/agent/compare/v0.1.50...v0.1.51) - 2020-01-15
 
