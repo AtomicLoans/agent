@@ -8,13 +8,14 @@ const { checksumEncode } = require('@liquality/ethereum-utils')
 
 const { chains } = require('../../common')
 // const { setTxParams, bumpTxFee, sendTransaction } = require('../../../src/worker/loan/utils/web3Transaction')
-const { setTxParams, bumpTxFee } = require('../../../src/worker/loan/utils/web3Transaction')
+const { setTxParams, bumpTxFee, handleWeb3TransactionError } = require('../../../src/worker/loan/utils/web3Transaction')
 const { getObject } = require('../../../src/utils/contracts')
 const { numToBytes32 } = require('../../../src/utils/finance')
 const { getWeb3Address } = require('../util/web3Helpers')
 
 const Loan = require('../../../src/models/Loan')
 const LoanMarket = require('../../../src/models/LoanMarket')
+const EthTx = require('../../../src/models/EthTx')
 
 chai.should()
 const expect = chai.expect
@@ -96,6 +97,24 @@ describe('Web3 Transaction', () => {
       const { gasPrice: gasPriceAfter } = ethTx
 
       expect(gasPriceAfter).to.equal(gasPriceBefore * 1.51)
+    })
+  })
+
+  describe('handleWeb3TransactionError', () => {
+    it('should set ethTx failed to true if Transaction error is timeout is longer than 750 seconds', async () => {
+      const error = 'Error: Transaction was not mined within750 seconds, please make sure your transaction was properly sent. Be aware that it might still be mined!'
+
+      const params = {
+        from: '0x0000000000000000000000000000000000000000',
+        to: '0x0000000000000000000000000000000000000000',
+        nonce: 0
+      }
+
+      const ethTx = EthTx.fromTxParams(params)
+
+      await handleWeb3TransactionError(error, ethTx, null, null, null, null, null)
+
+      expect(ethTx.failed).to.equal(true)
     })
   })
 
