@@ -137,7 +137,7 @@ function testSales (web3Chain, ethNode, btcChain) {
       console.log('Mine BTC Block')
       await chains.bitcoinWithNode.client.chain.generateBlock(1)
 
-      await secondsCountDown(55)
+      await secondsCountDown(70)
 
       const approvedAfter = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedAfter).to.equal(true)
