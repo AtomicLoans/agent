@@ -168,7 +168,7 @@ function defineFundsRouter (router) {
     const fund = await Fund.findOne({ principal: params.principal, fundId: params.fundId }).exec()
     if (!fund) return next(res.createError(401, 'Fund not found'))
 
-    fund.netDeposit = BN(fund.netDeposit).plus(amountToDeposit).toFixed(18);
+    fund.netDeposit = BN(fund.netDeposit).plus(amountToDeposit).toFixed(18)
     await fund.save()
 
     // TODO: Add verification to prevent griefing

@@ -75,8 +75,8 @@ function defineFundWithdrawJobs (agenda) {
       withdraw.status = 'WITHDRAWN'
       await withdraw.save()
 
-      const fund = await Fund.findOne({_id: withdraw.fundModelId }).exec()
-      fund.netDeposit = BN(fund.netDeposit).minus(withdraw.amount).toFixed(18);
+      const fund = await Fund.findOne({ _id: withdraw.fundModelId }).exec()
+      fund.netDeposit = BN(fund.netDeposit).minus(withdraw.amount).toFixed(18)
 
       await fund.save()
 

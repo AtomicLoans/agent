@@ -73,9 +73,9 @@ function defineFundDepositJobs (agenda) {
 
       deposit.status = 'DEPOSITED'
       await deposit.save()
-      const fund = await Fund.findOne({_id: deposit.fundModelId }).exec()
-      fund.netDeposit = BN(fund.netDeposit).minus(deposit.amount).toFixed(18);
-      
+      const fund = await Fund.findOne({ _id: deposit.fundModelId }).exec()
+      fund.netDeposit = BN(fund.netDeposit).minus(deposit.amount).toFixed(18)
+
       await fund.save()
 
       console.log('DEPOSIT SUCCESSFUL')
