@@ -491,8 +491,9 @@ async function approveTokens (loanMarket, agenda) {
   const fundsAddress = getContract('funds', principal)
 
   const allowance = await token.methods.allowance(principalAddress, fundsAddress).call()
+  const approve = await Approve.findOne({ principal, status: { $nin: ['FAILED'] } }).exec()
 
-  if (parseInt(allowance) === 0) {
+  if (parseInt(allowance) === 0 || !approve) {
     await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-tokens', { loanMarketModelId: loanMarket.id })
   } else {
     const fundModels = await Fund.find({ status: 'WAITING_FOR_APPROVE', principal }).exec()
