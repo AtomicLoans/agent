@@ -134,7 +134,7 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
 async function handleWeb3TransactionError (error, ethTx, instance, agenda, done, successCallback, errorCallback) {
   ethTx.error = error
   await ethTx.save()
-  if ((String(error).indexOf('nonce too low') >= 0) || (String(error).indexOf('There is another transaction with same nonce in the queue') >= 0)) {
+  if ((String(error).indexOf('nonce too low') >= 0) || (String(error).indexOf('nonce is too low') >= 0) || (String(error).indexOf('There is another transaction with same nonce in the queue') >= 0)) {
     const ethTxsFailed = await EthTx.find({ failed: true, nonce: ethTx.nonce }).sort({ gasPrice: 'descending' }).exec()
     if (ethTxsFailed.length > 0) {
       ethTx.gasPrice = Math.ceil(ethTxsFailed[0].gasPrice * 1.51)
@@ -173,12 +173,14 @@ async function handleWeb3TransactionError (error, ethTx, instance, agenda, done,
     await ethTx.save()
     await sendTransaction(ethTx, instance, agenda, done, successCallback, errorCallback)
   } else {
+    ethTx.failed = true
+    await ethTx.save()
+
     const agentUrl = getAgentUrl()
 
     bugsnagClient.metaData = {
       ethTx,
       instance,
-      model: instance.collection.name,
       agentUrl
     }
     bugsnagClient.notify(error)

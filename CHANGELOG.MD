@@ -1,3 +1,8 @@
+## [0.1.52](https://github.com/AtomicLoans/agent/compare/v0.1.51...v0.1.52) - 2020-01-28
+
+- Setup containerization
+- Update kovan addresses which fixes Min Seizable Collateral calculation [atomicloans-eth-contracts/pull/117](https://github.com/AtomicLoans/atomicloans-eth-contracts/pull/117)
+
 ## [0.1.51](https://github.com/AtomicLoans/agent/compare/v0.1.50...v0.1.51) - 2020-01-15
 
 - Fix issue with fund withdraw route syntax
