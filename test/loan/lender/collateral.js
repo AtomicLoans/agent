@@ -7,12 +7,12 @@ const toSecs = require('@mblackmblack/to-seconds')
 const bitcoin = require('bitcoinjs-lib')
 const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
-const { sha256, hash160 } = require('@liquality/crypto')
+const { sha256 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
 const isCI = require('is-ci')
 
-const { chains, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
-const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans, fundTokens, increaseTime } = require('../loanCommon')
+const { chains, importBitcoinAddresses, importBitcoinAddressesByAddress, fundUnusedBitcoinAddress, rewriteEnv, connectMetaMask } = require('../../common')
+const { fundArbiter, fundAgent, generateSecretHashesArbiter, getLockParams, getTestContract, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, restartJobs, removeFunds, removeLoans, increaseTime } = require('../loanCommon')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { currencies } = require('../../../src/utils/fx')
 const { numToBytes32 } = require('../../../src/utils/finance')
@@ -20,7 +20,7 @@ const { testLoadObject } = require('../util/contracts')
 const { createCustomFund } = require('../setup/fundSetup')
 const web3 = require('web3')
 
-const { toWei, hexToNumber } = web3.utils
+const { toWei } = web3.utils
 
 chai.should()
 const expect = chai.expect
@@ -29,13 +29,12 @@ chai.use(chaiHttp)
 chai.use(chaiAsPromised)
 
 const server = 'http://localhost:3030/api/loan'
-const swapServer = 'http://localhost:3030/api/swap'
 const arbiterServer = 'http://localhost:3032/api/loan'
 
 const arbiterChain = chains.web3WithArbiter
 
-function testSales (web3Chain, ethNode, btcChain) {
-  describe('Sales', () => {
+function testCollateral (web3Chain, ethNode, btcChain) {
+  describe('Collateral Tests', () => {
     it('should POST loanMarket details and return loan details', async () => {
       await createCustomFund(web3Chain, arbiterChain, 200, 'SAI') // Create Custom Loan Fund with 200 SAI
 
@@ -113,7 +112,6 @@ function testSales (web3Chain, ethNode, btcChain) {
       await importBitcoinAddressesByAddress([collateralRefundableP2SHAddress, collateralSeizableP2SHAddress])
 
       const loans = await getTestObject(web3Chain, 'loans', principal)
-      const sales = await getTestObject(web3Chain, 'sales', principal)
       const approvedBefore = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedBefore).to.equal(false)
 
@@ -126,8 +124,7 @@ function testSales (web3Chain, ethNode, btcChain) {
       expect(expectedAwaitingCollateralStatus).to.equal('AWAITING_COLLATERAL')
 
       const lockParams = await getLockParams(web3Chain, principal, values, loanId)
-      const tx = await btcChain.client.loan.collateral.lock(...lockParams)
-      console.log('tx', tx)
+      const lockTxHash = await btcChain.client.loan.collateral.lock(...lockParams)
 
       const balance = await btcChain.client.chain.getBalance([collateralRefundableP2SHAddress, collateralSeizableP2SHAddress])
       console.log('balance', balance)
@@ -137,7 +134,12 @@ function testSales (web3Chain, ethNode, btcChain) {
       console.log('Mine BTC Block')
       await chains.bitcoinWithNode.client.chain.generateBlock(1)
 
-      await secondsCountDown(70)
+      await secondsCountDown(60)
+
+      const { body: loanMarketsAfterLocking } = await chai.request(server).get('/loanmarketinfo')
+      const loanMarketAfterLocking = loanMarketsAfterLocking.find(loanMarket => loanMarket.principal === principal)
+      const { totalCollateralValue: totalCollateralValueAfterLocking } = loanMarketAfterLocking
+      expect(totalCollateralValueAfterLocking).to.equal(values.refundableValue + values.seizableValue)
 
       const approvedAfter = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedAfter).to.equal(true)
@@ -146,152 +148,48 @@ function testSales (web3Chain, ethNode, btcChain) {
       const withdrawn = await loans.methods.withdrawn(numToBytes32(loanId)).call()
       expect(withdrawn).to.equal(true)
 
+      const owedForLoan = await loans.methods.owedForLoan(numToBytes32(loanId)).call()
+
+      const web3Address = await getWeb3Address(web3Chain)
       const { address: ethereumWithNodeAddress } = await chains.ethereumWithNode.client.wallet.getUnusedAddress()
 
-      const medianizer = await testLoadObject('medianizer', getTestContract('medianizer', principal), chains.web3WithNode, ensure0x(ethereumWithNodeAddress))
+      const token = await testLoadObject('erc20', getTestContract('erc20', principal), chains.web3WithNode, ensure0x(ethereumWithNodeAddress))
+      await token.methods.transfer(web3Address, toWei(owedForLoan, 'wei')).send({ gas: 100000 })
 
-      const { body: markets } = await chai.request(swapServer).get('/marketinfo')
-      const market = markets.find((market) => market.to === principal)
-      const { rate } = market
+      const testToken = await getTestObject(web3Chain, 'erc20', principal)
+      await testToken.methods.approve(getTestContract('loans', principal), toWei(owedForLoan, 'wei')).send({ gas: 100000 })
 
-      await medianizer.methods.poke(numToBytes32(toWei((rate * 0.7).toString(), 'ether'))).send({ gas: 200000 })
+      console.log('About to repay')
+      await secondsCountDown(10)
 
-      const liquidatorSecrets = await chains.bitcoinLiquidator.client.loan.secrets.generateSecrets('test', 1)
-      const liquidatorSecret = liquidatorSecrets[0]
-      console.log('liquidatorSecret', liquidatorSecret)
-      const liquidatorSecretHash = sha256(liquidatorSecret)
+      await loans.methods.repay(numToBytes32(loanId), owedForLoan).send({ gas: 2000000 })
 
-      const liquidatorBtcAddresses = await chains.bitcoinLiquidator.client.wallet.getAddresses()
-      const liquidatorBtcAddress = liquidatorBtcAddresses[0]
-      const { publicKey: liquidatorPubKey } = liquidatorBtcAddress
-      const liquidatorPubKeyHash = hash160(liquidatorPubKey.toString('hex'))
+      const paid = await loans.methods.paid(numToBytes32(loanId)).call()
+      expect(paid).to.equal(true)
 
-      const liquidatorAddress = await getWeb3Address(chains.web3WithLiquidator)
-      const liquidatorLoans = await testLoadObject('loans', getTestContract('loans', principal), chains.web3WithLiquidator, liquidatorAddress)
-      const liquidatorToken = await testLoadObject('erc20', getTestContract('erc20', principal), chains.web3WithLiquidator, liquidatorAddress)
+      console.log('REPAY LOAN')
+      await secondsCountDown(50)
 
-      const discountCollateralValue = await liquidatorLoans.methods.discountCollateralValue(numToBytes32(loanId)).call()
-      const ddivDiscountCollateralValue = await liquidatorLoans.methods.ddiv(toWei(discountCollateralValue.toString(), 'wei')).call()
+      const off = await loans.methods.off(numToBytes32(loanId)).call()
+      expect(off).to.equal(true)
 
-      console.log('discountCollateralValue', discountCollateralValue)
-      console.log('ddivDiscountCollateralValue', ddivDiscountCollateralValue)
+      const { acceptSecret } = await loans.methods.secretHashes(numToBytes32(loanId)).call()
 
-      await fundWeb3Address(chains.web3WithLiquidator)
-      await fundTokens(liquidatorAddress, toWei(discountCollateralValue, 'wei'), principal)
-      await liquidatorToken.methods.approve(getTestContract('loans', principal), toWei(discountCollateralValue, 'wei')).send({ gas: 100000 })
+      const refundParams = [lockTxHash, lockParams[1], remove0x(acceptSecret), lockParams[2], lockParams[3]]
+      const refundTxHash = await btcChain.client.loan.collateral.refund(...refundParams)
+      console.log('refundTxHash', refundTxHash)
 
-      await increaseTime(3600)
-      await increaseTime(3600)
-      await increaseTime(3600)
-
-      const safe = await liquidatorLoans.methods.safe(numToBytes32(loanId)).call()
-      console.log('safe', safe)
-
-      const saleIdBytes32 = await liquidatorLoans.methods.liquidate(numToBytes32(loanId), ensure0x(liquidatorSecretHash), ensure0x(liquidatorPubKeyHash)).call()
-      const saleId = hexToNumber(saleIdBytes32)
-      await liquidatorLoans.methods.liquidate(numToBytes32(loanId), ensure0x(liquidatorSecretHash), ensure0x(liquidatorPubKeyHash)).send({ gas: 1000000 })
-      console.log('saleId', saleId)
-
-      await secondsCountDown(5)
-
-      await checkSaleInitiated(saleId, principal)
-
-      const secretB = await getSecret(server, principal, saleId, 'B')
-      const secretC = await getSecret(arbiterServer, principal, saleId, 'C')
-      const secretD = liquidatorSecret
-
-      console.log('secretB', secretB)
-      console.log('secretC', secretC)
-      console.log('secretD', secretD)
-
-      const multisigSendTxHash = await getMultisigSendTxHash(server, principal, saleId)
-
-      const { borrowerPubKey, lenderPubKey, arbiterPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
-
-      const { secretHashA, secretHashB, secretHashC, secretHashD } = await sales.methods.secretHashes(numToBytes32(saleId)).call()
-
-      const swapExpiration = await sales.methods.swapExpiration(numToBytes32(saleId)).call()
-      const liquidationExpiration = await loans.methods.liquidationExpiration(numToBytes32(loanId)).call()
-
-      const claimPubKeys = { borrowerPubKey: remove0x(borrowerPubKey), lenderPubKey: remove0x(lenderPubKey), arbiterPubKey: remove0x(arbiterPubKey), liquidatorPubKey, liquidatorPubKeyHash }
-      const claimSecretHashes = { secretHashA1: remove0x(secretHashA), secretHashB1: remove0x(secretHashB), secretHashC1: remove0x(secretHashC), secretHashD1: remove0x(secretHashD) }
-      const claimExpirations = { swapExpiration, liquidationExpiration }
-
-      const claimParams = [multisigSendTxHash, claimPubKeys, [secretB, secretC, secretD], claimSecretHashes, claimExpirations]
-
-      console.log('claimParams', claimParams)
-
-      const claimTxHash = await await chains.bitcoinLiquidator.client.loan.collateralSwap.claim(...claimParams)
-
-      console.log('claimTxHash', claimTxHash)
-
-      await secondsCountDown(5)
-
+      console.log('Mine BTC Block')
       await chains.bitcoinWithNode.client.chain.generateBlock(1)
 
-      await checkSaleAccepted(saleId, principal)
+      await secondsCountDown(60)
 
-      const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
-
-      expect(accepted).to.equal(true)
+      const { body: loanMarketsAfterUnlocking } = await chai.request(server).get('/loanmarketinfo')
+      const loanMarketAfterUnlocking = loanMarketsAfterUnlocking.find(loanMarket => loanMarket.principal === principal)
+      const { totalCollateralValue: totalCollateralValueAfterUnlocking } = loanMarketAfterUnlocking
+      expect(totalCollateralValueAfterUnlocking).to.equal(0)
     })
   })
-}
-
-async function checkSaleInitiated (saleId, principal) {
-  let collateralSent = false
-  let secretB
-  while (!collateralSent) {
-    await sleep(1000)
-    const { body, status } = await chai.request(server).get(`/sales/contract/${principal}/${saleId}`)
-    if (status === 200) {
-      const { status: saleStatus } = body
-      console.log(saleStatus)
-      if (saleStatus === 'COLLATERAL_SENDING') {
-        await chains.bitcoinWithNode.client.chain.generateBlock(1)
-
-        const { collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress } = body
-        await importBitcoinAddressesByAddress([collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress])
-      }
-      if (saleStatus === 'COLLATERAL_SENT' || saleStatus === 'SECRETS_PROVIDED' || saleStatus === 'COLLATERAL_CLAIMED') {
-        collateralSent = true
-        secretB = body.secretB
-      }
-    }
-  }
-
-  return secretB
-}
-
-async function checkSaleAccepted (saleId, principal) {
-  let accepted = false
-  while (!accepted) {
-    await sleep(1000)
-    const { body, status } = await chai.request(arbiterServer).get(`/sales/contract/${principal}/${saleId}`)
-    if (status === 200) {
-      const { status: saleStatus } = body
-      console.log(saleStatus)
-      if (saleStatus === 'ACCEPTED') {
-        accepted = true
-      }
-    }
-  }
-}
-
-async function getSecret (serverEndpoint, principal, saleId, secret) {
-  const { body, status } = await chai.request(serverEndpoint).get(`/sales/contract/${principal}/${saleId}`)
-
-  if (status === 200) {
-    return body[`secret${secret}`]
-  }
-}
-
-async function getMultisigSendTxHash (serverEndpoint, principal, saleId) {
-  const { body, status } = await chai.request(serverEndpoint).get(`/sales/contract/${principal}/${saleId}`)
-
-  if (status === 200) {
-    return body.initTxHash
-  }
 }
 
 async function secondsCountDown (num) {
@@ -351,30 +249,20 @@ describe('Lender Agent - Funds', () => {
     after(function () {
       testAfterArbiter()
     })
-    testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
+    testCollateral(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
 
   if (!isCI) {
     describe('MetaMask / BitcoinJs', () => {
-      before(async function () {
-        await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)
-        testSetupArbiter()
-      })
-      after(function () {
-        testAfterArbiter()
-      })
-      testSales(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)
+      connectMetaMask()
+      before(async function () { await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs) })
+      testCollateral(chains.web3WithMetaMask, chains.bitcoinWithJs)
     })
 
     describe('MetaMask / Ledger', () => {
-      before(async function () {
-        await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithLedger)
-        testSetupArbiter()
-      })
-      after(function () {
-        testAfterArbiter()
-      })
-      testSales(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithLedger)
+      connectMetaMask()
+      before(async function () { await testSetup(chains.web3WithMetaMask, chains.bitcoinWithLedger) })
+      testCollateral(chains.web3WithMetaMask, chains.bitcoinWithLedger)
     })
   }
 })

@@ -5,7 +5,7 @@ const chaiAsPromised = require('chai-as-promised')
 const BN = require('bignumber.js')
 const toSecs = require('@mblackmblack/to-seconds')
 const bitcoin = require('bitcoinjs-lib')
-const { ensure0x } = require('@liquality/ethereum-utils')
+const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
 const { sha256 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
@@ -124,8 +124,7 @@ function testE2E (web3Chain, ethNode, btcChain) {
       expect(expectedAwaitingCollateralStatus).to.equal('AWAITING_COLLATERAL')
 
       const lockParams = await getLockParams(web3Chain, principal, values, loanId)
-      const tx = await btcChain.client.loan.collateral.lock(...lockParams)
-      console.log('tx', tx)
+      const lockTxHash = await btcChain.client.loan.collateral.lock(...lockParams)
 
       const balance = await btcChain.client.chain.getBalance([collateralRefundableP2SHAddress, collateralSeizableP2SHAddress])
       console.log('balance', balance)
@@ -135,7 +134,7 @@ function testE2E (web3Chain, ethNode, btcChain) {
       console.log('Mine BTC Block')
       await chains.bitcoinWithNode.client.chain.generateBlock(1)
 
-      await secondsCountDown(60)
+      await secondsCountDown(80)
 
       const approvedAfter = await loans.methods.approved(numToBytes32(loanId)).call()
       expect(approvedAfter).to.equal(true)
@@ -168,6 +167,12 @@ function testE2E (web3Chain, ethNode, btcChain) {
 
       const off = await loans.methods.off(numToBytes32(loanId)).call()
       expect(off).to.equal(true)
+
+      const { acceptSecret } = await loans.methods.secretHashes(numToBytes32(loanId)).call()
+
+      const refundParams = [lockTxHash, lockParams[1], remove0x(acceptSecret), lockParams[2], lockParams[3]]
+      const refundTxHash = await btcChain.client.loan.collateral.refund(...refundParams)
+      console.log('refundTxHash', refundTxHash)
     })
   })
 }
