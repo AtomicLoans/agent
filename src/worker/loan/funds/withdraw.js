@@ -11,6 +11,7 @@ const { getFundParams } = require('../utils/fundParams')
 const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 const { toWei } = web3().utils
+const BN = require('bignumber.js')
 
 const date = require('date.js')
 
@@ -73,6 +74,11 @@ function defineFundWithdrawJobs (agenda) {
 
       withdraw.status = 'WITHDRAWN'
       await withdraw.save()
+
+      const fund = await Fund.findOne({ _id: withdraw.fundModelId }).exec()
+      fund.netDeposit = BN(fund.netDeposit).minus(withdraw.amount).toFixed(18)
+
+      await fund.save()
 
       console.log('WITHDRAW SUCCESSFUL')
     }
