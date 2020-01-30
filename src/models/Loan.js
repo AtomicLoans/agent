@@ -24,7 +24,7 @@ const LoanSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
-  collateralAmount: {
+  collateralAmount: { // Amount collateral required for loan
     type: Number,
     index: true
   },
@@ -33,22 +33,22 @@ const LoanSchema = new mongoose.Schema({
     index: true,
     default: false
   },
-  refundableCollateralAmount: {
+  refundableCollateralAmount: { // Amount refundable collateral required for loan
     type: Number,
     index: true,
     default: 0
   },
-  seizableCollateralAmount: {
+  seizableCollateralAmount: { // Amount seizable collateral required for loan
     type: Number,
     index: true,
     default: 0
   },
-  refundableCollateralValue: {
+  refundableCollateralValue: { // Current refundable collateral balance
     type: Number,
     index: true,
     default: 0
   },
-  seizableCollateralValue: {
+  seizableCollateralValue: { // Current seizable collateral balance
     type: Number,
     index: true,
     default: 0
