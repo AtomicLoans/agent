@@ -7,7 +7,7 @@ const toSecs = require('@mblackmblack/to-seconds')
 const { sha256 } = require('@liquality/crypto')
 
 const { chains, importBitcoinAddresses, fundUnusedBitcoinAddress, importBitcoinAddressesByAddress } = require('../../common')
-const { updateCollateralValues } = require('../../../src/worker/loan/loans/status')
+const { updateCollateralValues, updateMinCollateralValues } = require('../../../src/worker/loan/loans/status')
 
 const Loan = require('../../../src/models/Loan')
 const LoanMarket = require('../../../src/models/LoanMarket')
@@ -199,6 +199,43 @@ function testLoanStatus (web3Chain, btcChain) {
       const { totalCollateralValue: totalCollateralValueAfterInBTC } = loanMarket
       const totalCollateralValueAfter = BN(totalCollateralValueAfterInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueAfter).to.equal(0)
+    })
+  })
+
+  describe('updateMinCollateralValues', () => {
+    beforeEach(async function () {
+      const params = { principal: 'DAI', collateral: 'BTC', principalAmount: BN(10).pow(18).toFixed(), loanDuration: toSecs({ days: 2 }) }
+      const loanMarket = new LoanMarket({ minConf: 1, requestExpiresIn: 600000 })
+      await loanMarket.save()
+
+      const minCollateralAmount = BN(10).pow(8).toFixed()
+
+      const loan = Loan.fromLoanMarket(loanMarket, params, minCollateralAmount)
+      await loan.save()
+
+      const lockParams = await getLockParams()
+
+      const { refundableAddress, seizableAddress } = await btcChain.client.loan.collateral.getLockAddresses(...lockParams)
+
+      loan.collateralRefundableP2SHAddress = refundableAddress
+      loan.collateralSeizableP2SHAddress = seizableAddress
+      await loan.save()
+
+      await importBitcoinAddressesByAddress([refundableAddress, seizableAddress])
+
+      global.loan = loan
+      global.loanMarket = loanMarket
+      global.lockParams = lockParams
+      global.values = {
+        refundableValue: 1000000, // 0.01 BTC
+        seizableValue: 500000 // 0.005 BTC
+      }
+    })
+
+    it('should succeeed and create error when ethereum chain can\'t be accessed', async () => {
+      const { loan, loanMarket } = global
+
+      await updateMinCollateralValues([loan], loanMarket)
     })
   })
 }

@@ -494,9 +494,9 @@ async function updateMinCollateralValues (loanModels, loanMarket) {
 
     const { principal, collateral, loanId } = loan
 
-    const loans = getObject('loans', principal)
-
     try {
+      const loans = getObject('loans', principal)
+      
       const liquidationRatioInUnits = await loans.methods.liquidationRatio(numToBytes32(loanId)).call()
       const liquidationRatio = fromWei(liquidationRatioInUnits, 'gether')
 
@@ -538,5 +538,6 @@ async function approveTokens (loanMarket, agenda) {
 module.exports = {
   defineLoanStatusJobs,
   checkCollateralLocked,
-  updateCollateralValues
+  updateCollateralValues,
+  updateMinCollateralValues
 }
