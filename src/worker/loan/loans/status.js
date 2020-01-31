@@ -464,20 +464,20 @@ async function updateCollateralValues (loanModels, loanMarket) {
     const seizableBalance = BN(seizableBalanceInUnits.toNumber()).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
 
     if (loan.refundableCollateralValue !== refundableBalance) {
-      const deltaRefundableValue = loan.refundableCollateralValue - refundableBalance
+      const deltaRefundableValue = BN(loan.refundableCollateralValue).minus(refundableBalance)
 
-      loanMarket.totalCollateralValue -= deltaRefundableValue
+      loanMarket.totalCollateralValue = BN(loanMarket.totalCollateralValue).minus(deltaRefundableValue).toFixed()
       loan.refundableCollateralValue = refundableBalance
     }
 
     if (loan.seizableCollateralValue !== seizableBalance) {
-      const deltaSeizableValue = loan.seizableCollateralValue - seizableBalance
+      const deltaSeizableValue = BN(loan.seizableCollateralValue).minus(seizableBalance)
 
-      loanMarket.totalCollateralValue -= deltaSeizableValue
+      loanMarket.totalCollateralValue = BN(loanMarket.totalCollateralValue).minus(deltaSeizableValue).toFixed()
       loan.seizableCollateralValue = seizableBalance
     }
 
-    if (refundableBalance === 0 && seizableBalance === 0) {
+    if (parseFloat(refundableBalance) === 0 && parseFloat(seizableBalance) === 0) {
       loan.collateralLocked = false
     } else {
       loan.collateralLocked = true
