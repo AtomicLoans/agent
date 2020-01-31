@@ -18,6 +18,8 @@ const expect = chai.expect
 const { MONGODB_TEST_URI } = process.env
 let secrets
 
+const BTC_TO_SATS = 10 ** 8
+
 function testLoanStatus (web3Chain, btcChain) {
   describe('updateCollateralValues', () => {
     beforeEach(async function () {
@@ -54,7 +56,8 @@ function testLoanStatus (web3Chain, btcChain) {
 
       await updateCollateralValues([loan], loanMarket)
 
-      const { totalCollateralValue: totalCollateralValueBefore } = loanMarket
+      const { totalCollateralValue: totalCollateralValueBeforeInBTC } = loanMarket
+      const totalCollateralValueBefore = BN(totalCollateralValueBeforeInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueBefore).to.equal(0)
 
       await btcChain.client.loan.collateral.lock(values, ...lockParams)
@@ -62,7 +65,8 @@ function testLoanStatus (web3Chain, btcChain) {
 
       await updateCollateralValues([loan], loanMarket)
 
-      const { totalCollateralValue: totalCollateralValueAfter } = loanMarket
+      const { totalCollateralValue: totalCollateralValueAfterInBTC } = loanMarket
+      const totalCollateralValueAfter = BN(totalCollateralValueAfterInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueAfter).to.equal(values.refundableValue + values.seizableValue)
     })
 
@@ -76,7 +80,8 @@ function testLoanStatus (web3Chain, btcChain) {
 
       await updateCollateralValues([loan], loanMarket)
 
-      const { totalCollateralValue: totalCollateralValueBefore } = loanMarket
+      const { totalCollateralValue: totalCollateralValueBeforeInBTC } = loanMarket
+      const totalCollateralValueBefore = BN(totalCollateralValueBeforeInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueBefore).to.equal(values.refundableValue + values.seizableValue)
 
       const unlockParams = await getUnlockParams(lockParams, secrets[1])
@@ -86,7 +91,8 @@ function testLoanStatus (web3Chain, btcChain) {
 
       await updateCollateralValues([loan], loanMarket)
 
-      const { totalCollateralValue: totalCollateralValueAfter } = loanMarket
+      const { totalCollateralValue: totalCollateralValueAfterInBTC } = loanMarket
+      const totalCollateralValueAfter = BN(totalCollateralValueAfterInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueAfter).to.equal(0)
     })
 
@@ -100,7 +106,8 @@ function testLoanStatus (web3Chain, btcChain) {
 
       await updateCollateralValues([loan], loanMarket)
 
-      const { totalCollateralValue: totalCollateralValueBefore } = loanMarket
+      const { totalCollateralValue: totalCollateralValueBeforeInBTC } = loanMarket
+      const totalCollateralValueBefore = BN(totalCollateralValueBeforeInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueBefore).to.equal(values.refundableValue)
 
       const unlockParams = await getUnlockParams(lockParams, secrets[1])
@@ -110,7 +117,8 @@ function testLoanStatus (web3Chain, btcChain) {
 
       await updateCollateralValues([loan], loanMarket)
 
-      const { totalCollateralValue: totalCollateralValueAfter } = loanMarket
+      const { totalCollateralValue: totalCollateralValueAfterInBTC } = loanMarket
+      const totalCollateralValueAfter = BN(totalCollateralValueAfterInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueAfter).to.equal(0)
     })
 
@@ -124,7 +132,8 @@ function testLoanStatus (web3Chain, btcChain) {
 
       await updateCollateralValues([loan], loanMarket)
 
-      const { totalCollateralValue: totalCollateralValueBefore } = loanMarket
+      const { totalCollateralValue: totalCollateralValueBeforeInBTC } = loanMarket
+      const totalCollateralValueBefore = BN(totalCollateralValueBeforeInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueBefore).to.equal(values.seizableValue)
 
       const unlockParams = await getUnlockParams(lockParams, secrets[1])
@@ -134,7 +143,8 @@ function testLoanStatus (web3Chain, btcChain) {
 
       await updateCollateralValues([loan], loanMarket)
 
-      const { totalCollateralValue: totalCollateralValueAfter } = loanMarket
+      const { totalCollateralValue: totalCollateralValueAfterInBTC } = loanMarket
+      const totalCollateralValueAfter = BN(totalCollateralValueAfterInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueAfter).to.equal(0)
     })
 
@@ -145,7 +155,8 @@ function testLoanStatus (web3Chain, btcChain) {
 
       const { collateralLocked: collateralLockedBefore } = loan
       expect(collateralLockedBefore).to.equal(false)
-      const { totalCollateralValue: totalCollateralValueBefore } = loanMarket
+      const { totalCollateralValue: totalCollateralValueBeforeInBTC } = loanMarket
+      const totalCollateralValueBefore = BN(totalCollateralValueBeforeInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueBefore).to.equal(0)
 
       await btcChain.client.loan.collateral.lock(values, ...lockParams)
@@ -155,7 +166,8 @@ function testLoanStatus (web3Chain, btcChain) {
 
       const { collateralLocked: collateralLockedAfter } = loan
       expect(collateralLockedAfter).to.equal(true)
-      const { totalCollateralValue: totalCollateralValueAfter } = loanMarket
+      const { totalCollateralValue: totalCollateralValueAfterInBTC } = loanMarket
+      const totalCollateralValueAfter = BN(totalCollateralValueAfterInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueAfter).to.equal(values.refundableValue + values.seizableValue)
     })
 
@@ -171,7 +183,8 @@ function testLoanStatus (web3Chain, btcChain) {
 
       const { collateralLocked: collateralLockedBefore } = loan
       expect(collateralLockedBefore).to.equal(true)
-      const { totalCollateralValue: totalCollateralValueBefore } = loanMarket
+      const { totalCollateralValue: totalCollateralValueBeforeInBTC } = loanMarket
+      const totalCollateralValueBefore = BN(totalCollateralValueBeforeInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueBefore).to.equal(values.refundableValue + values.seizableValue)
 
       const unlockParams = await getUnlockParams(lockParams, secrets[1])
@@ -183,7 +196,8 @@ function testLoanStatus (web3Chain, btcChain) {
 
       const { collateralLocked: collateralLockedAfter } = loan
       expect(collateralLockedAfter).to.equal(false)
-      const { totalCollateralValue: totalCollateralValueAfter } = loanMarket
+      const { totalCollateralValue: totalCollateralValueAfterInBTC } = loanMarket
+      const totalCollateralValueAfter = BN(totalCollateralValueAfterInBTC).times(BTC_TO_SATS).toNumber()
       expect(totalCollateralValueAfter).to.equal(0)
     })
   })

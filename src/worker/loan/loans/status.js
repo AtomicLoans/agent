@@ -445,34 +445,39 @@ async function checkCollateralLocked (loanMarket) {
 
   await updateCollateralValues(finalLoanModels, loanMarket)
   await updateCollateralValues(onGoingLoanModels, loanMarket)
+
+  await updateMinCollateralValues(onGoingLoanModels, loanMarket)
 }
 
 async function updateCollateralValues (loanModels, loanMarket) {
   for (let k = 0; k < loanModels.length; k++) {
     const loan = loanModels[k]
 
-    const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress } = loan
+    const { collateral, collateralRefundableP2SHAddress, collateralSeizableP2SHAddress } = loan
 
-    const [refundableBalance, seizableBalance] = await Promise.all([
+    const [refundableBalanceInUnits, seizableBalanceInUnits] = await Promise.all([
       loan.collateralClient().chain.getBalance([collateralRefundableP2SHAddress]),
       loan.collateralClient().chain.getBalance([collateralSeizableP2SHAddress])
     ])
 
-    if (loan.refundableCollateralValue !== refundableBalance.toNumber()) {
-      const deltaRefundableValue = loan.refundableCollateralValue - refundableBalance.toNumber()
+    const refundableBalance = BN(refundableBalanceInUnits.toNumber()).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
+    const seizableBalance = BN(seizableBalanceInUnits.toNumber()).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
 
-      loanMarket.totalCollateralValue -= deltaRefundableValue
-      loan.refundableCollateralValue = refundableBalance.toNumber()
+    if (loan.refundableCollateralValue !== refundableBalance) {
+      const deltaRefundableValue = BN(loan.refundableCollateralValue).minus(refundableBalance)
+
+      loanMarket.totalCollateralValue = BN(loanMarket.totalCollateralValue).minus(deltaRefundableValue).toFixed()
+      loan.refundableCollateralValue = refundableBalance
     }
 
-    if (loan.seizableCollateralValue !== seizableBalance.toNumber()) {
-      const deltaSeizableValue = loan.seizableCollateralValue - seizableBalance.toNumber()
+    if (loan.seizableCollateralValue !== seizableBalance) {
+      const deltaSeizableValue = BN(loan.seizableCollateralValue).minus(seizableBalance)
 
-      loanMarket.totalCollateralValue -= deltaSeizableValue
-      loan.seizableCollateralValue = seizableBalance.toNumber()
+      loanMarket.totalCollateralValue = BN(loanMarket.totalCollateralValue).minus(deltaSeizableValue).toFixed()
+      loan.seizableCollateralValue = seizableBalance
     }
 
-    if (refundableBalance.toNumber() === 0 && seizableBalance.toNumber() === 0) {
+    if (parseFloat(refundableBalance) === 0 && parseFloat(seizableBalance) === 0) {
       loan.collateralLocked = false
     } else {
       loan.collateralLocked = true
@@ -480,6 +485,31 @@ async function updateCollateralValues (loanModels, loanMarket) {
 
     await loan.save()
     await loanMarket.save()
+  }
+}
+
+async function updateMinCollateralValues (loanModels, loanMarket) {
+  for (let i = 0; i < loanModels.length; i++) {
+    const loan = loanModels[i]
+
+    const { principal, collateral, loanId } = loan
+
+    const loans = getObject('loans', principal)
+
+    try {
+      const liquidationRatioInUnits = await loans.methods.liquidationRatio(numToBytes32(loanId)).call()
+      const liquidationRatio = fromWei(liquidationRatioInUnits, 'gether')
+
+      const minSeizableCollateralValue = await loans.methods.minSeizableCollateralValue(numToBytes32(loanId)).call()
+
+      const minCollateralValue = BN(Math.ceil(BN(minSeizableCollateralValue).times(liquidationRatio).toNumber())).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
+
+      loan.minimumCollateralAmount = minCollateralValue
+      await loan.save()
+    } catch (e) {
+      console.log('Error updateMinCollateralValues:', e)
+      handleError(e)
+    }
   }
 }
 
