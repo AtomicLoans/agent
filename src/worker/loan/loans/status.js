@@ -496,7 +496,7 @@ async function updateMinCollateralValues (loanModels, loanMarket) {
 
     try {
       const loans = getObject('loans', principal)
-      
+
       const liquidationRatioInUnits = await loans.methods.liquidationRatio(numToBytes32(loanId)).call()
       const liquidationRatio = fromWei(liquidationRatioInUnits, 'gether')
 
