@@ -1,3 +1,8 @@
+## [0.1.53](https://github.com/AtomicLoans/agent/compare/v0.1.52...v0.1.53) - 2020-02-02
+
+- Add live collateral values per loan and markets apis
+- Add min collateral values to loan apis
+
 ## [0.1.52](https://github.com/AtomicLoans/agent/compare/v0.1.51...v0.1.52) - 2020-01-28
 
 - Setup containerization
