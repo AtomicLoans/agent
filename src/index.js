@@ -15,11 +15,11 @@ if (MONGOOSE_DEBUG === 'true') {
 
 const connectWithRetry = (retry) => {
   return mongoose.connect(isArbiter() ? MONGODB_ARBITER_URI : MONGODB_URI, { useNewUrlParser: true, useCreateIndex: true },
-    function(err) {
+    function (err) {
       if (err && err.message && err.message.match(/failed to connect to server .* on first connect/)) {
         if (retry) {
           console.error('Failed to connect to mongo on startup - retrying in 5 sec', err)
-          setTimeout(() => {connectWithRetry(false)}, 5000)
+          setTimeout(() => { connectWithRetry(false) }, 5000)
         } else {
           process.exit(2)
         }
