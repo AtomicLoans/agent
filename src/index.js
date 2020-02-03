@@ -13,7 +13,22 @@ if (MONGOOSE_DEBUG === 'true') {
   mongoose.set('debug', true)
 }
 
-mongoose.connect(isArbiter() ? MONGODB_ARBITER_URI : MONGODB_URI, { useNewUrlParser: true, useCreateIndex: true })
+const connectWithRetry = (retry) => {
+  return mongoose.connect(isArbiter() ? MONGODB_ARBITER_URI : MONGODB_URI, { useNewUrlParser: true, useCreateIndex: true },
+    function(err) {
+      if (err && err.message && err.message.match(/failed to connect to server .* on first connect/)) {
+        if (retry) {
+          console.error('Failed to connect to mongo on startup - retrying in 5 sec', err)
+          setTimeout(() => {connectWithRetry(false)}, 5000)
+        } else {
+          process.exit(2)
+        }
+      }
+    }
+  )
+}
+
+connectWithRetry(true)
 
 async function start () {
   if (HEROKU_APP !== undefined && HEROKU_APP !== 'undefined') {
