@@ -112,7 +112,7 @@ function defineLoanStatusJobs (agenda) {
                 const refundableConfirmationRequirementsMet = refundableUnspent.length === 0 ? false : refundableUnspent[0].confirmations > 0
                 const seizableConfirmationRequirementsMet = seizableUnspent.length === 0 ? false : seizableUnspent[0].confirmations > 0
 
-                if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet && !loan.collateralLocked) {
+                if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet && loan.status === 'AWAITING_COLLATERAL') {
                   console.log('COLLATERAL LOCKED')
 
                   if (!isArbiter()) {
