@@ -37,8 +37,6 @@ const arbiterChain = chains.web3WithArbiter
 function testSales (web3Chain, ethNode, btcChain) {
   describe('Sales', () => {
     it('should POST loanMarket details and return loan details', async () => {
-      await createCustomFund(web3Chain, arbiterChain, 200, 'SAI') // Create Custom Loan Fund with 200 SAI
-
       const principal = 'SAI'
       const collateral = 'BTC'
       const principalAmount = 25
@@ -306,14 +304,13 @@ async function getLoanStatus (loanId) {
   return body.status
 }
 
-async function testSetup (web3Chain, ethNode, btcChain) {
-  const blockHeight = await btcChain.client.chain.getBlockHeight()
+async function testSetup (web3Chain, btcChain) {
+  const blockHeight = await chains.bitcoinWithJs.client.chain.getBlockHeight()
   if (blockHeight < 101) {
-    await btcChain.client.chain.generateBlock(101)
+    await chains.bitcoinWithJs.client.chain.generateBlock(101)
   }
 
   await increaseTime(3600)
-  await ethNode.client.getMethod('jsonrpc')('miner_start')
   const address = await getWeb3Address(web3Chain)
   rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
   await cancelLoans(web3Chain)
@@ -330,6 +327,7 @@ async function testSetup (web3Chain, ethNode, btcChain) {
   await fundUnusedBitcoinAddress(btcChain)
   await restartJobs(server)
   await restartJobs(arbiterServer)
+  await createCustomFund(web3Chain, arbiterChain, 200, 'SAI') // Create Custom Loan Fund with 200 SAI
 }
 
 function testSetupArbiter () {
@@ -345,36 +343,36 @@ function testAfterArbiter () {
 describe('Lender Agent - Funds', () => {
   describe('Web3HDWallet / BitcoinJs', () => {
     before(async function () {
-      await testSetup(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
-      testSetupArbiter()
+      await testSetup(chains.web3WithHDWallet, chains.bitcoinWithJs)
+      // testSetupArbiter()
     })
-    after(function () {
-      testAfterArbiter()
-    })
+    // after(function () {
+      // testAfterArbiter()
+    // })
     testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
 
   if (!isCI) {
-    describe('MetaMask / BitcoinJs', () => {
-      before(async function () {
-        await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)
-        testSetupArbiter()
-      })
-      after(function () {
-        testAfterArbiter()
-      })
-      testSales(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)
-    })
+    // describe('MetaMask / BitcoinJs', () => {
+    //   before(async function () {
+    //     await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)
+    //     testSetupArbiter()
+    //   })
+    //   after(function () {
+    //     testAfterArbiter()
+    //   })
+    //   testSales(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithJs)
+    // })
 
-    describe('MetaMask / Ledger', () => {
-      before(async function () {
-        await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithLedger)
-        testSetupArbiter()
-      })
-      after(function () {
-        testAfterArbiter()
-      })
-      testSales(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithLedger)
-    })
+    // describe('MetaMask / Ledger', () => {
+    //   before(async function () {
+    //     await testSetup(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithLedger)
+    //     testSetupArbiter()
+    //   })
+    //   after(function () {
+    //     testAfterArbiter()
+    //   })
+    //   testSales(chains.web3WithMetaMask, chains.ethereumWithNode, chains.bitcoinWithLedger)
+    // })
   }
 })

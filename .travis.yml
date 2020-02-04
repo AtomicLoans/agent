@@ -41,15 +41,15 @@ jobs:
         - CI=false npm run test:lender:tx
         - CI=false npm run test:modules
         - CI=false npm run coverage
+    - stage: Test Sales
+      script:
+        - CI=false npm run test:lender:sales
     - stage: Test Funds
       script:
         - CI=false npm run test:lender:funds
     - stage: Test Loans
       script:
         - CI=false npm run test:lender:loans
-    - stage: Test Sales
-      script:
-        - CI=false npm run test:lender:sales
     - stage: Test E2E
       script:
         - CI=false npm run test:lender:e2e
