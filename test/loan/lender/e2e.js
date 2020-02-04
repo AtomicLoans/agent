@@ -163,7 +163,7 @@ function testE2E (web3Chain, ethNode, btcChain) {
       expect(paid).to.equal(true)
 
       console.log('REPAY LOAN')
-      await secondsCountDown(50)
+      await secondsCountDown(80)
 
       const off = await loans.methods.off(numToBytes32(loanId)).call()
       expect(off).to.equal(true)
