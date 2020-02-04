@@ -330,16 +330,6 @@ async function testSetup (web3Chain, btcChain) {
   await createCustomFund(web3Chain, arbiterChain, 200, 'SAI') // Create Custom Loan Fund with 200 SAI
 }
 
-function testSetupArbiter () {
-  rewriteEnv('.env', 'API_OFFLINE', 'false')
-  rewriteEnv('.env', 'ACCEPT_CANCEL_JOBS_OFFLINE', 'true')
-}
-
-function testAfterArbiter () {
-  rewriteEnv('.env', 'API_OFFLINE', 'false')
-  rewriteEnv('.env', 'ACCEPT_CANCEL_JOBS_OFFLINE', 'false')
-}
-
 describe('Lender Agent - Funds', () => {
   describe('Web3HDWallet / BitcoinJs', () => {
     before(async function () {
@@ -347,7 +337,7 @@ describe('Lender Agent - Funds', () => {
       // testSetupArbiter()
     })
     // after(function () {
-      // testAfterArbiter()
+    // testAfterArbiter()
     // })
     testSales(chains.web3WithHDWallet, chains.ethereumWithNode, chains.bitcoinWithJs)
   })
