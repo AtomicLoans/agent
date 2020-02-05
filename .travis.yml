@@ -44,12 +44,12 @@ jobs:
     - stage: Test Sales
       script:
         - CI=false npm run test:lender:sales
+    - stage: Test E2E
+      script:
+        - CI=false npm run test:lender:e2e
     - stage: Test Funds
       script:
         - CI=false npm run test:lender:funds
     - stage: Test Loans
       script:
         - CI=false npm run test:lender:loans
-    - stage: Test E2E
-      script:
-        - CI=false npm run test:lender:e2e
