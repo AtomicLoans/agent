@@ -86,7 +86,8 @@ function defineSalesAcceptJobs (agenda) {
       if (!loan) return console.log('Error: Loan not found')
 
       mailer.notify(loan.borrowerPrincipalAddress, 'loan-liquidated', {
-        loanId: loan.loanId
+        loanId: loan.loanId,
+        asset: loan.principal.toLowerCase()
       })
 
       loan.status = 'LIQUIDATED'
