@@ -1,3 +1,9 @@
+## [0.1.54](https://github.com/AtomicLoans/agent/compare/v0.1.53...v0.1.54) - 2020-02-10
+
+- Verify deposit transactions
+- Update Kovan arbiter endpoint
+- Add auto-reconnect to mongoose
+
 ## [0.1.53](https://github.com/AtomicLoans/agent/compare/v0.1.52...v0.1.53) - 2020-02-02
 
 - Add live collateral values per loan and markets apis
