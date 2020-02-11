@@ -87,7 +87,7 @@ function defineSalesAcceptJobs (agenda) {
 
       mailer.notify(loan.borrowerPrincipalAddress, 'loan-liquidated', {
         loanId: loan.loanId,
-        asset: loan.principal.toLowerCase()
+        asset: loan.principal
       })
 
       loan.status = 'LIQUIDATED'

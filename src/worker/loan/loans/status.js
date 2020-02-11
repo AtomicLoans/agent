@@ -84,7 +84,7 @@ function defineLoanStatusJobs (agenda) {
               if (((Date.now() / 1000) - (lastWarningSent || 0) > 86400) && (currentTime > (parseInt(loanExpiration) - 86400))) {
                 mailer.notify(loan.borrowerPrincipalAddress, 'loan-expiring', {
                   loanId: loan.loanId,
-                  asset: loan.principal.toLowerCase()
+                  asset: loan.principal
                 })
                 loan.lastWarningSent = Date.now()
                 await loan.save()
@@ -132,7 +132,7 @@ function defineLoanStatusJobs (agenda) {
                 if (((Date.now() / 1000) - (lastWarningSent || 0) > 86400) && loan.collateralAmount < alertCollateralAmount) {
                   mailer.notify(loan.borrowerPrincipalAddress, 'loan-near-liquidation', {
                     loanId: loan.loanId,
-                    asset: loan.principal.toLowerCase()
+                    asset: loan.principal
                   })
                   loan.lastWarningSent = Date.now()
                 }
@@ -223,13 +223,13 @@ function defineLoanStatusJobs (agenda) {
               if (!paid) {
                 mailer.notify(loan.borrowerPrincipalAddress, 'loan-cancelled', {
                   loanId: loan.loanId,
-                  asset: loan.principal.toLowerCase()
+                  asset: loan.principal
                 })
                 loan.status = 'CANCELLED'
               } else {
                 mailer.notify(loan.borrowerPrincipalAddress, 'loan-accepted', {
                   loanId: loan.loanId,
-                  asset: loan.principal.toLowerCase()
+                  asset: loan.principal
                 })
                 loan.status = 'ACCEPTED'
               }
@@ -238,7 +238,7 @@ function defineLoanStatusJobs (agenda) {
             } else if (approved && loan.status === 'AWAITING_COLLATERAL') {
               mailer.notify(loan.borrowerPrincipalAddress, 'collateral-locked', {
                 amount: loan.principalAmount,
-                asset: loan.principal.toLowerCase(),
+                asset: loan.principal,
                 loanId: loan.loanId
               })
 
