@@ -89,6 +89,10 @@ const FundSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  depositTxs: {
+    type: [String],
+    index: true
+  },
   status: {
     type: String,
     enum: ['INITIATED', 'WAITING_FOR_APPROVE', 'CREATING', 'CREATED', 'FAILED'],

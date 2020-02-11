@@ -9,7 +9,6 @@ const { verifySignature } = require('../../../../utils/signatures')
 const { getInterval } = require('../../../../utils/intervals')
 const { getEthSigner } = require('../../../../utils/address')
 const { getEndpoint } = require('../../../../utils/endpoints')
-const BN = require('bignumber.js')
 
 function defineFundsRouter (router) {
   router.get('/funds/:fundModelId', asyncHandler(async (req, res, next) => {
@@ -162,16 +161,16 @@ function defineFundsRouter (router) {
   router.post('/funds/contract/:principal/:fundId/deposit', asyncHandler(async (req, res, next) => {
     console.log('start /funds/contract/:fundId/deposit')
 
-    const { params, body } = req
-    const { amountToDeposit } = body
+    const agenda = req.app.get('agenda')
 
-    const fund = await Fund.findOne({ principal: params.principal, fundId: params.fundId }).exec()
+    const { params, body } = req
+    const { fundId, principal } = params
+    const { ethTxId } = body
+
+    const fund = await Fund.findOne({ principal, fundId }).exec()
     if (!fund) return next(res.createError(401, 'Fund not found'))
 
-    fund.netDeposit = BN(fund.netDeposit).plus(amountToDeposit).toFixed(18)
-    await fund.save()
-
-    // TODO: Add verification to prevent griefing
+    await agenda.now('fund-lender-deposit', { principal, fundId, ethTxId })
 
     console.log('end /funds/contract/:fundId/deposit')
 
