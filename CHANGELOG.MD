@@ -1,3 +1,7 @@
+## [0.1.55](https://github.com/AtomicLoans/agent/compare/v0.1.54...v0.1.55) - 2020-02-11
+
+- Add asset variable to emails
+
 ## [0.1.54](https://github.com/AtomicLoans/agent/compare/v0.1.53...v0.1.54) - 2020-02-10
 
 - Verify deposit transactions
