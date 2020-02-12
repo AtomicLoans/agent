@@ -18,7 +18,7 @@ const { getInterval } = require('../../../utils/intervals')
 const { isArbiter } = require('../../../utils/env')
 const { currencies } = require('../../../utils/fx')
 const { getEndpoint } = require('../../../utils/endpoints')
-const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
+const { getLockArgs, getCollateralAmounts, isCollateralRequirementsSatisfied } = require('../utils/collateral')
 const getMailer = require('../utils/mailer')
 const handleError = require('../../../utils/handleError')
 
@@ -57,6 +57,13 @@ function defineLoanStatusJobs (agenda) {
             const loanModels = await Loan.find({ principal }).exec()
             if (lenderLoanCount > 0 && loanModels.length === 0) {
               await repopulateLenderLoans(loanMarket, principal, principalAddress, collateral, lenderLoanCount, loans, sales)
+            }
+          } else {
+            const loanModels = await Loan.find({ principal }).exec()
+            const loanCount = await loans.methods.loanIndex().call()
+
+            if (loanModels.length === 0 && loanCount > 0) {
+              await repopulateAllLoans(loanMarket, principal, collateral, loanCount, loans, sales)
             }
           }
 
@@ -221,9 +228,14 @@ function defineLoanStatusJobs (agenda) {
               }
             } else if (off) {
               if (!paid) {
+                const collateralRequirementsMet = await isCollateralRequirementsSatisfied(loan)
+
                 mailer.notify(loan.borrowerPrincipalAddress, 'loan-cancelled', {
                   loanId: loan.loanId,
-                  asset: loan.principal
+                  asset: loan.principal,
+                  approved,
+                  collateralRequirementsMet,
+                  minCollateralAmount: loan.minimumCollateralAmount
                 })
                 loan.status = 'CANCELLED'
               } else {
@@ -278,124 +290,127 @@ async function repopulateLenderLoans (loanMarket, principal, principalAddress, c
     const loanExists = await Loan.findOne({ principal, loanId }).exec()
 
     if (!loanExists) {
-      const loan = Loan.fromLoanMarket(loanMarket, params, minCollateralAmount)
+      await repopulateLoan(loanMarket, params, minCollateralAmount, loanId, requestTimestamp, loans, borrower, collateral, principal, sales)
+    }
+  }
+}
 
-      loan.loanId = loanId
-      loan.requestCreatedAt = requestTimestamp
+async function repopulateAllLoans (loanMarket, principal, collateral, loanCount, loans, sales) {
+  console.log('Repopulate All Loans')
 
-      await loan.setAgentAddresses()
+  const decimals = currencies[principal].decimals
+  const multiplier = currencies[principal].multiplier
+  for (let i = 0; i < loanCount; i++) {
+    const loanId = i + 1
 
-      const { borrowerPubKey, lenderPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
+    const { borrower, principal: principalAmount, createdAt, loanExpiration, requestTimestamp } = await loans.methods.loans(numToBytes32(loanId)).call()
+    const collateralAmount = await loans.methods.collateral(numToBytes32(loanId)).call()
+    const minCollateralAmount = BN(collateralAmount).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
 
-      loan.borrowerPrincipalAddress = borrower
-      loan.borrowerCollateralPublicKey = remove0x(borrowerPubKey)
-      loan.lenderCollateralPublicKey = remove0x(lenderPubKey)
+    const params = { principal, collateral, principalAmount: BN(principalAmount).dividedBy(multiplier).toFixed(decimals), requestLoanDuration: loanExpiration - createdAt }
 
-      await loan.setSecretHashes(minCollateralAmount)
+    const loanExists = await Loan.findOne({ principal, loanId }).exec()
 
-      const market = await Market.findOne({ from: collateral, to: principal }).exec()
-      const { rate } = market
+    if (!loanExists) {
+      await repopulateLoan(loanMarket, params, minCollateralAmount, loanId, requestTimestamp, loans, borrower, collateral, principal, sales)
+    }
+  }
+}
 
-      const lockArgs = await getLockArgs(numToBytes32(loanId), principal, collateral)
-      const addresses = await loan.collateralClient().loan.collateral.getLockAddresses(...lockArgs)
-      const amounts = await getCollateralAmounts(numToBytes32(loanId), loan, rate)
+async function repopulateLoan (loanMarket, params, minCollateralAmount, loanId, requestTimestamp, loans, borrower, collateral, principal, sales) {
+  const loan = Loan.fromLoanMarket(loanMarket, params, minCollateralAmount)
+  loan.loanId = loanId
+  loan.requestCreatedAt = requestTimestamp
 
-      loan.setCollateralAddressValues(addresses, amounts)
+  await loan.setAgentAddresses()
+  const { borrowerPubKey, lenderPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
 
-      const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
+  loan.borrowerPrincipalAddress = borrower
+  loan.borrowerCollateralPublicKey = remove0x(borrowerPubKey)
+  loan.lenderCollateralPublicKey = remove0x(lenderPubKey)
 
-      let saleModel
-      if (off && withdrawn) {
-        loan.status = 'ACCEPTED'
-      } else if (off && !withdrawn) {
-        loan.status = 'CANCELLED'
-      } else if (sale) {
-        loan.status = 'WITHDRAWN'
+  await loan.setSecretHashes(minCollateralAmount)
+  const market = await Market.findOne({ from: collateral, to: principal }).exec()
+  const { rate } = market
+  const lockArgs = await getLockArgs(numToBytes32(loanId), principal, collateral)
+  const addresses = await loan.collateralClient().loan.collateral.getLockAddresses(...lockArgs)
+  const amounts = await getCollateralAmounts(numToBytes32(loanId), loan, rate)
 
-        // TODO: add Sale records
-
-        const next = await sales.methods.next(numToBytes32(loanId)).call()
-        const saleIndexByLoan = next - 1
-        const saleIdBytes32 = await sales.methods.saleIndexByLoan(numToBytes32(loanId), saleIndexByLoan).call()
-        const saleId = hexToNumber(saleIdBytes32)
-
-        let safePrincipal = principal
-        if (principal === 'SAI') {
-          const { data: versionData } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/version`)
-          const { version } = versionData
-
-          if (!compareVersions(version, '0.1.31', '>')) {
-            safePrincipal = 'DAI'
-          }
-        }
-
-        const { data: arbiterSale } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${safePrincipal}/${saleId}`)
-
-        saleModel = new Sale(arbiterSale)
-
-        const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress } = loan
-
-        const { NETWORK } = process.env
-
-        if (NETWORK === 'mainnet' || NETWORK === 'kovan') {
-          let baseUrl
-          if (NETWORK === 'mainnet') {
-            baseUrl = 'https://blockstream.info'
-          } else {
-            baseUrl = 'https://blockstream.info/testnet'
-          }
-          try {
-            console.log(`${baseUrl}/api/addresss/${collateralRefundableP2SHAddress}`)
-            const { status, data: refundableAddressInfo } = await axios.get(`${baseUrl}/api/addresss/${collateralRefundableP2SHAddress}`)
-            const { data: seizableAddressInfo } = await axios.get(`${baseUrl}/api/addresss/${collateralSeizableP2SHAddress}`)
-
-            if (status === 200) {
-              const { chain_stats: refChainStats } = refundableAddressInfo
-              const { chain_stats: sezChainStats } = seizableAddressInfo
-
-              if (refChainStats.funded_txo_sum > 0 && sezChainStats.funded_txo_sum > 0) {
-                const refDif = refChainStats.funded_txo_sum - refChainStats.spent_txo_sum
-                const sezDif = sezChainStats.funded_txo_sum - sezChainStats.spent_txo_sum
-
-                if (refDif === 0 && sezDif === 0) {
-                  const secret = loan.lenderSecrets[1]
-
-                  if (sha256(secret) === sale.secretHashB) {
-                    console.log('LENDER SECRET MATCHES')
-                    sale.secretB = secret
-                    sale.status = 'SECRETS_PROVIDED'
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            handleError(e)
-          }
-        }
-
-        const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
-
-        if (accepted) {
-          saleModel.status = 'ACCEPTED'
-          loan.status = 'LIQUIDATED'
-        }
-      } else if (paid) {
-        loan.status = 'REPAID'
-      } else if (withdrawn) {
-        loan.status = 'WITHDRAWN'
-      } else if (approved) {
-        loan.status = 'APPROVED'
-      } else {
-        loan.status = 'AWAITING_COLLATERAL'
-      }
-
-      await loan.save()
-
-      if (saleModel) {
-        saleModel.loanModelId = loan.id
-        await saleModel.save()
+  loan.setCollateralAddressValues(addresses, amounts)
+  const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
+  let saleModel
+  if (off && withdrawn) {
+    loan.status = 'ACCEPTED'
+  } else if (off && !withdrawn) {
+    loan.status = 'CANCELLED'
+  } else if (sale) {
+    loan.status = 'WITHDRAWN'
+    // TODO: add Sale records
+    const next = await sales.methods.next(numToBytes32(loanId)).call()
+    const saleIndexByLoan = next - 1
+    const saleIdBytes32 = await sales.methods.saleIndexByLoan(numToBytes32(loanId), saleIndexByLoan).call()
+    const saleId = hexToNumber(saleIdBytes32)
+    let safePrincipal = principal
+    if (principal === 'SAI') {
+      const { data: versionData } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/version`)
+      const { version } = versionData
+      if (!compareVersions(version, '0.1.31', '>')) {
+        safePrincipal = 'DAI'
       }
     }
+    const { data: arbiterSale } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${safePrincipal}/${saleId}`)
+    saleModel = new Sale(arbiterSale)
+    const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress } = loan
+    const { NETWORK } = process.env
+    if (NETWORK === 'mainnet' || NETWORK === 'kovan') {
+      let baseUrl
+      if (NETWORK === 'mainnet') {
+        baseUrl = 'https://blockstream.info'
+      } else {
+        baseUrl = 'https://blockstream.info/testnet'
+      }
+      try {
+        console.log(`${baseUrl}/api/addresss/${collateralRefundableP2SHAddress}`)
+        const { status, data: refundableAddressInfo } = await axios.get(`${baseUrl}/api/addresss/${collateralRefundableP2SHAddress}`)
+        const { data: seizableAddressInfo } = await axios.get(`${baseUrl}/api/addresss/${collateralSeizableP2SHAddress}`)
+        if (status === 200) {
+          const { chain_stats: refChainStats } = refundableAddressInfo
+          const { chain_stats: sezChainStats } = seizableAddressInfo
+          if (refChainStats.funded_txo_sum > 0 && sezChainStats.funded_txo_sum > 0) {
+            const refDif = refChainStats.funded_txo_sum - refChainStats.spent_txo_sum
+            const sezDif = sezChainStats.funded_txo_sum - sezChainStats.spent_txo_sum
+            if (refDif === 0 && sezDif === 0) {
+              const secret = loan.lenderSecrets[1]
+              if (sha256(secret) === sale.secretHashB) {
+                console.log('LENDER SECRET MATCHES')
+                sale.secretB = secret
+                sale.status = 'SECRETS_PROVIDED'
+              }
+            }
+          }
+        }
+      } catch (e) {
+        handleError(e)
+      }
+    }
+    const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
+    if (accepted) {
+      saleModel.status = 'ACCEPTED'
+      loan.status = 'LIQUIDATED'
+    }
+  } else if (paid) {
+    loan.status = 'REPAID'
+  } else if (withdrawn) {
+    loan.status = 'WITHDRAWN'
+  } else if (approved) {
+    loan.status = 'APPROVED'
+  } else {
+    loan.status = 'AWAITING_COLLATERAL'
+  }
+  await loan.save()
+  if (saleModel) {
+    saleModel.loanModelId = loan.id
+    await saleModel.save()
   }
 }
 

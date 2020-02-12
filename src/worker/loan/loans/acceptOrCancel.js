@@ -13,6 +13,7 @@ const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const { isArbiter } = require('../../../utils/env')
 const getMailer = require('../utils/mailer')
+const { isCollateralRequirementsSatisfied } = require('../utils/collateral')
 const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 
@@ -119,7 +120,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
 
       const { principal, loanId } = loan
       const loans = getObject('loans', principal)
-      const paid = await loans.methods.paid(numToBytes32(loanId)).call()
+      const { approved, paid } = await loans.methods.bools(numToBytes32(loanId)).call()
 
       if (paid) {
         console.log('ACCEPTED')
@@ -132,10 +133,17 @@ function defineLoanAcceptOrCancelJobs (agenda) {
       } else {
         console.log('CANCELLED')
         loan.status = 'CANCELLED'
+
+        const collateralRequirementsMet = await isCollateralRequirementsSatisfied(loan)
+
         mailer.notify(loan.borrowerPrincipalAddress, 'loan-cancelled', {
           loanId: loan.loanId,
-          asset: loan.principal
+          asset: loan.principal,
+          approved,
+          collateralRequirementsMet,
+          minCollateralAmount: loan.minimumCollateralAmount
         })
+
         await loan.save()
       }
     }

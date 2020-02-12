@@ -77,8 +77,8 @@ function defineSalesAcceptJobs (agenda) {
       console.log('TX WAS MINED BUT TX FAILED')
     } else {
       console.log('RECEIPT IS NOT NULL')
-
       console.log('ACCEPTED')
+
       sale.status = 'ACCEPTED'
       await sale.save()
 
