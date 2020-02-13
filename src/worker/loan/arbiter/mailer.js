@@ -8,7 +8,7 @@ function defineMailerJobs (agenda) {
     const { data } = job.attrs
     const { emails, amount, asset } = data
 
-    const subject = `Your loan has been approved. ${amount} ${asset.toUpperCase()} is available to be withdrawn!`
+    const subject = `Your loan has been approved. ${amount} ${asset.toUpperCase()} is available to withdraw!`
     const templateId = process.env.SENDGRID_COLLATERAL_LOCKED_TEMPLATE_ID
 
     sendEmail(emails, subject, data, templateId)
@@ -18,12 +18,20 @@ function defineMailerJobs (agenda) {
 
   agenda.define('mail-loan-cancelled', async (job, done) => {
     const { data } = job.attrs
-    const { emails } = data
+    const { emails, approved, collateralRequirementsMet, minCollateralAmount } = data
 
     const subject = 'Your loan has been cancelled.'
     const templateId = process.env.SENDGRID_LOAN_CANCELLED_TEMPLATE_ID
 
-    sendEmail(emails, subject, data, templateId)
+    let reason = `${minCollateralAmount} BTC was not locked as collateral within an hour and your loan request has been cancelled.`
+
+    if (approved) {
+      reason = "Your loan was cancelled because the loan was not withdrawn within 24hrs. You may unlock any BTC you've deposited as collateral."
+    } else if (collateralRequirementsMet) {
+      reason = "The lender did not approve your loan request.<br/>You may withdraw any BTC you've deposited as collateral."
+    }
+
+    sendEmail(emails, subject, { ...data, reason }, templateId)
 
     done()
   })

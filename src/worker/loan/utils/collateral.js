@@ -38,7 +38,18 @@ async function getCollateralAmounts (loanId, loan, rate) {
   return { seizableCollateral, refundableCollateral }
 }
 
+async function isCollateralRequirementsSatisfied (loan) {
+  const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress, refundableCollateralAmount, seizableCollateralAmount } = loan
+  const [refundableBalance, seizableBalance] = await Promise.all([
+    loan.collateralClient().chain.getBalance([collateralRefundableP2SHAddress]),
+    loan.collateralClient().chain.getBalance([collateralSeizableP2SHAddress])
+  ])
+  const collateralRequirementsMet = (refundableBalance.toNumber() >= refundableCollateralAmount && seizableBalance.toNumber() >= seizableCollateralAmount)
+  return collateralRequirementsMet
+}
+
 module.exports = {
   getLockArgs,
-  getCollateralAmounts
+  getCollateralAmounts,
+  isCollateralRequirementsSatisfied
 }
