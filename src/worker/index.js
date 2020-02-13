@@ -9,7 +9,7 @@ const { getInterval } = require('../utils/intervals')
 const { defineSwapJobs } = require('./swap/index')
 const { defineLoanJobs } = require('./loan/index')
 
-const { RUN_SINGLE_PROCESS, WORKER_PORT, PORT, NODE_ENV, PARTY } = process.env
+const { RUN_SINGLE_PROCESS, WORKER_PORT, PORT, NODE_ENV, PARTY, HEROKU_APP } = process.env
 
 async function start () {
   await agenda.start()
