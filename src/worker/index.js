@@ -46,7 +46,7 @@ async function start () {
   }
 }
 
-if (!RUN_SINGLE_PROCESS) {
+if (!(RUN_SINGLE_PROCESS || (HEROKU_APP !== undefined && HEROKU_APP !== 'undefined'))) {
   const app = express()
   app.get('/ping', (_, res) => res.send('pong'))
   app.listen(WORKER_PORT || PORT)
