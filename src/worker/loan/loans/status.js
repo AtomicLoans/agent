@@ -58,13 +58,6 @@ function defineLoanStatusJobs (agenda) {
             if (lenderLoanCount > 0 && loanModels.length === 0) {
               await repopulateLenderLoans(loanMarket, principal, principalAddress, collateral, lenderLoanCount, loans, sales)
             }
-          } else {
-            const loanModels = await Loan.find({ principal }).exec()
-            const loanCount = await loans.methods.loanIndex().call()
-
-            if (loanModels.length === 0 && loanCount > 0) {
-              await repopulateAllLoans(loanMarket, principal, collateral, loanCount, loans, sales)
-            }
           }
 
           const loanModels = await Loan.find({ principal, status: { $nin: ['QUOTE', 'REQUESTING', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] } })
@@ -135,11 +128,15 @@ function defineLoanStatusJobs (agenda) {
 
               const alertCollateralAmount = loan.minimumCollateralAmount * 1.1
 
+              const market = await Market.findOne({ from: loan.collateral, to: loan.principal }).exec()
+              const { rate } = market
+
               if (isArbiter()) {
                 if (((Date.now() / 1000) - (lastWarningSent || 0) > 86400) && loan.collateralAmount < alertCollateralAmount) {
                   mailer.notify(loan.borrowerPrincipalAddress, 'loan-near-liquidation', {
                     loanId: loan.loanId,
-                    asset: loan.principal
+                    asset: loan.principal,
+                    liquidation_price: BN(loan.minimumCollateralAmount).dividedBy(loan.collateralAmount).times(rate).toFixed(2)
                   })
                   loan.lastWarningSent = Date.now()
                 }
@@ -280,28 +277,6 @@ async function repopulateLenderLoans (loanMarket, principal, principalAddress, c
   for (let i = 0; i < lenderLoanCount; i++) {
     const loanIdBytes32 = await loans.methods.lenderLoans(principalAddress, i).call()
     const loanId = hexToNumber(loanIdBytes32)
-
-    const { borrower, principal: principalAmount, createdAt, loanExpiration, requestTimestamp } = await loans.methods.loans(numToBytes32(loanId)).call()
-    const collateralAmount = await loans.methods.collateral(numToBytes32(loanId)).call()
-    const minCollateralAmount = BN(collateralAmount).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
-
-    const params = { principal, collateral, principalAmount: BN(principalAmount).dividedBy(multiplier).toFixed(decimals), requestLoanDuration: loanExpiration - createdAt }
-
-    const loanExists = await Loan.findOne({ principal, loanId }).exec()
-
-    if (!loanExists) {
-      await repopulateLoan(loanMarket, params, minCollateralAmount, loanId, requestTimestamp, loans, borrower, collateral, principal, sales)
-    }
-  }
-}
-
-async function repopulateAllLoans (loanMarket, principal, collateral, loanCount, loans, sales) {
-  console.log('Repopulate All Loans')
-
-  const decimals = currencies[principal].decimals
-  const multiplier = currencies[principal].multiplier
-  for (let i = 0; i < loanCount; i++) {
-    const loanId = i + 1
 
     const { borrower, principal: principalAmount, createdAt, loanExpiration, requestTimestamp } = await loans.methods.loans(numToBytes32(loanId)).call()
     const collateralAmount = await loans.methods.collateral(numToBytes32(loanId)).call()
