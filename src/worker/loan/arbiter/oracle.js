@@ -30,86 +30,120 @@ function defineOracleJobs (agenda) {
     const med = getObject('medianizer')
 
     if (NETWORK === 'mainnet') {
-        for (let i = 0; i < 10; i++) {
-            console.log('testing oracle update')
-            const oracleAddress = await med.methods.oracles(i).call()
-            console.log('oracleAddress', oracleAddress)
+      for (let i = 0; i < 1; i++) {
+        console.log('testing oracle update')
+        const oracleAddress = await med.methods.oracles(i).call()
+        console.log('oracleAddress', oracleAddress)
 
-            const oracle = loadObject('oracle', oracleAddress)
-            const peek = await oracle.methods.peek().call()
-            console.log('peek', peek)
+        const oracle = loadObject('oracle', oracleAddress)
+        const peek = await oracle.methods.peek().call()
+        console.log('peek', peek)
 
-            const oraclePriceInBytes32 = peek[0]
-            const oraclePrice = parseFloat(fromWei(hexToNumberString(oraclePriceInBytes32), 'ether'))
-            console.log('oraclePrice', oraclePrice)
-            
-            const { data } = await axios.get('https://api.kraken.com/0/public/Ticker?pair=XBTUSD');
-            const btcPrice = parseFloat(data.result.XXBTZUSD.c[0]);
-            console.log('btcPrice', btcPrice)
+        const oraclePriceInBytes32 = peek[0]
+        const oraclePrice = parseFloat(fromWei(hexToNumberString(oraclePriceInBytes32), 'ether'))
+        console.log('oraclePrice', oraclePrice)
+
+        const { data } = await axios.get('https://api.kraken.com/0/public/Ticker?pair=XBTUSD');
+        const btcPrice = parseFloat(data.result.XXBTZUSD.c[0]);
+        console.log('btcPrice', btcPrice)
+
+        if ((Math.abs(1 - (btcPrice / oraclePrice)) * 100) > 1) {
+          try {
+            console.log('WORKING')
+
+            const fundOracles = getObject('fundoracles')
+
+            const payment = await fundOracles.methods.billWithEth(i).call()
+            const paymentEth = await fundOracles.methods.paymentWithEth(i, payment).call()
+            console.log('paymentEth', paymentEth)
+
+            const txData = await fundOracles.methods.updateWithEth(i, payment, getContract('erc20', 'DAI')).encodeABI()
+
+            const oracleUpdate = OracleUpdate.fromOracleUpdate(oraclePrice, btcPrice)
+            await oracleUpdate.save()
+
+            console.log('txData', txData)
+
+            const ethTx = await setTxParams(txData, arbiterAddress, getContract('fundoracles'), oracleUpdate)
+
+            ethTx.value = paymentEth
+            await ethTx.save()
+
+            console.log('ethTx', ethTx)
+
+            await sendTransaction(ethTx, oracleUpdate, agenda, done, txSuccess, txFailure)
+          } catch(e) {
+            console.log('e', e)
+          }
         }
+      }
     } else {
-        // const peek = await med.methods.peek().call()
+      // const peek = await med.methods.peek().call()
 
-        // const oraclePriceInBytes32 = peek[0]
-        // const oraclePrice = parseFloat(fromWei(hexToNumberString(oraclePriceInBytes32), 'ether'))
-        
-        // const { data } = await axios.get('https://api.kraken.com/0/public/Ticker?pair=XBTUSD');
-        // const btcPrice = parseFloat(data.result.XXBTZUSD.c[0]);
+      // const oraclePriceInBytes32 = peek[0]
+      // const oraclePrice = parseFloat(fromWei(hexToNumberString(oraclePriceInBytes32), 'ether'))
 
-        // if ((Math.abs(1 - (btcPrice / oraclePrice)) * 100) > 1) {
-        //     const txData = med.methods.poke(ensure0x(numToBytes32(toWei(btcPrice.toString(), 'ether'))), true).encodeABI()
+      // const { data } = await axios.get('https://api.kraken.com/0/public/Ticker?pair=XBTUSD');
+      // const btcPrice = parseFloat(data.result.XXBTZUSD.c[0]);
 
-        //     const oracleUpdate = OracleUpdate.fromOracleUpdate(oraclePrice, btcPrice)
-        //     await oracleUpdate.save()
+      // if ((Math.abs(1 - (btcPrice / oraclePrice)) * 100) > 1) {
+      //     const txData = med.methods.poke(ensure0x(numToBytes32(toWei(btcPrice.toString(), 'ether'))), true).encodeABI()
 
-        //     const ethTx = await setTxParams(txData, arbiterAddress, getContract('medianizer'), oracleUpdate)
+      //     const oracleUpdate = OracleUpdate.fromOracleUpdate(oraclePrice, btcPrice)
+      //     await oracleUpdate.save()
 
-        //     await sendTransaction(ethTx, oracleUpdate, agenda, done, txSuccess, txFailure)
-        // }
+      //     const ethTx = await setTxParams(txData, arbiterAddress, getContract('medianizer'), oracleUpdate)
+
+      //     await sendTransaction(ethTx, oracleUpdate, agenda, done, txSuccess, txFailure)
+      // }
     }
 
     done()
   })
 
   agenda.define('verify-check-arbiter-oracle', async (job, done) => {
-    const { data } = job.attrs
-    const { oracleUpdateId } = data
+    try {
+      const { data } = job.attrs
+      const { oracleUpdateId } = data
 
-    const oracleUpdate = await OracleUpdate.findOne({ _id: oracleUpdateId }).exec()
-    if (!oracleUpdate) return console.log('Error: OracleUpdate not found')
-    const { oracleUpdateTxHash } = OracleUpdate
+      const oracleUpdate = await OracleUpdate.findOne({ _id: oracleUpdateId }).exec()
+      if (!oracleUpdate) return console.log('Error: OracleUpdate not found')
+      const { oracleUpdateTxHash } = OracleUpdate
 
-    console.log('CHECKING RECEIPT')
+      console.log('CHECKING RECEIPT')
 
-    const receipt = await web3().eth.getTransactionReceipt(oracleUpdateTxHash)
+      const receipt = await web3().eth.getTransactionReceipt(oracleUpdateTxHash)
 
-    if (receipt === null) {
-      console.log('RECEIPT IS NULL')
+      if (receipt === null) {
+        console.log('RECEIPT IS NULL')
 
-      const ethTx = await EthTx.findOne({ _id: oracleUpdate.ethTxId }).exec()
-      if (!ethTx) return console.log('Error: EthTx not found')
+        const ethTx = await EthTx.findOne({ _id: oracleUpdate.ethTxId }).exec()
+        if (!ethTx) return console.log('Error: EthTx not found')
 
-      if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && oracleUpdate.status !== 'FAILED') {
-        console.log('BUMPING TX FEE')
+        if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && oracleUpdate.status !== 'FAILED') {
+          console.log('BUMPING TX FEE')
 
-        await bumpTxFee(ethTx)
-        await sendTransaction(ethTx, oracleUpdate, agenda, done, txSuccess, txFailure)
+          await bumpTxFee(ethTx)
+          await sendTransaction(ethTx, oracleUpdate, agenda, done, txSuccess, txFailure)
+        } else {
+          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-check-arbiter-oracle', { oracleUpdateId })
+        }
+      } else if (receipt.status === false) {
+        console.log('RECEIPT STATUS IS FALSE')
+        console.log('TX WAS MINED BUT TX FAILED')
       } else {
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-check-arbiter-oracle', { oracleUpdateId })
+        console.log('RECEIPT IS NOT NULL')
+
+        console.log('SET')
+        oracleUpdate.status = 'SET'
+        await oracleUpdate.save()
+        done()
       }
-    } else if (receipt.status === false) {
-      console.log('RECEIPT STATUS IS FALSE')
-      console.log('TX WAS MINED BUT TX FAILED')
-    } else {
-      console.log('RECEIPT IS NOT NULL')
 
-      console.log('SET')
-      oracleUpdate.status = 'SET'
-      await oracleUpdate.save()
       done()
+    } catch(e) {
+      console.log('e', e)
     }
-
-    done()
   })
 }
 

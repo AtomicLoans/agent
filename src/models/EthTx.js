@@ -21,6 +21,10 @@ const EthTxSchema = new mongoose.Schema({
   data: {
     type: String
   },
+  value: {
+    type: String,
+    default: '0'
+  },
   nonce: {
     type: Number,
     index: true
