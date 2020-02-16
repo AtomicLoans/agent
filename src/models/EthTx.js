@@ -40,7 +40,7 @@ const EthTxSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['QUOTE', 'REQUESTING', 'AWAITING_COLLATERAL', 'APPROVING', 'APPROVED', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'AGENT_CLAIMED'],
+    enum: ['QUOTE', 'REQUESTING', 'AWAITING_COLLATERAL', 'APPROVING', 'APPROVED', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'AGENT_CLAIMED', 'FAILED'],
     index: true
   }
 })
