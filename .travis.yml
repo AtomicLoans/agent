@@ -7,6 +7,7 @@ cache: npm
 services:
   - mongodb
 before_install:
+  - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 762E3157
   - sudo apt-get install -y libusb-1.0-0 libusb-1.0-0-dev libudev-dev
   - sudo apt-add-repository ppa:bitcoin/bitcoin -y
   - sudo apt-get update
