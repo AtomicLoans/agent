@@ -7,6 +7,7 @@
   "ARBITER_STATUS_INTERVAL": "5 minutes",
   "SECRETS_BUMP_TX_INTERVAL": "in 6 minutes",
   "LENDER_CHECK_INTERVAL": "2 minutes",
+  "ARBITER_ORACLE_INTERVAL": "4 minutes",
   "SANITIZE_TX_INTERVAL": "30 minutes",
   "LOAN_SECRET_HASH_COUNT": 40
 }

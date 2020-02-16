@@ -24,6 +24,7 @@ async function start () {
   if (PARTY === 'arbiter') {
     await agenda.every(getInterval('ARBITER_STATUS_INTERVAL'), 'check-arbiter-status')
     await agenda.every(getInterval('LENDER_CHECK_INTERVAL'), 'check-lender-status')
+    await agenda.every(getInterval('ARBITER_ORACLE_INTERVAL'), 'check-arbiter-oracle')
   } else {
     // TODO: check every 30 seconds to changes to open loans and react
     await agenda.now('notify-arbiter')
