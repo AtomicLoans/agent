@@ -11,6 +11,9 @@ schema.loans = require(`../abi/${version}/loans`)
 schema.sales = require(`../abi/${version}/sales`)
 schema.erc20 = require('../abi/erc20')
 schema.ctoken = require('../abi/ctoken')
+schema.medianizer = require('../abi/medianizer')
+schema.oracle = require('../abi/oracle')
+schema.fundoracles = require('../abi/fundoracles')
 
 function loadObject (type, address) {
   const web3 = getWeb3()
@@ -18,7 +21,9 @@ function loadObject (type, address) {
 }
 
 function getContract (contract, principal) {
-  if (contract === 'erc20' || contract === 'ctoken') {
+  if (contract === 'medianizer' || contract === 'fundoracles') {
+    return addresses[`${contract.toUpperCase()}`]
+  } else if (contract === 'erc20' || contract === 'ctoken') {
     const cPrefix = contract === 'ctoken' ? 'C' : ''
     return addresses[`${cPrefix}${principal}`]
   } else {

@@ -113,6 +113,7 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
   try {
     web3().eth.sendTransaction(ethTx.json())
       .on('transactionHash', async (transactionHash) => {
+        console.log('transactionHash', transactionHash)
         await successCallback(transactionHash, ethTx, instance, agenda)
         done()
       })
