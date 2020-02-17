@@ -18,7 +18,7 @@ function testLenderLoanMarket () {
 
       expect(status).to.equal(200)
       expect(body).to.be.a('array')
-      expect(body.length).to.equal(3)
+      expect(body.length).to.equal(2)
     })
   })
 }

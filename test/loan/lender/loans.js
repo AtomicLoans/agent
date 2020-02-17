@@ -25,7 +25,7 @@ const arbiterChain = chains.web3WithArbiter
 function testLoans (web3Chain, btcChain) {
   describe('Cancel Loan', () => {
     it('should cancel loan if after approveExpiration', async () => {
-      const principal = 'SAI'
+      const principal = 'USDC'
       const collateral = 'BTC'
       const loans = await getTestObject(web3Chain, 'loans', principal)
 
@@ -62,13 +62,13 @@ async function testSetup (web3Chain, btcChain) {
   await removeLoans()
   await fundAgent(server)
   await fundArbiter()
-  await generateSecretHashesArbiter('SAI')
+  await generateSecretHashesArbiter('USDC')
   await fundWeb3Address(web3Chain)
   await importBitcoinAddresses(btcChain)
   await fundUnusedBitcoinAddress(btcChain)
   await restartJobs(server)
   await restartJobs(arbiterServer)
-  await createCustomFund(web3Chain, arbiterChain, 200, 'SAI') // Create Custom Loan Fund with 200 SAI
+  await createCustomFund(web3Chain, arbiterChain, 200, 'USDC') // Create Custom Loan Fund with 200 USDC
 }
 
 describe('Lender Agent - Loans', () => {
