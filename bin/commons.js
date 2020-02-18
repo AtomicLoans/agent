@@ -80,7 +80,7 @@ module.exports.loadVariables = (config = {}) => {
 }
 
 function loadMnemonic (envKey) {
-  if (process.env[envKey] !== 'undefined') {
+  if (process.env[envKey] !== 'undefined' && process.env[envKey] !== undefined) {
     process.env[envKey] = process.env[envKey].replace(/"/g, '')
     if (!(fs.existsSync(path.resolve(process.cwd(), '.env')) && getEnvValue('.env', envKey))) {
       rewriteEnv('.env', envKey, `"${process.env[envKey]}"`)
