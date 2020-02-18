@@ -27,7 +27,7 @@ function defineOracleJobs (agenda) {
     const med = getObject('medianizer')
 
     if (NETWORK === 'mainnet') {
-      for (let i = 0; i < 1; i++) {
+      for (let i = 0; i < 10; i++) {
         const oracleAddress = await med.methods.oracles(i).call()
 
         const oracle = loadObject('oracle', oracleAddress)
@@ -56,6 +56,7 @@ function defineOracleJobs (agenda) {
             const ethTx = await setTxParams(txData, arbiterAddress, getContract('fundoracles'), oracleUpdate)
 
             ethTx.value = paymentEth
+            ethTx.gasLimit = 700000
             await ethTx.save()
 
             console.log('ethTx', ethTx)
@@ -97,7 +98,7 @@ function defineOracleJobs (agenda) {
 
       const oracleUpdate = await OracleUpdate.findOne({ _id: oracleUpdateId }).exec()
       if (!oracleUpdate) return console.log('Error: OracleUpdate not found')
-      const { oracleUpdateTxHash } = OracleUpdate
+      const { oracleUpdateTxHash } = oracleUpdate
 
       console.log('CHECKING RECEIPT')
 
