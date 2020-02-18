@@ -35,7 +35,7 @@ function deployFund (web3Chain) {
       const agentAddress = await getAgentAddress(server)
       const balanceBefore = await token.methods.balanceOf(getTestContract('funds', principal)).call()
 
-      const fundId = await createCustomFund(web3Chain, arbiterChain, amount, principal) // Create Custom Loan Fund with 200 SAI
+      const fundId = await createCustomFund(web3Chain, arbiterChain, amount, principal) // Create Custom Loan Fund with 200 USDC
 
       const balanceAfter = await token.methods.balanceOf(getTestContract('funds', principal)).call()
       const { lender } = await funds.methods.funds(numToBytes32(fundId)).call()

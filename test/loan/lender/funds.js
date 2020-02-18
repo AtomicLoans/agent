@@ -34,7 +34,7 @@ const WAD = BN(10).pow(18)
 function testFunds (web3Chain, ethNode) {
   describe('Create Custom Loan Fund', () => {
     it('should create a new loan fund and deposit funds into it', async () => {
-      const principal = 'SAI'
+      const principal = 'USDC'
       const amount = 200
       const fixture = fundFixtures.customFundWithFundExpiryIn100Days
       const [funds] = await getTestObjects(web3Chain, principal, ['funds'])
@@ -59,7 +59,7 @@ function testFunds (web3Chain, ethNode) {
 
   describe('Create Custom Loan Fund with Compound Enabled', () => {
     it('should create a new loan fund and deposit funds into it', async () => {
-      const principal = 'SAI'
+      const principal = 'USDC'
       const amount = 200
       const fixture = fundFixtures.customFundWithFundExpiryIn100DaysAndCompoundEnabled
       const [funds, ctoken] = await getTestObjects(web3Chain, principal, ['funds', 'ctoken'])
@@ -90,7 +90,7 @@ function testFunds (web3Chain, ethNode) {
       const currentTime = Math.floor(new Date().getTime() / 1000)
       const agentPrincipalAddress = await getAgentAddress(server)
       const address = await getWeb3Address(web3Chain)
-      const fundParams = fundFixtures.fundWithFundExpiryIn100Days(currentTime, 'SAI')
+      const fundParams = fundFixtures.fundWithFundExpiryIn100Days(currentTime, 'USDC')
       const { principal, fundExpiry } = fundParams
       const [token, funds] = await getTestObjects(web3Chain, principal, ['erc20', 'funds'])
       const unit = currencies[principal].unit
@@ -125,7 +125,7 @@ function testFunds (web3Chain, ethNode) {
 
   describe('Create Regular Loan Fund with Compound Enabled', () => {
     it.skip('should create a new loan fund and deposit funds into it', async () => { // TODO FIX
-      const principal = 'SAI'
+      const principal = 'USDC'
       const amount = 200
       const fixture = fundFixtures.fundWithFundExpiryIn100DaysAndCompoundEnabled
       const [funds, ctoken] = await getTestObjects(web3Chain, principal, ['funds', 'ctoken'])
@@ -151,9 +151,9 @@ function testFunds (web3Chain, ethNode) {
     it.skip('should return 401 when attempting to create more than one fund with same principal', async () => { // TODO: remove .skip
       const currentTime = Math.floor(new Date().getTime() / 1000)
 
-      await createCustomFund(web3Chain, arbiterChain, 200, 'SAI')
+      await createCustomFund(web3Chain, arbiterChain, 200, 'USDC')
 
-      const fundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'SAI')
+      const fundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'USDC')
       const { status } = await chai.request(server).post('/funds/new').send(fundParams)
 
       expect(status).to.equal(401)
@@ -166,7 +166,7 @@ function testFunds (web3Chain, ethNode) {
 
       await createCustomFund(web3Chain, arbiterChain, 200, 'USDC')
 
-      const fundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'SAI')
+      const fundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'USDC')
       const { status } = await chai.request(server).post('/funds/new').send(fundParams)
 
       expect(status).to.equal(200)
@@ -176,7 +176,7 @@ function testFunds (web3Chain, ethNode) {
   describe('Create Fund Tx Error', () => {
     it.skip('should set Fund status to FAILED', async () => { // TODO FIX
       const address = await getWeb3Address(web3Chain)
-      const fundParams = fundFixtures.invalidFundWithNillMaxLoanDurAndFundExpiry('SAI')
+      const fundParams = fundFixtures.invalidFundWithNillMaxLoanDurAndFundExpiry('USDC')
       const { principal } = fundParams
       const unit = currencies[principal].unit
       const amountToDeposit = toWei('200', unit)
@@ -196,7 +196,7 @@ function testFunds (web3Chain, ethNode) {
     it.skip('should allow creation of Fund after previous Fund creation failed', async () => { // TODO FIX
       const currentTime = Math.floor(new Date().getTime() / 1000)
       const address = await getWeb3Address(web3Chain)
-      const fundParams = fundFixtures.invalidFundWithNillMaxLoanDurAndFundExpiry('SAI')
+      const fundParams = fundFixtures.invalidFundWithNillMaxLoanDurAndFundExpiry('USDC')
       const { principal } = fundParams
       const unit = currencies[principal].unit
       const amountToDeposit = toWei('200', unit)
@@ -213,7 +213,7 @@ function testFunds (web3Chain, ethNode) {
       expect(status).to.equal('FAILED')
 
       // Start success params
-      const successFundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'SAI')
+      const successFundParams = fundFixtures.customFundWithFundExpiryIn100Days(currentTime, 'USDC')
       await fundTokens(address, amountToDeposit, principal)
 
       const { body: fundNewBodySuccess } = await chai.request(server).post('/funds/new').send(successFundParams)
@@ -390,7 +390,7 @@ async function testSetup (web3Chain, ethNode, btcChain) {
   await removeLoans()
   await fundAgent(server)
   await fundArbiter()
-  await generateSecretHashesArbiter('SAI')
+  await generateSecretHashesArbiter('USDC')
   await fundWeb3Address(web3Chain)
   await importBitcoinAddresses(btcChain)
   await fundUnusedBitcoinAddress(btcChain)
