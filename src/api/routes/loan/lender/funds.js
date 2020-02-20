@@ -92,7 +92,7 @@ function defineFundsRouter (router) {
     if (!(message === `Withdraw ${amountToWithdraw} ${principal} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
     if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
     if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
-    if (!(typeof timestamp === 'number'))  return next(res.createError(401, 'Timestamp is not a number'))
+    if (!(typeof timestamp === 'number')) return next(res.createError(401, 'Timestamp is not a number'))
 
     await agenda.schedule(getInterval('ACTION_INTERVAL'), 'fund-withdraw', { fundModelId: fund.id, amountToWithdraw })
 
@@ -124,7 +124,7 @@ function defineFundsRouter (router) {
     if (!(message === `Withdraw ${amountToWithdraw} ${principal} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
     if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
     if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
-    if (!(typeof timestamp === 'number'))  return next(res.createError(401, 'Timestamp is not a number'))
+    if (!(typeof timestamp === 'number')) return next(res.createError(401, 'Timestamp is not a number'))
 
     await agenda.schedule(getInterval('ACTION_INTERVAL'), 'fund-withdraw', { fundModelId: fund.id, amountToWithdraw })
 
@@ -155,7 +155,7 @@ function defineFundsRouter (router) {
     if (!(message === `Withdraw ${amountToWithdraw} ${principal} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
     if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
     if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
-    if (!(typeof timestamp === 'number'))  return next(res.createError(401, 'Timestamp is not a number'))
+    if (!(typeof timestamp === 'number')) return next(res.createError(401, 'Timestamp is not a number'))
 
     await agenda.schedule(getInterval('ACTION_INTERVAL'), 'fund-withdraw', { fundModelId: fund.id, amountToWithdraw })
 
@@ -197,9 +197,9 @@ function defineFundsRouter (router) {
     if (!fund) return next(res.createError(401, 'Fund not found'))
 
     try {
-      verifyTimestampedSignature(signature, message, timestamp, next, res)
+      verifyTimestampedSignature(signature, message, timestamp)
     } catch (e) {
-      return next(res.createError(401, e))
+      return next(res.createError(401, e.message))
     }
 
     let safePrincipal = principal

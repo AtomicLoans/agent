@@ -185,9 +185,9 @@ function defineLoansRouter (router) {
     const { signature, message, timestamp } = body
 
     try {
-      verifyTimestampedSignature(signature, message, timestamp, next, res)
+      verifyTimestampedSignature(signature, message, timestamp)
     } catch (e) {
-      return next(res.createError(401, e))
+      return next(res.createError(401, e.message))
     }
 
     const requestedLoans = await Loan.find({ status: 'AWAITING_COLLATERAL' }).exec()

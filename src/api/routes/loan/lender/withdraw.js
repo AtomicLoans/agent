@@ -14,9 +14,9 @@ function defineWithdrawRoutes (router) {
     const { signature, message, amount, timestamp, currency } = body
 
     try {
-      verifyTimestampedSignature(signature, message, timestamp, next, res)
+      verifyTimestampedSignature(signature, message, timestamp)
     } catch (e) {
-      return next(res.createError(401, e))
+      return next(res.createError(401, e.message))
     }
 
     const toAmount = BN(amount).times(currencies[currency].multiplier).toFixed()

@@ -14,9 +14,9 @@ function defineResetRouter (router) {
     console.log('signature, message, timestamp', signature, message, timestamp)
 
     try {
-      verifyTimestampedSignature(signature, message, timestamp, next, res)
+      verifyTimestampedSignature(signature, message, timestamp)
     } catch (e) {
-      return next(res.createError(401, e))
+      return next(res.createError(401, e.message))
     }
 
     await agenda.now('sanitize-eth-txs', { timePeriod: 0 })

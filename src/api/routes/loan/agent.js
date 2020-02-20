@@ -64,9 +64,9 @@ function defineAgentRoutes (router) {
     const { signature, message, timestamp } = body
 
     try {
-      verifyTimestampedSignature(signature, message, timestamp, next, res)
+      verifyTimestampedSignature(signature, message, timestamp)
     } catch (e) {
-      return next(res.createError(401, e))
+      return next(res.createError(401, e.message))
     }
 
     res.json({ mnemonic: process.env.MNEMONIC })
@@ -87,9 +87,9 @@ function defineAgentRoutes (router) {
       const { signature, message, timestamp, key } = body
 
       try {
-        verifyTimestampedSignature(signature, message, timestamp, next, res)
+        verifyTimestampedSignature(signature, message, timestamp)
       } catch (e) {
-        return next(res.createError(401, e))
+        return next(res.createError(401, e.message))
       }
 
       const mnemonics = await Mnemonic.find().exec()
@@ -111,9 +111,9 @@ function defineAgentRoutes (router) {
       const { signature, message, timestamp } = body
 
       try {
-        verifyTimestampedSignature(signature, message, timestamp, next, res)
+        verifyTimestampedSignature(signature, message, timestamp)
       } catch (e) {
-        return next(res.createError(401, e))
+        return next(res.createError(401, e.message))
       }
 
       const mnemonics = await Mnemonic.find().exec()
