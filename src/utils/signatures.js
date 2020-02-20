@@ -1,5 +1,5 @@
 const ethJsUtil = require('ethereumjs-util')
-const { getEthSigner } = require('../../../utils/address')
+const { getEthSigner } = require('./address')
 const { ensure0x, checksumEncode } = require('@liquality/ethereum-utils')
 
 function verifySignature (signature, message, address) {
