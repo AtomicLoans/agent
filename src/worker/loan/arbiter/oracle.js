@@ -6,12 +6,17 @@ const EthTx = require('../../../models/EthTx')
 const LoanMarket = require('../../../models/LoanMarket')
 const OracleUpdate = require('../../../models/OracleUpdate')
 const { numToBytes32 } = require('../../../utils/finance')
+const { BlockchainInfo, CoinMarketCap, CryptoCompare, Gemini, BitBay, Bitstamp, Coinbase, CryptoWatch, Coinpaprika, Kraken } = require('../../../utils/getPrices')
 const { getObject, getContract, loadObject } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
 const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 const { hexToNumberString, fromWei, toWei } = web3().utils
+
+const apis = [
+  BlockchainInfo, CoinMarketCap, CryptoCompare, Gemini, BitBay, Bitstamp, Coinbase, CryptoWatch, Coinpaprika, Kraken
+]
 
 function defineOracleJobs (agenda) {
   agenda.define('check-arbiter-oracle', async (job, done) => {
@@ -27,19 +32,24 @@ function defineOracleJobs (agenda) {
     const med = getObject('medianizer')
 
     if (NETWORK === 'mainnet') {
+      const currentTime = Math.floor(new Date().getTime() / 1000)
+
       for (let i = 0; i < 10; i++) {
         const oracleAddress = await med.methods.oracles(i).call()
 
         const oracle = loadObject('oracle', oracleAddress)
+
+        const expiry = await oracle.methods.expiry().call()
         const peek = await oracle.methods.peek().call()
 
         const oraclePriceInBytes32 = peek[0]
         const oraclePrice = parseFloat(fromWei(hexToNumberString(oraclePriceInBytes32), 'ether'))
 
-        const { data } = await axios.get('https://api.kraken.com/0/public/Ticker?pair=XBTUSD')
-        const btcPrice = parseFloat(data.result.XXBTZUSD.c[0])
+        const btcPrice = await apis[i]()
+        console.log('btcPrice', btcPrice)
 
-        if ((Math.abs(1 - (btcPrice / oraclePrice)) * 100) > 1) {
+        // Check that price has changed at least 1% and the oracle hasn't been updated in the last 15 min
+        if ((Math.abs(1 - (btcPrice / oraclePrice)) * 100) > 1 && currentTime > expiry) {
           try {
             console.log('UPDATING ORACLES')
 
