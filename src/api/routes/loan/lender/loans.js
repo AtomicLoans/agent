@@ -189,6 +189,8 @@ function defineLoansRouter (router) {
     if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
     if (!(message === `Cancel all loans for ${address} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
     if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+    if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
+    if (!(typeof timestamp === 'number'))  return next(res.createError(401, 'Timestamp is not a number'))
 
     const requestedLoans = await Loan.find({ status: 'AWAITING_COLLATERAL' }).exec()
 

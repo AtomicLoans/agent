@@ -66,6 +66,8 @@ function defineAgentRoutes (router) {
     if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
     if (!(message === `Get Mnemonic for ${address} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
     if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+    if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
+    if (!(typeof timestamp === 'number'))  return next(res.createError(401, 'Timestamp is not a number'))
 
     res.json({ mnemonic: process.env.MNEMONIC })
   }))
@@ -87,6 +89,8 @@ function defineAgentRoutes (router) {
       if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
       if (!(message === `Set Heroku API Key ${key} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
       if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+      if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
+      if (!(typeof timestamp === 'number'))  return next(res.createError(401, 'Timestamp is not a number'))
 
       const mnemonics = await Mnemonic.find().exec()
       if (mnemonics.length > 0) {
@@ -109,6 +113,8 @@ function defineAgentRoutes (router) {
       if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
       if (!(message === `Update Autopilot Agent at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
       if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+      if (!(typeof timestamp === 'number'))  return next(res.createError(401, 'Timestamp is not a number'))
+      if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
 
       const mnemonics = await Mnemonic.find().exec()
       if (mnemonics.length > 0) {
