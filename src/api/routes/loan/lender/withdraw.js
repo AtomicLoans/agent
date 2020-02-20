@@ -7,7 +7,6 @@ const { getEthSigner } = require('../../../../utils/address')
 
 function defineWithdrawRoutes (router) {
   router.post('/withdraw', asyncHandler(async (req, res, next) => {
-    const currentTime = Math.floor(new Date().getTime() / 1000)
     const address = getEthSigner()
 
     const { body } = req

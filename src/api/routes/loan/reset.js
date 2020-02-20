@@ -1,12 +1,9 @@
 const asyncHandler = require('express-async-handler')
 const { verifyTimestampedSignature } = require('../../../utils/signatures')
-const { getEthSigner } = require('../../../utils/address')
 
 function defineResetRouter (router) {
   router.post('/reset', asyncHandler(async (req, res, next) => {
     const agenda = req.app.get('agenda')
-    const currentTime = Math.floor(new Date().getTime() / 1000)
-    const address = getEthSigner()
 
     const { body } = req
     const { signature, message, timestamp } = body

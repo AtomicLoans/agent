@@ -186,9 +186,7 @@ function defineFundsRouter (router) {
   router.post('/funds/contract/:principal/:fundId/update', asyncHandler(async (req, res, next) => {
     console.log('start /funds/contract/:principal/:fundId/update')
 
-    const currentTime = Math.floor(new Date().getTime() / 1000)
     const agenda = req.app.get('agenda')
-    const address = getEthSigner()
     const { params, body } = req
     const { maxLoanDuration, fundExpiry, signature, message, timestamp } = body
     const { fundId, principal } = params

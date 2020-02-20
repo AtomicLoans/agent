@@ -1,7 +1,6 @@
 const _ = require('lodash')
 const axios = require('axios')
 const asyncHandler = require('express-async-handler')
-const { getEthSigner } = require('../../../utils/address')
 const { verifyTimestampedSignature } = require('../../../utils/signatures')
 const LoanMarket = require('../../../models/LoanMarket')
 const { version } = require('../../../../package.json')
@@ -57,9 +56,6 @@ function defineAgentRoutes (router) {
   }))
 
   router.post('/backupseedphrase', asyncHandler(async (req, res, next) => {
-    const currentTime = Math.floor(new Date().getTime() / 1000)
-    const address = getEthSigner()
-
     const { body } = req
     const { signature, message, timestamp } = body
 
@@ -80,9 +76,6 @@ function defineAgentRoutes (router) {
     const Mnemonic = require('../../../models/Mnemonic')
 
     router.post('/set_heroku_api_key', asyncHandler(async (req, res, next) => {
-      const currentTime = Math.floor(new Date().getTime() / 1000)
-      const address = getEthSigner()
-
       const { body } = req
       const { signature, message, timestamp, key } = body
 
@@ -104,9 +97,6 @@ function defineAgentRoutes (router) {
     }))
 
     router.post('/update', asyncHandler(async (req, res, next) => {
-      const currentTime = Math.floor(new Date().getTime() / 1000)
-      const address = getEthSigner()
-
       const { body } = req
       const { signature, message, timestamp } = body
 
