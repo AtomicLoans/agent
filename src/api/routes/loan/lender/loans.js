@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler')
 const BN = require('bignumber.js')
 const { ensure0x, checksumEncode } = require('@liquality/ethereum-utils')
-const { verifySignature } = require('../../../../utils/signatures')
+const { verifyTimestampedSignature } = require('../../../../utils/signatures')
 const clients = require('../../../../utils/clients')
 const { getObject } = require('../../../../utils/contracts')
 const { getEthSigner } = require('../../../../utils/address')
@@ -180,17 +180,15 @@ function defineLoansRouter (router) {
 
   router.post('/loans/cancel_all', asyncHandler(async (req, res, next) => {
     const agenda = req.app.get('agenda')
-    const currentTime = Math.floor(new Date().getTime() / 1000)
-    const address = getEthSigner()
 
     const { body } = req
     const { signature, message, timestamp } = body
 
-    if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
-    if (!(message === `Cancel all loans for ${address} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
-    if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
-    if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
-    if (!(typeof timestamp === 'number'))  return next(res.createError(401, 'Timestamp is not a number'))
+    try {
+      verifyTimestampedSignature(signature, message, timestamp, next, res)
+    } catch (e) {
+      return next(res.createError(401, e))
+    }
 
     const requestedLoans = await Loan.find({ status: 'AWAITING_COLLATERAL' }).exec()
 

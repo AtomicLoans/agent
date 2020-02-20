@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler')
-const { verifySignature } = require('../../../utils/signatures')
+const { verifyTimestampedSignature } = require('../../../utils/signatures')
 const { getEthSigner } = require('../../../utils/address')
 
 function defineResetRouter (router) {
@@ -13,11 +13,11 @@ function defineResetRouter (router) {
 
     console.log('signature, message, timestamp', signature, message, timestamp)
 
-    if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
-    if (!(message === `Reset transactions at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
-    if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
-    if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
-    if (!(typeof timestamp === 'number'))  return next(res.createError(401, 'Timestamp is not a number'))
+    try {
+      verifyTimestampedSignature(signature, message, timestamp, next, res)
+    } catch (e) {
+      return next(res.createError(401, e))
+    }
 
     await agenda.now('sanitize-eth-txs', { timePeriod: 0 })
 

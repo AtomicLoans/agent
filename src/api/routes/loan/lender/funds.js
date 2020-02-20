@@ -5,7 +5,7 @@ const compareVersions = require('compare-versions')
 
 const LoanMarket = require('../../../../models/LoanMarket')
 const Fund = require('../../../../models/Fund')
-const { verifySignature } = require('../../../../utils/signatures')
+const { verifySignature, verifyTimestampedSignature } = require('../../../../utils/signatures')
 const { getInterval } = require('../../../../utils/intervals')
 const { getEthSigner } = require('../../../../utils/address')
 const { getEndpoint } = require('../../../../utils/endpoints')
@@ -196,11 +196,11 @@ function defineFundsRouter (router) {
     const fund = await Fund.findOne({ fundId, principal }).exec()
     if (!fund) return next(res.createError(401, 'Fund not found'))
 
-    if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
-    if (!(message === `Update ${principal} Fund with maxLoanDuration: ${maxLoanDuration} and fundExpiry ${fundExpiry} at timestamp ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
-    if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
-    if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
-    if (!(typeof timestamp === 'number'))  return next(res.createError(401, 'Timestamp is not a number'))
+    try {
+      verifyTimestampedSignature(signature, message, timestamp, next, res)
+    } catch (e) {
+      return next(res.createError(401, e))
+    }
 
     let safePrincipal = principal
     if (principal === 'SAI') {
