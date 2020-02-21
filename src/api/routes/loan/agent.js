@@ -60,7 +60,7 @@ function defineAgentRoutes (router) {
     const { signature, message, timestamp } = body
 
     try {
-      verifyTimestampedSignature(signature, message, timestamp)
+      verifyTimestampedSignature(signature, message, `Get Mnemonic for ${address} at ${timestamp}`, timestamp)
     } catch (e) {
       return next(res.createError(401, e.message))
     }
@@ -80,7 +80,7 @@ function defineAgentRoutes (router) {
       const { signature, message, timestamp, key } = body
 
       try {
-        verifyTimestampedSignature(signature, message, timestamp)
+        verifyTimestampedSignature(signature, message, `Set Heroku API Key ${key} at ${timestamp}`, timestamp)
       } catch (e) {
         return next(res.createError(401, e.message))
       }
@@ -101,7 +101,7 @@ function defineAgentRoutes (router) {
       const { signature, message, timestamp } = body
 
       try {
-        verifyTimestampedSignature(signature, message, timestamp)
+        verifyTimestampedSignature(signature, message, `Update Autopilot Agent at ${timestamp}`, timestamp)
       } catch (e) {
         return next(res.createError(401, e.message))
       }

@@ -13,7 +13,7 @@ function defineWithdrawRoutes (router) {
     const { signature, message, amount, timestamp, currency } = body
 
     try {
-      verifyTimestampedSignature(signature, message, timestamp)
+      verifyTimestampedSignature(signature, message, `Withdraw ${amount} ${currency} to ${address} at ${timestamp}`, timestamp)
     } catch (e) {
       return next(res.createError(401, e.message))
     }

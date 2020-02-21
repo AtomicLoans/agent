@@ -184,7 +184,7 @@ function defineLoansRouter (router) {
     const { signature, message, timestamp } = body
 
     try {
-      verifyTimestampedSignature(signature, message, timestamp)
+      verifyTimestampedSignature(signature, message, `Cancel all loans for ${address} at ${timestamp}`, timestamp)
     } catch (e) {
       return next(res.createError(401, e.message))
     }

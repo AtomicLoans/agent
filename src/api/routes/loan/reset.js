@@ -11,7 +11,7 @@ function defineResetRouter (router) {
     console.log('signature, message, timestamp', signature, message, timestamp)
 
     try {
-      verifyTimestampedSignature(signature, message, timestamp)
+      verifyTimestampedSignature(signature, message, `Reset transactions at ${timestamp}`, timestamp)
     } catch (e) {
       return next(res.createError(401, e.message))
     }
