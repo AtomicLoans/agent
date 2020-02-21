@@ -6,6 +6,7 @@ const { verifyTimestampedSignature, verifySignature } = require('../../../utils/
 const LoanMarket = require('../../../models/LoanMarket')
 const { version } = require('../../../../package.json')
 const { getEthSigner } = require('../../../utils/address')
+const { getEndpoint } = require('../../../utils/endpoints')
 
 const ncp = require('ncp').ncp
 ncp.limit = 16
@@ -147,7 +148,8 @@ function defineAgentRoutes (router) {
       }
     }))
 
-    router.post('/allow_auto_update', asyncHandler(async (req, res, next) => {
+    router.post('/force_update', asyncHandler(async (req, res, next) => {
+      if (!ALLOW_AUTO_UPDATE) return next(res.createError(401, 'Autoupdate is not enabled'))
       const { body } = req
       const { signature, message, timestamp } = body
 
@@ -155,11 +157,12 @@ function defineAgentRoutes (router) {
       const loanMarket = await LoanMarket.findOne().exec()
       const { principalAddress } = await loanMarket.getAgentAddresses()
 
+      const currentTime = Math.floor(new Date().getTime() / 1000)
       if (!verifySignature(signature, message, arbiterAddress)) return next(res.createError(401, 'Signature verification failed'))
       if (!(message === `Arbiter force update ${principalAddress} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
       if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
       if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
-      if (!(typeof timestamp === 'number'))  return next(res.createError(401, 'Timestamp is not a number'))
+      if (!(typeof timestamp === 'number')) return next(res.createError(401, 'Timestamp is not a number'))
 
       const mnemonics = await Mnemonic.find().exec()
       if (mnemonics.length > 0) {
@@ -170,10 +173,10 @@ function defineAgentRoutes (router) {
           const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
 
           if (status === 200) {
-            const { name, published_at } = release
+            const { name, published_at: publishedTimestamp } = release
 
-            const publishedTime = moment(published_at)
-            if (!moment().isAfter(publishedTime.add(3, "day"))) {
+            const publishedTime = moment(publishedTimestamp)
+            if (!moment().isAfter(publishedTime.add(3, 'day'))) {
               return next(res.createError(401, '3 day cooldown before a new release can be auto-updated to'))
             }
 
