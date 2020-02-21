@@ -1,12 +1,12 @@
 const asyncHandler = require('express-async-handler')
 const BN = require('bignumber.js')
 const { ensure0x, checksumEncode } = require('@liquality/ethereum-utils')
-const { verifySignature } = require('../../../../utils/signatures')
+const { verifyTimestampedSignature } = require('../../../../utils/signatures')
 const clients = require('../../../../utils/clients')
 const { getObject } = require('../../../../utils/contracts')
-const { getEthSigner } = require('../../../../utils/address')
 const { getInterval } = require('../../../../utils/intervals')
 const { numToBytes32 } = require('../../../../utils/finance')
+const { getEthSigner } = require('../../../../utils/address')
 const web3 = require('web3')
 const { fromWei, hexToAscii } = web3.utils
 
@@ -180,15 +180,17 @@ function defineLoansRouter (router) {
 
   router.post('/loans/cancel_all', asyncHandler(async (req, res, next) => {
     const agenda = req.app.get('agenda')
-    const currentTime = Math.floor(new Date().getTime() / 1000)
-    const address = getEthSigner()
 
     const { body } = req
     const { signature, message, timestamp } = body
 
-    if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
-    if (!(message === `Cancel all loans for ${address} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
-    if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+    const address = getEthSigner()
+
+    try {
+      verifyTimestampedSignature(signature, message, `Cancel all loans for ${address} at ${timestamp}`, timestamp)
+    } catch (e) {
+      return next(res.createError(401, e.message))
+    }
 
     const requestedLoans = await Loan.find({ status: 'AWAITING_COLLATERAL' }).exec()
 

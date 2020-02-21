@@ -1,10 +1,10 @@
 const _ = require('lodash')
 const axios = require('axios')
 const asyncHandler = require('express-async-handler')
-const { getEthSigner } = require('../../../utils/address')
-const { verifySignature } = require('../../../utils/signatures')
+const { verifyTimestampedSignature } = require('../../../utils/signatures')
 const LoanMarket = require('../../../models/LoanMarket')
 const { version } = require('../../../../package.json')
+const { getEthSigner } = require('../../../utils/address')
 
 const ncp = require('ncp').ncp
 ncp.limit = 16
@@ -57,15 +57,15 @@ function defineAgentRoutes (router) {
   }))
 
   router.post('/backupseedphrase', asyncHandler(async (req, res, next) => {
-    const currentTime = Math.floor(new Date().getTime() / 1000)
-    const address = getEthSigner()
-
     const { body } = req
     const { signature, message, timestamp } = body
+    const address = getEthSigner()
 
-    if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
-    if (!(message === `Get Mnemonic for ${address} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
-    if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+    try {
+      verifyTimestampedSignature(signature, message, `Get Mnemonic for ${address} at ${timestamp}`, timestamp)
+    } catch (e) {
+      return next(res.createError(401, e.message))
+    }
 
     res.json({ mnemonic: process.env.MNEMONIC })
   }))
@@ -78,15 +78,14 @@ function defineAgentRoutes (router) {
     const Mnemonic = require('../../../models/Mnemonic')
 
     router.post('/set_heroku_api_key', asyncHandler(async (req, res, next) => {
-      const currentTime = Math.floor(new Date().getTime() / 1000)
-      const address = getEthSigner()
-
       const { body } = req
       const { signature, message, timestamp, key } = body
 
-      if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
-      if (!(message === `Set Heroku API Key ${key} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
-      if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+      try {
+        verifyTimestampedSignature(signature, message, `Set Heroku API Key ${key} at ${timestamp}`, timestamp)
+      } catch (e) {
+        return next(res.createError(401, e.message))
+      }
 
       const mnemonics = await Mnemonic.find().exec()
       if (mnemonics.length > 0) {
@@ -100,15 +99,14 @@ function defineAgentRoutes (router) {
     }))
 
     router.post('/update', asyncHandler(async (req, res, next) => {
-      const currentTime = Math.floor(new Date().getTime() / 1000)
-      const address = getEthSigner()
-
       const { body } = req
       const { signature, message, timestamp } = body
 
-      if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
-      if (!(message === `Update Autopilot Agent at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
-      if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+      try {
+        verifyTimestampedSignature(signature, message, `Update Autopilot Agent at ${timestamp}`, timestamp)
+      } catch (e) {
+        return next(res.createError(401, e.message))
+      }
 
       const mnemonics = await Mnemonic.find().exec()
       if (mnemonics.length > 0) {

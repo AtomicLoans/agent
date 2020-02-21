@@ -1,4 +1,5 @@
 const ethJsUtil = require('ethereumjs-util')
+const { getEthSigner } = require('./address')
 const { ensure0x, checksumEncode } = require('@liquality/ethereum-utils')
 
 function verifySignature (signature, message, address) {
@@ -18,6 +19,18 @@ function verifySignature (signature, message, address) {
   return checksumEncode(address) === checksumEncode(addressFromSignature)
 }
 
+function verifyTimestampedSignature (signature, message, expected, timestamp) {
+  const currentTime = Math.floor(new Date().getTime() / 1000)
+  const address = getEthSigner()
+
+  if (!verifySignature(signature, message, address)) { throw new Error('Signature doesn\'t match address') }
+  if (!(message === expected)) { throw new Error('Message doesn\'t match params') }
+  if (!(currentTime <= (timestamp + 60))) { throw new Error('Signature is stale') }
+  if (!(currentTime >= (timestamp - 120))) { throw new Error('Timestamp is too far ahead in the future') }
+  if (!(typeof timestamp === 'number')) { throw new Error('Timestamp is not a number') }
+}
+
 module.exports = {
-  verifySignature
+  verifySignature,
+  verifyTimestampedSignature
 }
