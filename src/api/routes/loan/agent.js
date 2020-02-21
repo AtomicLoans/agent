@@ -11,7 +11,7 @@ const { getEndpoint } = require('../../../utils/endpoints')
 const ncp = require('ncp').ncp
 ncp.limit = 16
 
-const { HEROKU_APP, ALLOW_AUTO_UPDATE } = process.env
+const { HEROKU_APP } = process.env
 
 function defineAgentRoutes (router) {
   router.get('/loanmarketinfo', asyncHandler(async (req, res) => {
@@ -148,8 +148,15 @@ function defineAgentRoutes (router) {
       }
     }))
 
-    router.post('/force_update', asyncHandler(async (req, res, next) => {
-      if (!ALLOW_AUTO_UPDATE) return next(res.createError(401, 'Autoupdate is not enabled'))
+    router.post('/auto_update', asyncHandler(async (req, res, next) => {
+      const mnemonics = await Mnemonic.find().exec()
+      if (!(mnemonics.length > 0)) return next(res.createError(401, 'Mnemonic not set'))
+
+      const mnemonic = mnemonics[0]
+      const { heroku_api_key: token, autoupdateEnabled } = mnemonic
+
+      if (!autoupdateEnabled) return next(res.createError(401, 'Autoupdate is not enabled'))
+
       const { body } = req
       const { signature, message, timestamp } = body
 
@@ -164,47 +171,67 @@ function defineAgentRoutes (router) {
       if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
       if (!(typeof timestamp === 'number')) return next(res.createError(401, 'Timestamp is not a number'))
 
-      const mnemonics = await Mnemonic.find().exec()
-      if (mnemonics.length > 0) {
-        const mnemonic = mnemonics[0]
-        const { heroku_api_key: token } = mnemonic
+      if (token) {
+        const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
 
-        if (token) {
-          const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
+        if (status === 200) {
+          const { name, published_at: publishedTimestamp } = release
 
-          if (status === 200) {
-            const { name, published_at: publishedTimestamp } = release
+          const publishedTime = moment(publishedTimestamp)
+          if (!moment().isAfter(publishedTime.add(3, 'day'))) {
+            return next(res.createError(401, '3 day cooldown before a new release can be auto-updated to'))
+          }
 
-            const publishedTime = moment(publishedTimestamp)
-            if (!moment().isAfter(publishedTime.add(3, 'day'))) {
-              return next(res.createError(401, '3 day cooldown before a new release can be auto-updated to'))
+          const params = { source_blob: { url: `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
+          const config = {
+            headers: {
+              Accept: 'application/vnd.heroku+json; version=3',
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
             }
+          }
 
-            const params = { source_blob: { url: `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
-            const config = {
-              headers: {
-                Accept: 'application/vnd.heroku+json; version=3',
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`
-              }
-            }
+          const { status: herokuStatus } = await axios.post(`https://api.heroku.com/apps/${HEROKU_APP}/builds`, params, config)
 
-            const { status: herokuStatus } = await axios.post(`https://api.heroku.com/apps/${HEROKU_APP}/builds`, params, config)
-
-            if (herokuStatus === 201) {
-              res.json({ message: 'Success' })
-            } else {
-              return next(res.createError(401, 'Heroku error'))
-            }
+          if (herokuStatus === 201) {
+            res.json({ message: 'Success' })
           } else {
-            return next(res.createError(401, 'Github error'))
+            return next(res.createError(401, 'Heroku error'))
           }
         } else {
-          return next(res.createError(401, 'Heroku API Key not set'))
+          return next(res.createError(401, 'Github error'))
         }
       } else {
-        return next(res.createError(401, 'Mnemonic not set'))
+        return next(res.createError(401, 'Heroku API Key not set'))
       }
+    }))
+
+    router.put('/auto_update', asyncHandler(async (req, res, next) => {
+      const { body } = req
+      const { signature, message, timestamp, enableAutoupdate } = body
+      const mnemonics = await Mnemonic.find().exec()
+      if (!(mnemonics.length > 0)) return next(res.createError(401, 'Mnemonic not set'))
+
+      const mnemonic = mnemonics[0]
+
+      try {
+        verifyTimestampedSignature(signature, message, `Set agent autoupdate (${enableAutoupdate}) at ${timestamp}`, timestamp)
+      } catch (e) {
+        return next(res.createError(401, e.message))
+      }
+
+      mnemonic.autoupdateEnabled = enableAutoupdate
+      await mnemonic.save()
+      res.json({ message: 'Success' })
+    }))
+
+    router.get('/auto_update', asyncHandler(async (req, res, next) => {
+      const mnemonics = await Mnemonic.find().exec()
+      if (!(mnemonics.length > 0)) return next(res.createError(401, 'Mnemonic not set'))
+
+      const { autoupdateEnabled } = mnemonics[0]
+
+      res.json({ autoupdateEnabled })
     }))
   }
 
