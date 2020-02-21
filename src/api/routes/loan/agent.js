@@ -148,7 +148,7 @@ function defineAgentRoutes (router) {
       }
     }))
 
-    router.post('/auto_update', asyncHandler(async (req, res, next) => {
+    router.post('/autoupdate', asyncHandler(async (req, res, next) => {
       const mnemonics = await Mnemonic.find().exec()
       if (!(mnemonics.length > 0)) return next(res.createError(401, 'Mnemonic not set'))
 
@@ -206,7 +206,7 @@ function defineAgentRoutes (router) {
       }
     }))
 
-    router.put('/auto_update', asyncHandler(async (req, res, next) => {
+    router.put('/autoupdate', asyncHandler(async (req, res, next) => {
       const { body } = req
       const { signature, message, timestamp, enableAutoupdate } = body
       const mnemonics = await Mnemonic.find().exec()
@@ -225,7 +225,7 @@ function defineAgentRoutes (router) {
       res.json({ message: 'Success' })
     }))
 
-    router.get('/auto_update', asyncHandler(async (req, res, next) => {
+    router.get('/autoupdate', asyncHandler(async (req, res, next) => {
       const mnemonics = await Mnemonic.find().exec()
       if (!(mnemonics.length > 0)) return next(res.createError(401, 'Mnemonic not set'))
 
