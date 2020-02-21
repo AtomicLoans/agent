@@ -1,3 +1,10 @@
+## [0.1.56](https://github.com/AtomicLoans/agent/compare/v0.1.55...v0.1.56) - 2020-02-11
+
+- Fix already bound port crash
+- Auto-update functionality
+- Update addresses
+- Update arbiter endpoints
+
 ## [0.1.55](https://github.com/AtomicLoans/agent/compare/v0.1.54...v0.1.55) - 2020-02-11
 
 - Add asset variable to emails
