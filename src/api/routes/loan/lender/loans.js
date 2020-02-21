@@ -6,6 +6,7 @@ const clients = require('../../../../utils/clients')
 const { getObject } = require('../../../../utils/contracts')
 const { getInterval } = require('../../../../utils/intervals')
 const { numToBytes32 } = require('../../../../utils/finance')
+const { getEthSigner } = require('../../../../utils/address')
 const web3 = require('web3')
 const { fromWei, hexToAscii } = web3.utils
 
@@ -182,6 +183,8 @@ function defineLoansRouter (router) {
 
     const { body } = req
     const { signature, message, timestamp } = body
+
+    const address = getEthSigner()
 
     try {
       verifyTimestampedSignature(signature, message, `Cancel all loans for ${address} at ${timestamp}`, timestamp)
