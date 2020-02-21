@@ -1,7 +1,7 @@
 const _ = require('lodash')
 const axios = require('axios')
 const asyncHandler = require('express-async-handler')
-const { verifyTimestampedSignature } = require('../../../utils/signatures')
+const { verifyTimestampedSignature, verifySignature } = require('../../../utils/signatures')
 const LoanMarket = require('../../../models/LoanMarket')
 const { version } = require('../../../../package.json')
 const { getEthSigner } = require('../../../utils/address')
@@ -107,6 +107,58 @@ function defineAgentRoutes (router) {
       } catch (e) {
         return next(res.createError(401, e.message))
       }
+
+      const mnemonics = await Mnemonic.find().exec()
+      if (mnemonics.length > 0) {
+        const mnemonic = mnemonics[0]
+        const { heroku_api_key: token } = mnemonic
+
+        if (token) {
+          const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
+
+          if (status === 200) {
+            const { name } = release
+
+            const params = { source_blob: { url: `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
+            const config = {
+              headers: {
+                Accept: 'application/vnd.heroku+json; version=3',
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+              }
+            }
+
+            const { status: herokuStatus } = await axios.post(`https://api.heroku.com/apps/${HEROKU_APP}/builds`, params, config)
+
+            if (herokuStatus === 201) {
+              res.json({ message: 'Success' })
+            } else {
+              return next(res.createError(401, 'Heroku error'))
+            }
+          } else {
+            return next(res.createError(401, 'Github error'))
+          }
+        } else {
+          return next(res.createError(401, 'Heroku API Key not set'))
+        }
+      } else {
+        return next(res.createError(401, 'Mnemonic not set'))
+      }
+    }))
+
+    router.post('/force_update', asyncHandler(async (req, res, next) => {
+      const { body } = req
+      const { signature, message, timestamp } = body
+
+      const { data: { principalAddress: arbiterAddress } } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/agentinfo/ticker/USDC/BTC`)
+      const loanMarket = await LoanMarket.findOne().exec()
+      const { principalAddress } = await loanMarket.getAgentAddresses()
+
+      if (!verifySignature(signature, message, arbiterAddress)) return next(res.createError(401, 'Signature verification failed'))
+      if (!(message === `Arbiter force update ${principalAddress} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
+      if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
+      if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
+      if (!(typeof timestamp === 'number'))  return next(res.createError(401, 'Timestamp is not a number'))
 
       const mnemonics = await Mnemonic.find().exec()
       if (mnemonics.length > 0) {
