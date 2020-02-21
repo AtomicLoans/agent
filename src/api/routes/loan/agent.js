@@ -1,5 +1,6 @@
 const _ = require('lodash')
 const axios = require('axios')
+const moment = require('moment')
 const asyncHandler = require('express-async-handler')
 const { verifyTimestampedSignature, verifySignature } = require('../../../utils/signatures')
 const LoanMarket = require('../../../models/LoanMarket')
@@ -9,7 +10,7 @@ const { getEthSigner } = require('../../../utils/address')
 const ncp = require('ncp').ncp
 ncp.limit = 16
 
-const { HEROKU_APP } = process.env
+const { HEROKU_APP, ALLOW_AUTO_UPDATE } = process.env
 
 function defineAgentRoutes (router) {
   router.get('/loanmarketinfo', asyncHandler(async (req, res) => {
@@ -146,7 +147,7 @@ function defineAgentRoutes (router) {
       }
     }))
 
-    router.post('/force_update', asyncHandler(async (req, res, next) => {
+    router.post('/allow_auto_update', asyncHandler(async (req, res, next) => {
       const { body } = req
       const { signature, message, timestamp } = body
 
@@ -169,7 +170,12 @@ function defineAgentRoutes (router) {
           const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
 
           if (status === 200) {
-            const { name } = release
+            const { name, published_at } = release
+
+            const publishedTime = moment(published_at)
+            if (!moment().isAfter(publishedTime.add(3, "day"))) {
+              return next(res.createError(401, '3 day cooldown before a new release can be auto-updated to'))
+            }
 
             const params = { source_blob: { url: `https://github.com/AtomicLoans/agent/archive/${name}.tar.gz` } }
             const config = {
