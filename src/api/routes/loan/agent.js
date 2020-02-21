@@ -113,9 +113,9 @@ function defineAgentRoutes (router) {
       const mnemonics = await Mnemonic.find().exec()
       if (mnemonics.length > 0) {
         const mnemonic = mnemonics[0]
-        const { heroku_api_key: token } = mnemonic
+        const { heroku_api_key: apiKey } = mnemonic
 
-        if (token) {
+        if (apiKey) {
           const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
 
           if (status === 200) {
@@ -126,7 +126,7 @@ function defineAgentRoutes (router) {
               headers: {
                 Accept: 'application/vnd.heroku+json; version=3',
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`
+                Authorization: `Bearer ${apiKey}`
               }
             }
 
@@ -153,7 +153,7 @@ function defineAgentRoutes (router) {
       if (!(mnemonics.length > 0)) return next(res.createError(401, 'Mnemonic not set'))
 
       const mnemonic = mnemonics[0]
-      const { heroku_api_key: token, autoupdateEnabled } = mnemonic
+      const { heroku_api_key: apiKey, autoupdateEnabled } = mnemonic
 
       if (!autoupdateEnabled) return next(res.createError(401, 'Autoupdate is not enabled'))
 
@@ -171,7 +171,7 @@ function defineAgentRoutes (router) {
       if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
       if (!(typeof timestamp === 'number')) return next(res.createError(401, 'Timestamp is not a number'))
 
-      if (token) {
+      if (apiKey) {
         const { status, data: release } = await axios.get('https://api.github.com/repos/AtomicLoans/agent/releases/latest')
 
         if (status === 200) {
@@ -187,7 +187,7 @@ function defineAgentRoutes (router) {
             headers: {
               Accept: 'application/vnd.heroku+json; version=3',
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
+              Authorization: `Bearer ${apiKey}`
             }
           }
 
