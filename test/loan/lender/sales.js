@@ -161,7 +161,8 @@ function testSales (web3Chain, ethNode, btcChain) {
 
       const liquidatorBtcAddresses = await chains.bitcoinLiquidator.client.wallet.getAddresses()
       const liquidatorBtcAddress = liquidatorBtcAddresses[0]
-      const { publicKey: liquidatorPubKey } = liquidatorBtcAddress
+      const { publicKey: liquidatorPublicKey } = liquidatorBtcAddress
+      const liquidatorPubKey = liquidatorPublicKey.toString('hex')
       const liquidatorPubKeyHash = hash160(liquidatorPubKey.toString('hex'))
 
       const liquidatorAddress = await getWeb3Address(chains.web3WithLiquidator)
