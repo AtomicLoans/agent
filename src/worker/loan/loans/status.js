@@ -494,7 +494,7 @@ async function updateMinCollateralValues (loanModels, loanMarket) {
       const liquidationRatioInUnits = await loans.methods.liquidationRatio(numToBytes32(loanId)).call()
       const liquidationRatio = fromWei(liquidationRatioInUnits, 'gether')
 
-      const minSeizableCollateralValue = await loans.methods.minSeizableCollateralValue(numToBytes32(loanId)).call()
+      const minSeizableCollateralValue = await loans.methods.minSeizableCollateral(numToBytes32(loanId)).call()
 
       const minCollateralValue = BN(Math.ceil(BN(minSeizableCollateralValue).times(liquidationRatio).toNumber())).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
 

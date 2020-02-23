@@ -17,38 +17,44 @@ const date = require('date.js')
 function defineFundCreateJobs (agenda) {
   agenda.define('create-fund-ish', async (job, done) => {
     console.log('create-fund')
-    const { data } = job.attrs
-    const { fundModelId } = data
 
-    const fund = await Fund.findOne({ _id: fundModelId }).exec()
-    if (!fund) return console.log('Error: Fund not found')
+    try {
+      const { data } = job.attrs
+      const { fundModelId } = data
 
-    const { principal, custom } = fund
+      const fund = await Fund.findOne({ _id: fundModelId }).exec()
+      if (!fund) return console.log('Error: Fund not found')
 
-    const approves = await Approve.find({ principal, status: { $nin: ['FAILED'] } }).exec()
+      const { principal, custom } = fund
 
-    if (approves.length > 0) {
-      const funds = getObject('funds', principal)
-      const { fundParams, lenderAddress } = await getFundParams(fund)
+      const approves = await Approve.find({ principal, status: { $nin: ['FAILED'] } }).exec()
 
-      let txData
-      if (custom) {
-        txData = funds.methods.createCustom(...fundParams).encodeABI()
+      if (approves.length > 0) {
+        const funds = getObject('funds', principal)
+        const { fundParams, lenderAddress } = await getFundParams(fund)
+
+        let txData
+        if (custom) {
+          txData = funds.methods.createCustom(...fundParams).encodeABI()
+        } else {
+          txData = funds.methods.create(...fundParams).encodeABI()
+        }
+
+        const ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
+
+        fund.ethTxId = ethTx.id
+        await fund.save()
+
+        await sendTransaction(ethTx, fund, agenda, done, txSuccess, txFailure)
       } else {
-        txData = funds.methods.create(...fundParams).encodeABI()
+        console.log('Rescheduling fund create because erc20 approve hasn\'t finished')
+
+        fund.status = 'WAITING_FOR_APPROVE'
+        await fund.save()
       }
-
-      const ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
-
-      fund.ethTxId = ethTx.id
-      await fund.save()
-
-      await sendTransaction(ethTx, fund, agenda, done, txSuccess, txFailure)
-    } else {
-      console.log('Rescheduling fund create because erc20 approve hasn\'t finished')
-
-      fund.status = 'WAITING_FOR_APPROVE'
-      await fund.save()
+    } catch (e) {
+      console.log('ERROR CREATING FUND')
+      console.log('e', e)
     }
     done()
   })

@@ -45,11 +45,7 @@ function defineAgentRoutes (router) {
 
   router.get('/agentinfo/ticker/:principal/:collateral', asyncHandler(async (req, res) => {
     const { params } = req
-    let { principal, collateral } = params
-
-    if (principal === 'DAI') {
-      principal = 'SAI'
-    }
+    const { principal, collateral } = params
 
     const loanMarket = await LoanMarket.findOne({ principal, collateral }).exec()
 
