@@ -5,7 +5,6 @@ const Loan = require('../../../models/Loan')
 const LoanMarket = require('../../../models/LoanMarket')
 const Market = require('../../../models/Market')
 const { getObject } = require('../../../utils/contracts')
-const { getMarketModels } = require('../utils/models')
 const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
 const { numToBytes32 } = require('../../../utils/finance')
 const { currencies } = require('../../../utils/fx')
@@ -122,10 +121,10 @@ function defineArbiterLoanJobs (agenda) {
 
           const liquidationRatioInUnits = await loans.methods.liquidationRatio(numToBytes32(loanId)).call()
           const liquidationRatio = fromWei(liquidationRatioInUnits, 'gether')
-    
+
           const minSeizableCollateralValue = await loans.methods.minSeizableCollateral(numToBytes32(loanId)).call()
-    
-          const contractMinimumCollateralAmount = BN(Math.ceil(BN(minSeizableCollateralValue).times(liquidationRatio).toNumber())).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)    
+
+          const contractMinimumCollateralAmount = BN(Math.ceil(BN(minSeizableCollateralValue).times(liquidationRatio).toNumber())).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
 
           if (loan.collateral < contractMinimumCollateralAmount * 1.1) {
             await agenda.now('check-arbiter-oracle')
