@@ -5,12 +5,12 @@ const Loan = require('../../../models/Loan')
 const LoanMarket = require('../../../models/LoanMarket')
 const Market = require('../../../models/Market')
 const { getObject } = require('../../../utils/contracts')
-const { getMarketModels } = require('../utils/models')
 const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
 const { numToBytes32 } = require('../../../utils/finance')
 const { currencies } = require('../../../utils/fx')
 const { getCurrentTime } = require('../../../utils/time')
 const web3 = require('../../../utils/web3')
+const { getMedianBtcPrice } = require('../../../utils/getPrices')
 
 const { fromWei } = web3().utils
 
@@ -91,8 +91,7 @@ function defineArbiterLoanJobs (agenda) {
           status = 'ACCEPTED'
         }
 
-        const { market } = await getMarketModels(principal, collateral)
-        const { rate } = market
+        const rate = await getMedianBtcPrice()
 
         const unit = currencies[principal].unit
         const { principal: principalAmountInWei, createdAt, liquidationRatio } = loans
@@ -119,6 +118,18 @@ function defineArbiterLoanJobs (agenda) {
           loan.setCollateralAddressValues(addresses, amounts)
           loan.borrowerPrincipalAddress = borrower
           loan.loanExpiration = loanExpiration
+
+          const liquidationRatioInUnits = await loansContract.methods.liquidationRatio(numToBytes32(loanId)).call()
+          const liquidationRatio = fromWei(liquidationRatioInUnits, 'gether')
+
+          const minSeizableCollateralValue = await loansContract.methods.minSeizableCollateral(numToBytes32(loanId)).call()
+
+          const contractMinimumCollateralAmount = BN(Math.ceil(BN(minSeizableCollateralValue).times(liquidationRatio).toNumber())).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
+
+          if (loan.collateralAmount < contractMinimumCollateralAmount * 1.1) {
+            console.log('Running oracle update job')
+            await agenda.now('check-arbiter-oracle')
+          }
 
           await loan.save()
         }
