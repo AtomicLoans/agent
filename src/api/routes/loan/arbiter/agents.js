@@ -25,6 +25,7 @@ function defineAgentsRouter (router) {
 
       if (status === 200) {
         const { data: agent } = await axios.get(`${url}/agentinfo/${loanMarkets[0].id}`)
+        const { data: { version } } = await axios.get(`${url}/version`)
         console.log('agent', agent)
 
         const agentWithUrlExists = await Agent.findOne({ url }).exec()
@@ -33,7 +34,7 @@ function defineAgentsRouter (router) {
 
         if (!agentWithUrlExists && !agentWithEthSignerExists && !agentWithPrincipalAddressExists) {
           const ethBalance = await web3().eth.getBalance(principalAddress)
-          const params = { ethSigner, principalAddress, collateralPublicKey, url, endpoint, ethBalance: fromWei(ethBalance.toString(), 'ether') }
+          const params = { ethSigner, principalAddress, collateralPublicKey, url, endpoint, ethBalance: fromWei(ethBalance.toString(), 'ether'), version }
           const agent = Agent.fromAgentParams(params)
           await agent.save()
           res.json(agent.json())
