@@ -36,7 +36,7 @@ function defineAgentUpdateJobs (agenda) {
         const currentTime = Math.floor(new Date().getTime() / 1000)
 
         const message = `Arbiter force update ${principalAddress} at ${currentTime}`
-        const signature = await web3().personal.sign(message, (await web3().currentProvider.getAddresses())[0])
+        const signature = await web3().eth.personal.sign(message, (await web3().currentProvider.getAddresses())[0])
 
         await axios.post(`${agent.url}/autoupdate`, {
           signature,
