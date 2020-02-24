@@ -33,15 +33,15 @@ function defineAgentUpdateJobs (agenda) {
       const { data: { autoupdateEnabled } } = await axios.get(`${agent.url}/autoupdate`)
       if (autoupdateEnabled && compareVersions(version, latestVersion, '<')) {
         const { data: { principalAddress } } = await axios.get(`${agent.url}/agentinfo/ticker/USDC/BTC`)
-        const currentTime = Math.floor(new Date().getTime() / 1000)
+        const timestamp = Math.floor(new Date().getTime() / 1000)
 
-        const message = `Arbiter force update ${principalAddress} at ${currentTime}`
+        const message = `Arbiter force update ${principalAddress} at ${timestamp}`
         const signature = await web3().eth.personal.sign(message, (await web3().currentProvider.getAddresses())[0])
 
         await axios.post(`${agent.url}/autoupdate`, {
           signature,
           message,
-          currentTime
+          timestamp 
         })
       }
     } catch (e) {
