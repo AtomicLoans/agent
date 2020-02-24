@@ -1,6 +1,5 @@
 const axios = require('axios')
 const BN = require('bignumber.js')
-const compareVersions = require('compare-versions')
 const Agent = require('../../../models/Agent')
 const AgentFund = require('../../../models/AgentFund')
 const { getObject } = require('../../../utils/contracts')
@@ -67,12 +66,8 @@ function defineAgentStatusJobs (agenda) {
       try {
         for (let i = 0; i < loanMarkets.length; i++) {
           const loanMarket = loanMarkets[i]
-          let { principal, collateral } = loanMarket
-          if (compareVersions.compare(agentVersion, '0.1.31', '<')) {
-            if (principal === 'DAI') {
-              principal = 'SAI'
-            }
-          }
+          const { principal, collateral } = loanMarket
+
           const multiplier = currencies[principal].multiplier
           const decimals = currencies[principal].decimals
 

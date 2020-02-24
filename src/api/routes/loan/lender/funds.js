@@ -1,7 +1,6 @@
 const _ = require('lodash')
 const axios = require('axios')
 const asyncHandler = require('express-async-handler')
-const compareVersions = require('compare-versions')
 
 const LoanMarket = require('../../../../models/LoanMarket')
 const Fund = require('../../../../models/Fund')
@@ -182,17 +181,7 @@ function defineFundsRouter (router) {
       return next(res.createError(401, e.message))
     }
 
-    let safePrincipal = principal
-    if (principal === 'SAI') {
-      const { data: versionData } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/version`)
-      const { version } = versionData
-
-      if (!compareVersions(version, '0.1.31', '>')) {
-        safePrincipal = 'DAI'
-      }
-    }
-
-    const { status, data } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/agentinfo/ticker/${safePrincipal}/BTC`)
+    const { status, data } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/agentinfo/ticker/${principal}/BTC`)
 
     if (status === 200) {
       const { principalAddress: arbiter } = data
