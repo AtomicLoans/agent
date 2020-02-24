@@ -88,7 +88,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
     }
   })
 
-  agenda.define('verify-accept-or-cancel-loan-ish', async (job, done) => {
+  agenda.define('verify-accept-or-cancel-loan', async (job, done) => {
     const { data } = job.attrs
     const { loanModelId } = data
 
@@ -110,7 +110,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
         await bumpTxFee(ethTx)
         await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
       } else {
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan-ish', { loanModelId })
+        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan', { loanModelId })
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')
@@ -168,7 +168,7 @@ async function txSuccess (transactionHash, ethTx, instance, agenda) {
     console.log('CANCELLING')
   }
   await loan.save()
-  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan-ish', { loanModelId: loan.id })
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan', { loanModelId: loan.id })
 }
 
 async function txFailure (error, instance) {

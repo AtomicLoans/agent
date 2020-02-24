@@ -15,7 +15,7 @@ const { hexToNumber } = web3().utils
 const date = require('date.js')
 
 function defineFundCreateJobs (agenda) {
-  agenda.define('create-fund-ish', async (job, done) => {
+  agenda.define('create-fund', async (job, done) => {
     console.log('create-fund')
 
     try {
