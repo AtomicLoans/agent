@@ -45,7 +45,7 @@ function defineAgentUpdateJobs (agenda) {
         })
       }
     } catch (e) {
-      console.error('Agent not active')
+      console.error('Update failed', e)
     }
 
     done()
