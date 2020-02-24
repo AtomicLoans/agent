@@ -62,7 +62,7 @@ function defineFundsRouter (router) {
     }
 
     await fund.save()
-    await agenda.schedule(getInterval('ACTION_INTERVAL'), 'create-fund-ish', { fundModelId: fund.id })
+    await agenda.schedule(getInterval('ACTION_INTERVAL'), 'create-fund', { fundModelId: fund.id })
 
     console.log('end /funds/new')
 
