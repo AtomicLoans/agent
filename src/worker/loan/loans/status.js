@@ -2,7 +2,6 @@ const axios = require('axios')
 const BN = require('bignumber.js')
 const { remove0x } = require('@liquality/ethereum-utils')
 const { sha256 } = require('@liquality/crypto')
-const compareVersions = require('compare-versions')
 const Agent = require('../../../models/Agent')
 const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
@@ -152,18 +151,8 @@ function defineLoanStatusJobs (agenda) {
 
                 const agent = await Agent.findOne({ principalAddress: lender }).exec()
 
-                let safePrincipal = principal
-                if (principal === 'SAI') {
-                  const { data: versionData } = await axios.get(`${agent.url}/version`)
-                  const { version } = versionData
-
-                  if (compareVersions(version, '0.1.31', '<')) {
-                    safePrincipal = 'DAI'
-                  }
-                }
-
                 try {
-                  const { status, data: lenderLoanModel } = await axios.get(`${agent.url}/loans/contract/${safePrincipal}/${loanId}`)
+                  const { status, data: lenderLoanModel } = await axios.get(`${agent.url}/loans/contract/${principal}/${loanId}`)
                   const { status: lenderLoanStatus } = lenderLoanModel
 
                   // if it can't be reached or status currently isn't ACCEPTING / ACCEPTED then do something
@@ -325,15 +314,8 @@ async function repopulateLoan (loanMarket, params, minCollateralAmount, loanId, 
     const saleIndexByLoan = next - 1
     const saleIdBytes32 = await sales.methods.saleIndexByLoan(numToBytes32(loanId), saleIndexByLoan).call()
     const saleId = hexToNumber(saleIdBytes32)
-    let safePrincipal = principal
-    if (principal === 'SAI') {
-      const { data: versionData } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/version`)
-      const { version } = versionData
-      if (!compareVersions(version, '0.1.31', '>')) {
-        safePrincipal = 'DAI'
-      }
-    }
-    const { data: arbiterSale } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${safePrincipal}/${saleId}`)
+
+    const { data: arbiterSale } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/sales/contract/${principal}/${saleId}`)
     saleModel = new Sale(arbiterSale)
     const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress } = loan
     const { NETWORK } = process.env

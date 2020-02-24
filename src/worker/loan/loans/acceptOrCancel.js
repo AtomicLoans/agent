@@ -1,7 +1,6 @@
 const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
 const axios = require('axios')
 const date = require('date.js')
-const compareVersions = require('compare-versions')
 const Agent = require('../../../models/Agent')
 const Loan = require('../../../models/Loan')
 const LoanMarket = require('../../../models/LoanMarket')
@@ -46,17 +45,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
         const agent = await Agent.findOne({ principalAddress: lender }).exec()
         if (agent) {
           try {
-            let safePrincipal = principal
-            if (principal === 'SAI') {
-              const { data: versionData } = await axios.get(`${agent.url}/version`)
-              const { version } = versionData
-
-              if (compareVersions(version, '0.1.31', '<')) {
-                safePrincipal = 'DAI'
-              }
-            }
-
-            const { status, data } = await axios.get(`${agent.url}/loans/contract/${safePrincipal}/${loanId}`)
+            const { status, data } = await axios.get(`${agent.url}/loans/contract/${principal}/${loanId}`)
             console.log(`${agent.url} status:`, status)
             if (status === 200) {
               const { acceptOrCancelTxHash } = data

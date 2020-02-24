@@ -31,7 +31,7 @@ function defineAgentUpdateJobs (agenda) {
     try {
       const { data: { version } } = await axios.get(`${agent.url}/version`)
       const { data: { autoupdateEnabled } } = await axios.get(`${agent.url}/autoupdate`)
-      if (autoupdateEnabled && compareVersions(version, latestVersion, '<')) {
+      if (autoupdateEnabled && compareVersions.compare(version, latestVersion, '<')) {
         const { data: { principalAddress } } = await axios.get(`${agent.url}/agentinfo/ticker/USDC/BTC`)
         const timestamp = Math.floor(new Date().getTime() / 1000)
 
@@ -41,7 +41,7 @@ function defineAgentUpdateJobs (agenda) {
         await axios.post(`${agent.url}/autoupdate`, {
           signature,
           message,
-          timestamp 
+          timestamp
         })
       }
     } catch (e) {
