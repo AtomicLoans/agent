@@ -119,14 +119,10 @@ function defineArbiterLoanJobs (agenda) {
           loan.borrowerPrincipalAddress = borrower
           loan.loanExpiration = loanExpiration
 
-          const liquidationRatioInUnits = await loansContract.methods.liquidationRatio(numToBytes32(loanId)).call()
-          const liquidationRatio = fromWei(liquidationRatioInUnits, 'gether')
+          const collateralValue = BN(await loansContract.methods.collateralValue(numToBytes32(loanId)).call())
+          const minCollateralValue = BN(await loansContract.methods.minCollateralValue(numToBytes32(loanId)).call())
 
-          const minSeizableCollateralValue = await loansContract.methods.minSeizableCollateral(numToBytes32(loanId)).call()
-
-          const contractMinimumCollateralAmount = BN(Math.ceil(BN(minSeizableCollateralValue).times(liquidationRatio).toNumber())).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
-
-          if (loan.collateralAmount < contractMinimumCollateralAmount * 1.1) {
+          if (collateralValue.lt(minCollateralValue)) {
             console.log('Running oracle update job')
             await agenda.now('check-arbiter-oracle')
           }
