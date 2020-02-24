@@ -119,10 +119,10 @@ function defineArbiterLoanJobs (agenda) {
           loan.borrowerPrincipalAddress = borrower
           loan.loanExpiration = loanExpiration
 
-          const liquidationRatioInUnits = await loans.methods.liquidationRatio(numToBytes32(loanId)).call()
+          const liquidationRatioInUnits = await loansContract.methods.liquidationRatio(numToBytes32(loanId)).call()
           const liquidationRatio = fromWei(liquidationRatioInUnits, 'gether')
 
-          const minSeizableCollateralValue = await loans.methods.minSeizableCollateral(numToBytes32(loanId)).call()
+          const minSeizableCollateralValue = await loansContract.methods.minSeizableCollateral(numToBytes32(loanId)).call()
 
           const contractMinimumCollateralAmount = BN(Math.ceil(BN(minSeizableCollateralValue).times(liquidationRatio).toNumber())).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
 
