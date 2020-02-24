@@ -27,7 +27,7 @@ function defineArbiterSecretsJobs (agenda) {
 
     const secretHashesCount = await funds.methods.secretHashesCount(lenderAddress).call()
 
-    const message = `${lenderAddress}-${principal}-atomic-loans-${secretIndex}`
+    const message = `You are signing with ${lenderAddress} to Generate Secrets for ${principal} on Contract ${funds._address} at Index ${secretIndex}`
 
     const secrets = await loanMarket.collateralClient().loan.secrets.generateSecrets(message, parseInt(getInterval('LOAN_SECRET_HASH_COUNT')) * 4)
 
