@@ -127,6 +127,7 @@ function defineArbiterLoanJobs (agenda) {
           const contractMinimumCollateralAmount = BN(Math.ceil(BN(minSeizableCollateralValue).times(liquidationRatio).toNumber())).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
 
           if (loan.collateral < contractMinimumCollateralAmount * 1.1) {
+            console.log('Running oracle update job')
             await agenda.now('check-arbiter-oracle')
           }
 
