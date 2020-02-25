@@ -36,7 +36,7 @@ function defineMailerJobs (agenda) {
     done()
   })
 
-  agenda.define('mail-liquidated', async (job, done) => {
+  agenda.define('mail-loan-liquidated', async (job, done) => {
     const { data } = job.attrs
     const { emails } = data
 
