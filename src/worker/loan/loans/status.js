@@ -100,6 +100,7 @@ function defineLoanStatusJobs (agenda) {
                 console.log('accept or cancel 5')
               } else {
                 const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress, refundableCollateralAmount, seizableCollateralAmount } = loan
+                const minConfirmations = loan.principalAmount >= 1000 ? 3 : 1 // 3 confirmations minimum if loan size is greaer than 1000
 
                 const [refundableBalance, seizableBalance, refundableUnspent, seizableUnspent] = await Promise.all([
                   loan.collateralClient().chain.getBalance([collateralRefundableP2SHAddress]),
@@ -109,8 +110,8 @@ function defineLoanStatusJobs (agenda) {
                 ])
 
                 const collateralRequirementsMet = (refundableBalance.toNumber() >= refundableCollateralAmount && seizableBalance.toNumber() >= seizableCollateralAmount)
-                const refundableConfirmationRequirementsMet = refundableUnspent.length === 0 ? false : refundableUnspent[0].confirmations > 0
-                const seizableConfirmationRequirementsMet = seizableUnspent.length === 0 ? false : seizableUnspent[0].confirmations > 0
+                const refundableConfirmationRequirementsMet = refundableUnspent.length === 0 ? false : refundableUnspent.every(unspent => unspent.confirmations >= minConfirmations)
+                const seizableConfirmationRequirementsMet = seizableUnspent.length === 0 ? false : seizableUnspent.every(unspent => unspent.confirmations >= minConfirmations)
 
                 if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet && loan.status === 'AWAITING_COLLATERAL') {
                   console.log('COLLATERAL LOCKED')
