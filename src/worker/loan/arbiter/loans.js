@@ -78,7 +78,7 @@ function defineArbiterLoanJobs (agenda) {
               // STATUS is going to be LIQUIDATING
             }
           } else {
-            status = 'LIQUIDATING'
+            status = 'LIQUIDATED'
           }
         } else if (!sale && !off) {
           if (currentTime < acceptExpiration) {
