@@ -171,6 +171,8 @@ const LoanSchema = new mongoose.Schema({
   }
 })
 
+LoanSchema.index({ principal: 1, loanId: 1 }, { unique: true })
+
 LoanSchema.methods.principalClient = function () {
   return clients[currencies[this.principal].chain]
 }
