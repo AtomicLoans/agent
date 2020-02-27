@@ -420,13 +420,13 @@ async function checkCollateralLocked (loanMarket) {
   const finalLoanModels = await Loan.find({ principal, status: { $in: ['CANCELLED', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] }, collateralLocked: true }).exec()
   const onGoingLoanModels = await Loan.find({ principal, status: { $nin: ['QUOTE', 'REQUESTING', 'CANCELLED', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] } }).exec()
 
-  await updateCollateralValues(finalLoanModels, loanMarket)
-  await updateCollateralValues(onGoingLoanModels, loanMarket)
+  await updateCollateralValues([...finalLoanModels, ...onGoingLoanModels], loanMarket)
 
   await updateMinCollateralValues(onGoingLoanModels, loanMarket)
 }
 
 async function updateCollateralValues (loanModels, loanMarket) {
+  let collateralValueSum = BN(0)
   for (let k = 0; k < loanModels.length; k++) {
     const loan = loanModels[k]
 
@@ -440,19 +440,17 @@ async function updateCollateralValues (loanModels, loanMarket) {
     const refundableBalance = BN(refundableBalanceInUnits.toNumber()).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
     const seizableBalance = BN(seizableBalanceInUnits.toNumber()).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
 
-    if (loan.refundableCollateralValue !== refundableBalance) {
-      const deltaRefundableValue = BN(loan.refundableCollateralValue).minus(refundableBalance)
+    collateralValueSum = collateralValueSum.plus(refundableBalance)
 
-      loanMarket.totalCollateralValue = BN(loanMarket.totalCollateralValue).minus(deltaRefundableValue).toFixed()
+    if (loan.refundableCollateralValue !== refundableBalance) {
       loan.refundableCollateralValue = refundableBalance
     }
 
     if (loan.seizableCollateralValue !== seizableBalance) {
-      const deltaSeizableValue = BN(loan.seizableCollateralValue).minus(seizableBalance)
-
-      loanMarket.totalCollateralValue = BN(loanMarket.totalCollateralValue).minus(deltaSeizableValue).toFixed()
       loan.seizableCollateralValue = seizableBalance
     }
+
+    collateralValueSum = collateralValueSum.plus(seizableBalance)
 
     if (parseFloat(refundableBalance) === 0 && parseFloat(seizableBalance) === 0) {
       loan.collateralLocked = false
@@ -461,8 +459,10 @@ async function updateCollateralValues (loanModels, loanMarket) {
     }
 
     await loan.save()
-    await loanMarket.save()
   }
+
+  loanMarket.totalCollateralValue = collateralValueSum.toFixed()
+  await loanMarket.save()
 }
 
 async function updateMinCollateralValues (loanModels, loanMarket) {
