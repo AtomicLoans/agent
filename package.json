@@ -93,7 +93,7 @@
     "@liquality/bitcoin-networks": "^0.4.18",
     "@liquality/bitcoin-rpc-provider": "^0.4.18",
     "@liquality/bitcoin-swap-provider": "^0.4.18",
-    "@liquality/client": "^0.4.18",
+    "@liquality/client": "^0.4.22",
     "@liquality/crypto": "^0.4.18",
     "@liquality/ethereum-erc20-provider": "^0.4.18",
     "@liquality/ethereum-networks": "^0.4.18",
