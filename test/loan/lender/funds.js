@@ -174,7 +174,7 @@ function testFunds (web3Chain, ethNode) {
   })
 
   describe('Create Fund Tx Error', () => {
-    it.skip('should set Fund status to FAILED', async () => { // TODO FIX
+    it.only('should set Fund status to FAILED', async () => { // TODO FIX
       const address = await getWeb3Address(web3Chain)
       const fundParams = fundFixtures.invalidFundWithNillMaxLoanDurAndFundExpiry('USDC')
       const { principal } = fundParams
