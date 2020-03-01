@@ -88,6 +88,8 @@ function defineFundCreateJobs (agenda) {
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')
       console.log('TX WAS MINED BUT TX FAILED')
+      fund.status = 'FAILED'
+      fund.save()
     } else {
       console.log('RECEIPT IS NOT NULL')
       const fundCreateLog = receipt.logs.filter(log => log.topics[0] === ensure0x(keccak256('Create(bytes32)').toString('hex')))
