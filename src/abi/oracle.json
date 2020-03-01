@@ -78,6 +78,20 @@
       "payable": false,
       "stateMutability": "view",
       "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "timeout",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint32"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
     }
   ],
   "metadata": "",
@@ -85,16 +99,16 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity 0.4.26;\n\ninterface OracleInterface {\n  function bill() external view returns (uint256);\n  function update(uint128 payment_, address token_) external;\n  function peek() external view returns (bytes32,bool);\n  function read() external view returns (bytes32);\n  function expiry() external view returns (uint32);\n}\n",
-  "sourcePath": "/Users/matthewblack/al-example/atomicloans-oracle-contracts/contracts/OracleInterface.sol",
+  "source": "pragma solidity 0.4.26;\n\ninterface OracleInterface {\n  function bill() external view returns (uint256);\n  function update(uint128 payment_, address token_) external;\n  function peek() external view returns (bytes32,bool);\n  function read() external view returns (bytes32);\n  function expiry() external view returns (uint32);\n  function timeout() external view returns (uint32);\n}\n",
+  "sourcePath": "/Users/matthewblack/atomicloans/atomicloans-oracle-contracts/contracts/OracleInterface.sol",
   "ast": {
-    "absolutePath": "/Users/matthewblack/al-example/atomicloans-oracle-contracts/contracts/OracleInterface.sol",
+    "absolutePath": "/Users/matthewblack/atomicloans/atomicloans-oracle-contracts/contracts/OracleInterface.sol",
     "exportedSymbols": {
       "OracleInterface": [
-        2886
+        2891
       ]
     },
-    "id": 2887,
+    "id": 2892,
     "nodeType": "SourceUnit",
     "nodes": [
       {
@@ -113,9 +127,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 2886,
+        "id": 2891,
         "linearizedBaseContracts": [
-          2886
+          2891
         ],
         "name": "OracleInterface",
         "nodeType": "ContractDefinition",
@@ -170,7 +184,7 @@
               ],
               "src": "93:9:11"
             },
-            "scope": 2886,
+            "scope": 2891,
             "src": "55:48:11",
             "stateMutability": "view",
             "superFunction": null,
@@ -252,7 +266,7 @@
               "parameters": [],
               "src": "164:0:11"
             },
-            "scope": 2886,
+            "scope": 2891,
             "src": "106:59:11",
             "stateMutability": "nonpayable",
             "superFunction": null,
@@ -334,7 +348,7 @@
               ],
               "src": "206:14:11"
             },
-            "scope": 2886,
+            "scope": 2891,
             "src": "168:53:11",
             "stateMutability": "view",
             "superFunction": null,
@@ -390,7 +404,7 @@
               ],
               "src": "262:9:11"
             },
-            "scope": 2886,
+            "scope": 2891,
             "src": "224:48:11",
             "stateMutability": "view",
             "superFunction": null,
@@ -446,27 +460,83 @@
               ],
               "src": "315:8:11"
             },
-            "scope": 2886,
+            "scope": 2891,
             "src": "275:49:11",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 2890,
+            "implemented": false,
+            "isConstructor": false,
+            "isDeclaredConst": true,
+            "modifiers": [],
+            "name": "timeout",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 2886,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "343:2:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 2889,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 2888,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2890,
+                  "src": "369:6:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint32",
+                    "typeString": "uint32"
+                  },
+                  "typeName": {
+                    "id": 2887,
+                    "name": "uint32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "369:6:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint32",
+                      "typeString": "uint32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "368:8:11"
+            },
+            "scope": 2891,
+            "src": "327:50:11",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 2887,
-        "src": "25:301:11"
+        "scope": 2892,
+        "src": "25:354:11"
       }
     ],
-    "src": "0:327:11"
+    "src": "0:380:11"
   },
   "legacyAST": {
-    "absolutePath": "/Users/matthewblack/al-example/atomicloans-oracle-contracts/contracts/OracleInterface.sol",
+    "absolutePath": "/Users/matthewblack/atomicloans/atomicloans-oracle-contracts/contracts/OracleInterface.sol",
     "exportedSymbols": {
       "OracleInterface": [
-        2886
+        2891
       ]
     },
-    "id": 2887,
+    "id": 2892,
     "nodeType": "SourceUnit",
     "nodes": [
       {
@@ -485,9 +555,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 2886,
+        "id": 2891,
         "linearizedBaseContracts": [
-          2886
+          2891
         ],
         "name": "OracleInterface",
         "nodeType": "ContractDefinition",
@@ -542,7 +612,7 @@
               ],
               "src": "93:9:11"
             },
-            "scope": 2886,
+            "scope": 2891,
             "src": "55:48:11",
             "stateMutability": "view",
             "superFunction": null,
@@ -624,7 +694,7 @@
               "parameters": [],
               "src": "164:0:11"
             },
-            "scope": 2886,
+            "scope": 2891,
             "src": "106:59:11",
             "stateMutability": "nonpayable",
             "superFunction": null,
@@ -706,7 +776,7 @@
               ],
               "src": "206:14:11"
             },
-            "scope": 2886,
+            "scope": 2891,
             "src": "168:53:11",
             "stateMutability": "view",
             "superFunction": null,
@@ -762,7 +832,7 @@
               ],
               "src": "262:9:11"
             },
-            "scope": 2886,
+            "scope": 2891,
             "src": "224:48:11",
             "stateMutability": "view",
             "superFunction": null,
@@ -818,18 +888,74 @@
               ],
               "src": "315:8:11"
             },
-            "scope": 2886,
+            "scope": 2891,
             "src": "275:49:11",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 2890,
+            "implemented": false,
+            "isConstructor": false,
+            "isDeclaredConst": true,
+            "modifiers": [],
+            "name": "timeout",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 2886,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "343:2:11"
+            },
+            "payable": false,
+            "returnParameters": {
+              "id": 2889,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 2888,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2890,
+                  "src": "369:6:11",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint32",
+                    "typeString": "uint32"
+                  },
+                  "typeName": {
+                    "id": 2887,
+                    "name": "uint32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "369:6:11",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint32",
+                      "typeString": "uint32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "368:8:11"
+            },
+            "scope": 2891,
+            "src": "327:50:11",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 2887,
-        "src": "25:301:11"
+        "scope": 2892,
+        "src": "25:354:11"
       }
     ],
-    "src": "0:327:11"
+    "src": "0:380:11"
   },
   "compiler": {
     "name": "solc",
@@ -837,7 +963,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.11",
-  "updatedAt": "2020-02-20T17:38:49.769Z",
+  "updatedAt": "2020-03-01T03:54:47.843Z",
   "devdoc": {
     "methods": {}
   },
