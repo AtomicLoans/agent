@@ -177,7 +177,7 @@ function testFunds (web3Chain, ethNode) {
   })
 
   describe('Create Fund Tx Error', () => {
-    it.only('should set Fund status to FAILED', async () => { // TODO FIX
+    it('should set Fund status to FAILED', async () => { // TODO FIX
       const address = await getWeb3Address(web3Chain)
       const fixture = fundFixtures.invalidFundWithNillMaxLoanDurAndFundExpiry
       const message = 'Create Non-Custom USDC Loan Fund backed by BTC with Compound Disabled and Maximum Loan Duration of 0 seconds which expires at timestamp 0 and deposit 0 USDC'
