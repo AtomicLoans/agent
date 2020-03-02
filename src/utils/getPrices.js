@@ -91,7 +91,7 @@ const median = arr => {
 
 async function getMedianBtcPrice () {
   const prices = await Promise.all(Object.values(apis).map(fn => fn().catch(e => e)))
-  const validPrices = prices.filter(result => !(result instanceof Error))
+  const validPrices = prices.filter(result => !(result instanceof Error)).map((x) => parseFloat(x))
 
   return median(validPrices)
 }
