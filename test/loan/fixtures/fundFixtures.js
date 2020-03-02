@@ -56,7 +56,7 @@ function fundWithFundExpiryIn100DaysAndCompoundEnabled (currentTime, principal) 
   }
 }
 
-function invalidFundWithNillMaxLoanDurAndFundExpiry (principal) {
+function invalidFundWithNillMaxLoanDurAndFundExpiry (_, principal) {
   return {
     collateral: 'BTC',
     principal,

@@ -20,6 +20,7 @@ const { toWei, fromWei } = web3.utils
 
 chai.should()
 const expect = chai.expect
+const assert = chai.assert
 
 chai.use(chaiHttp)
 chai.use(chaiAsPromised)
@@ -109,6 +110,8 @@ function testFunds (web3Chain, ethNode) {
 
       const fundId = await checkFundCreated(fundModelId)
 
+      assert(fundId)
+
       await token.methods.approve(getTestContract('funds', principal), amountToDeposit).send({ gas: 100000 })
       await funds.methods.deposit(numToBytes32(fundId), amountToDeposit).send({ gas: 500000 })
 
@@ -176,19 +179,19 @@ function testFunds (web3Chain, ethNode) {
   describe('Create Fund Tx Error', () => {
     it.only('should set Fund status to FAILED', async () => { // TODO FIX
       const address = await getWeb3Address(web3Chain)
-      const fundParams = fundFixtures.invalidFundWithNillMaxLoanDurAndFundExpiry('USDC')
-      const { principal } = fundParams
-      const unit = currencies[principal].unit
-      const amountToDeposit = toWei('200', unit)
-      await fundTokens(address, amountToDeposit, principal)
+      const fixture = fundFixtures.invalidFundWithNillMaxLoanDurAndFundExpiry
+      const message = `Create Non-Custom USDC Loan Fund backed by BTC with Compound Disabled and Maximum Loan Duration of 0 seconds which expires at timestamp 0 and deposit 0 USDC`
+      const signature = await web3Chain.client.eth.personal.sign(message, address)
 
-      const { body: fundNewBody } = await chai.request(server).post('/funds/new').send(fundParams)
-      const { id: fundModelId } = fundNewBody
+      const { fundParams, fundModelId } = await createFundFromFixture(web3Chain, fixture, 'USDC', 200, message, signature)
+      console.log(fundParams)
 
       await sleep(5000)
 
       const { body: fundsIdBody } = await chai.request(server).get(`/funds/${fundModelId}`)
       const { status } = fundsIdBody
+
+      console.log(status)
 
       expect(status).to.equal('FAILED')
     })
@@ -366,6 +369,10 @@ async function createFundFromFixture (web3Chain, fixture, principal_, amount, me
   const { id: fundModelId } = body
 
   const fundId = await checkFundCreated(fundModelId)
+
+  if (!fundId) {
+    return { fundParams, agentAddress: agentPrincipalAddress, amountDeposited: amountToDeposit, fundModelId }
+  }
 
   await token.methods.approve(getTestContract('funds', principal), amountToDeposit).send({ gas: 500000 })
   await funds.methods.deposit(numToBytes32(fundId), amountToDeposit).send({ gas: 2000000 })
