@@ -40,6 +40,10 @@ async function createCustomFund (web3Chain, arbiterChain, amount, principal) {
 
   const fundId = await checkFundCreated(fundModelId)
 
+  if (!fundId) {
+    return
+  }
+
   await token.methods.approve(getTestContract('funds', principal), amountToDeposit).send({ gas: 100000 })
   await funds.methods.deposit(numToBytes32(fundId), amountToDeposit).send({ gas: 100000 })
 
@@ -73,6 +77,8 @@ async function checkFundCreated (fundModelId) {
     if (status === 'CREATED') {
       created = true
       fundId = body.fundId
+    } else if (status === 'FAILED') {
+      created = true
     }
   }
 
