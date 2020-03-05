@@ -24,7 +24,7 @@ function defineMailerRouter (router) {
       const { params: { address } } = req
       const exists = await AddressEmail.exists({ address })
 
-      return exists
+      res.json({ exists })
     })
   )
 }
