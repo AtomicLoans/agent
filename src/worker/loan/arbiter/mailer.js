@@ -79,7 +79,10 @@ function defineMailerJobs (agenda) {
     const subject = 'Your loan is close to liquidation. Repay or add collateral soon.'
     const templateId = process.env.SENDGRID_LOAN_NEAR_LIQUIDATION_TEMPLATE_ID
 
-    sendEmail(emails, subject, data, templateId)
+    console.log("NEAR_LIQUIDATION_EMAIL")
+    console.log(data)
+    console.log(emails)
+    // sendEmail(emails, subject, data, templateId)
 
     done()
   })
