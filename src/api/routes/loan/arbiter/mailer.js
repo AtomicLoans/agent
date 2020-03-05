@@ -17,6 +17,16 @@ function defineMailerRouter (router) {
       res.json({ message: 'success' })
     })
   )
+
+  router.get(
+    '/mailer/emails/:address/set',
+    asyncHandler(async (req, res) => {
+      const { params: { address } } = req
+      const exists = await AddressEmail.exists({ address })
+
+      return exists
+    })
+  )
 }
 
 module.exports = defineMailerRouter
