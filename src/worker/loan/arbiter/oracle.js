@@ -129,7 +129,7 @@ function defineOracleJobs (agenda) {
             const ethTx = await setTxParams(txData, arbiterAddress, getContract('fundoracles'), oracleUpdate)
 
             ethTx.value = index < 5 ? BN(paymentEth).plus(10e12).toString() : paymentEth
-            ethTx.gasLimit = 900000
+            ethTx.gasLimit = 1500000
             await ethTx.save()
 
             console.log('ethTx', ethTx)
