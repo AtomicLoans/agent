@@ -10,11 +10,7 @@ function defineSalesRouter (router) {
 
   router.get('/sales/contract/:principal/:saleId', asyncHandler(async (req, res, next) => {
     const { params } = req
-    let { principal, saleId } = params
-
-    if (principal === 'DAI') {
-      principal = 'SAI'
-    }
+    const { principal, saleId } = params
 
     const sale = await Sale.findOne({ principal, saleId }).exec()
     if (!sale) return next(res.createError(401, 'Sale not found'))
