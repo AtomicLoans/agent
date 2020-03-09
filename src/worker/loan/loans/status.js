@@ -133,6 +133,12 @@ function defineLoanStatusJobs (agenda) {
 
               if (isArbiter()) {
                 if (((Date.now() / 1000) - (lastWarningSent || 0) > 86400) && loan.collateralAmount < alertCollateralAmount) {
+                  console.log('LIQPRICE-DEBUG:')
+                  console.log('rate:', rate)
+                  console.log('alertCollateralAmount:', alertCollateralAmount)
+                  console.log('minimumCollateralAmount:', loan.minimumCollateralAmount)
+                  console.log('loan.collateralAmount', loan.collateralAmount)
+
                   mailer.notify(loan.borrowerPrincipalAddress, 'loan-near-liquidation', {
                     loanId: loan.loanId,
                     asset: loan.principal,
