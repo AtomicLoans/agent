@@ -19,9 +19,8 @@ function verifySignature (signature, message, address) {
   return checksumEncode(address) === checksumEncode(addressFromSignature)
 }
 
-function verifyTimestampedSignature (signature, message, expected, timestamp) {
+function verifyTimestampedSignature (signature, message, expected, timestamp, address = getEthSigner()) {
   const currentTime = Math.floor(new Date().getTime() / 1000)
-  const address = getEthSigner()
 
   if (!verifySignature(signature, message, address)) { throw new Error('Signature doesn\'t match address') }
   if (!(message === expected)) { throw new Error('Message doesn\'t match params') }

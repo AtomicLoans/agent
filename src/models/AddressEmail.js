@@ -7,7 +7,11 @@ const AddressEmailSchema = new mongoose.Schema({
   },
   emails: [{
     type: mongoose.Schema.Types.ObjectId, ref: 'Email'
-  }]
+  }],
+  enabled: {
+    type: Boolean,
+    default: true
+  }
 })
 
 AddressEmailSchema.methods.json = function () {
