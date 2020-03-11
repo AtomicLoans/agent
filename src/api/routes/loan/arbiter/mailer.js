@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler')
 
-const { verifyTimestampedSignature } = require('../../../../utils/signatures')
+const { verifyTimestampedSignatureUsingExpected } = require('../../../../utils/signatures')
 const AddressEmail = require('../../../../models/AddressEmail')
 const Email = require('../../../../models/Email')
 
@@ -22,11 +22,13 @@ function defineMailerRouter (router) {
   router.get(
     '/mailer/emails/:address',
     asyncHandler(async (req, res, next) => {
-      const { params: { address, message, timestamp } } = req
+      const { params: { address } } = req
+
       const signature = req.header('X-Signature')
+      const timestamp = req.header('X-Timestamp')
 
       try {
-        verifyTimestampedSignature(signature, message, `Retrieve email preferences (${timestamp})`, timestamp, address)
+        verifyTimestampedSignatureUsingExpected(signature, `Retrieve email preferences (${timestamp})`, timestamp, address)
       } catch (e) {
         return next(res.createError(401, e.message))
       }
