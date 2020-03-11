@@ -25,7 +25,7 @@ function defineMailerRouter (router) {
       const { params: { address } } = req
 
       const signature = req.header('X-Signature')
-      const timestamp = req.header('X-Timestamp')
+      const timestamp = parseInt(req.header('X-Timestamp'))
 
       try {
         verifyTimestampedSignatureUsingExpected(signature, `Retrieve email preferences (${timestamp})`, timestamp, address)
@@ -33,7 +33,7 @@ function defineMailerRouter (router) {
         return next(res.createError(401, e.message))
       }
 
-      const data = await AddressEmail.find({ address })
+      const data = await AddressEmail.findOne({ address }).exec()
 
       res.json(data.json())
     })
