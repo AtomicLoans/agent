@@ -33,7 +33,7 @@ function defineMailerRouter (router) {
         return next(res.createError(401, e.message))
       }
 
-      const data = await AddressEmail.findOne({ address }).exec()
+      const data = await AddressEmail.findOne({ address }).populate({ path: 'emails', model: 'Email' }).exec()
 
       res.json(data.json())
     })
