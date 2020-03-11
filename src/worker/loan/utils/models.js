@@ -13,14 +13,14 @@ async function getMarketModels (principal, collateral) {
   return { loanMarket, market }
 }
 
-async function getEmails (addressEmail) {
+async function getEmail (addressEmail) {
   console.log('Finding emails for ', addressEmail)
-  const res = await AddressEmail.findOne({ address: addressEmail }).populate({ path: 'emails', model: 'Email' }).exec()
+  const res = await AddressEmail.findOne({ address: addressEmail })
   console.log(res)
-  return res ? res.emails : []
+  return (res && res.enabled) ? res.email : null
 }
 
 module.exports = {
   getMarketModels,
-  getEmails
+  getEmail
 }

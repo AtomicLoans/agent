@@ -5,6 +5,10 @@ const AddressEmailSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  email: {
+    type: String,
+    index: true
+  },
   emails: [{
     type: mongoose.Schema.Types.ObjectId, ref: 'Email'
   }],

@@ -2,18 +2,49 @@ const asyncHandler = require('express-async-handler')
 
 const { verifyTimestampedSignatureUsingExpected } = require('../../../../utils/signatures')
 const AddressEmail = require('../../../../models/AddressEmail')
-const Email = require('../../../../models/Email')
 
 function defineMailerRouter (router) {
   router.post(
     '/mailer',
-    asyncHandler(async (req, res) => {
+    asyncHandler(async (req, res, next) => {
       const {
         body: { address, email }
       } = req
-      const emailRecord = await Email.findOneAndUpdate({ email }, {}, { upsert: true, new: true }).exec()
 
-      await AddressEmail.findOneAndUpdate({ address }, { $addToSet: { emails: emailRecord } }, { upsert: true, new: true }).exec()
+      const exists = await AddressEmail.exists({ address })
+      if (exists) {
+        return next(res.createError(401, 'Email already exists. Update through the settings.'))
+      }
+
+      await AddressEmail.findOneAndUpdate({ address }, { email }, { upsert: true, new: true }).exec()
+
+      res.json({ message: 'success' })
+    })
+  )
+
+  router.put(
+    '/mailer/emails/:address',
+    asyncHandler(async (req, res, next) => {
+      const {
+        body: { email, enabled },
+        params: { address }
+      } = req
+
+      const exists = await AddressEmail.exists({ address })
+      if (!exists) {
+        return next(res.createError(401, `Preferences for address ${address} does not exist.`))
+      }
+
+      const signature = req.header('X-Signature')
+      const timestamp = parseInt(req.header('X-Timestamp'))
+
+      try {
+        verifyTimestampedSignatureUsingExpected(signature, `Update email preferences (${enabled}) (${email}) (${timestamp})`, timestamp, address)
+      } catch (e) {
+        return next(res.createError(401, e.message))
+      }
+
+      await AddressEmail.findOneAndUpdate({ address }, { email, enabled }, { new: true }).exec()
 
       res.json({ message: 'success' })
     })
@@ -33,7 +64,7 @@ function defineMailerRouter (router) {
         return next(res.createError(401, e.message))
       }
 
-      const data = await AddressEmail.findOne({ address }).populate({ path: 'emails', model: 'Email' }).exec()
+      const data = await AddressEmail.findOne({ address }).exec()
 
       res.json(data.json())
     })
