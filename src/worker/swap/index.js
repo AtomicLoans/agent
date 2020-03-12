@@ -1,8 +1,8 @@
 const axios = require('axios')
 const fx = require('../../utils/fx')
+const { getMedianBtcPrice } = require('../../utils/getPrices')
 const Market = require('../../models/Market')
 const Order = require('../../models/Order')
-const BN = require('bignumber.js')
 
 function defineSwapJobs (agenda) {
   agenda.define('verify-user-init-tx', async (job, done) => {
@@ -121,14 +121,11 @@ function defineSwapJobs (agenda) {
         })
     }))
 
+    const BTCPrice = await getMedianBtcPrice()
+
     await Promise.all(markets.map(market => {
-      const from = BN(MAP[market.from])
-      const to = BN(MAP[market.to])
-
-      market.rate = from.div(to).dp(8)
-
+      market.rate = BTCPrice
       console.log(`${market.from}_${market.to}`, market.rate)
-
       return market.save()
     }))
 

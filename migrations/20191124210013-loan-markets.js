@@ -1,8 +1,6 @@
 const axios = require('axios')
 
 const markets = [
-  { from: 'BTC', to: 'ETH' },
-  { from: 'ETH', to: 'BTC' },
   { from: 'BTC', to: 'DAI' },
   { from: 'BTC', to: 'USDC' }
 ]
