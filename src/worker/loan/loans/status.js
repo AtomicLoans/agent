@@ -80,7 +80,7 @@ function defineLoanStatusJobs (agenda) {
 
             if (isArbiter()) {
               // Warn if loan is about to expire in a day
-              if (((Date.now() / 1000) - (lastWarningSent || 0) > 86400) && (currentTime > (parseInt(loanExpiration) - 86400))) {
+              if (((Date.now() / 1000) - ((lastWarningSent / 1000) || 0) > 86400) && (currentTime > (parseInt(loanExpiration) - 86400))) {
                 mailer.notify(loan.borrowerPrincipalAddress, 'loan-expiring', {
                   loanId: loan.loanId,
                   asset: loan.principal
@@ -132,7 +132,7 @@ function defineLoanStatusJobs (agenda) {
               const { rate } = market
 
               if (isArbiter()) {
-                if (((Date.now() / 1000) - (lastWarningSent || 0) > 86400) && loan.collateralAmount < alertCollateralAmount) {
+                if (((Date.now() / 1000) - ((lastWarningSent / 1000) || 0) > 86400) && loan.collateralAmount < alertCollateralAmount) {
                   console.log('LIQPRICE-DEBUG:')
                   console.log('rate:', rate)
                   console.log('alertCollateralAmount:', alertCollateralAmount)
