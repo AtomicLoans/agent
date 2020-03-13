@@ -96,7 +96,7 @@ function sendEmail (emails, subject, data, templateId) {
     data: {
       personalizations: [
         {
-          to: emails.map(({ email }) => ({ email })),
+          to: emails,
           dynamic_template_data: {
             subject,
             ...data
