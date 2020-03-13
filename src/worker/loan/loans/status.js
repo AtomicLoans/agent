@@ -139,11 +139,18 @@ function defineLoanStatusJobs (agenda) {
                   console.log('minimumCollateralAmount:', loan.minimumCollateralAmount)
                   console.log('loan.collateralAmount', loan.collateralAmount)
 
-                  mailer.notify(loan.borrowerPrincipalAddress, 'loan-near-liquidation', {
-                    loanId: loan.loanId,
-                    asset: loan.principal,
-                    liquidation_price: BN(loan.minimumCollateralAmount).dividedBy(loan.collateralAmount).times(rate).toFixed(2)
-                  })
+                  const liquidationPrice = BN(loan.minimumCollateralAmount).dividedBy(loan.collateralAmount).times(rate).toFixed(2);
+
+                  if (liquidationPrice > 10000) {
+                    console.log("liqprice error:" , liquidationPrice)
+                  } else {
+                    mailer.notify(loan.borrowerPrincipalAddress, 'loan-near-liquidation', {
+                      loanId: loan.loanId,
+                      asset: loan.principal,
+                      liquidation_price: 
+                    })
+                  }
+
                   loan.lastWarningSent = Date.now()
                 }
               }
