@@ -174,7 +174,7 @@ function defineAgentRoutes (router) {
           const { name, published_at: publishedTimestamp } = release
 
           const publishedTime = moment(publishedTimestamp)
-          if (!moment().isAfter(publishedTime.add(1, 'hour'))) {
+          if (!moment().isAfter(publishedTime.add(10, 'minutes'))) {
             return next(res.createError(401, '3 day cooldown before a new release can be auto-updated to'))
           }
 
