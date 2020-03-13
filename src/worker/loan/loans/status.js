@@ -78,7 +78,7 @@ function defineLoanStatusJobs (agenda) {
               console.log('accept or cancel 4')
             }
 
-            if (isArbiter()) {
+            if (isArbiter() & !loan.off) {
               // Warn if loan is about to expire in a day
               if (((Date.now() / 1000) - ((lastWarningSent / 1000) || 0) > 86400) && (currentTime > (parseInt(loanExpiration) - 86400))) {
                 mailer.notify(loan.borrowerPrincipalAddress, 'loan-expiring', {
@@ -139,15 +139,15 @@ function defineLoanStatusJobs (agenda) {
                   console.log('minimumCollateralAmount:', loan.minimumCollateralAmount)
                   console.log('loan.collateralAmount', loan.collateralAmount)
 
-                  const liquidationPrice = BN(loan.minimumCollateralAmount).dividedBy(loan.collateralAmount).times(rate).toFixed(2);
+                  const liquidationPrice = BN(loan.minimumCollateralAmount).dividedBy(loan.collateralAmount).times(rate).toFixed(2)
 
                   if (liquidationPrice > 10000) {
-                    console.log("liqprice error:" , liquidationPrice)
+                    console.log('liqprice error:', liquidationPrice)
                   } else {
                     mailer.notify(loan.borrowerPrincipalAddress, 'loan-near-liquidation', {
                       loanId: loan.loanId,
                       asset: loan.principal,
-                      liquidation_price: 
+                      liquidation_price: liquidationPrice
                     })
                   }
 
