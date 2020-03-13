@@ -1,3 +1,9 @@
+## [0.1.58](https://github.com/AtomicLoans/agent/compare/v0.1.57...v0.1.58) - 2020-02-26
+- Unique loanIds as index
+- Fix total collateral value
+- Email management endpoints for arbiter
+- Fix last warning sent calculations
+
 ## [0.1.57](https://github.com/AtomicLoans/agent/compare/v0.1.56...v0.1.57) - 2020-02-26
 
 - Test auto update
