@@ -171,7 +171,7 @@ function defineLoansRouter (router) {
       await agenda.now('accept-loan', { loanModelId: loan.id })
 
       res.json({ message: 'Accepting Loan', status: 0 })
-    } else if (!off & !paid) {
+    } else if (!off && !paid) {
       res.json({ message: 'Loan hasn\'t been paid', status: 1 })
     } else {
       res.json({ message: 'Loan was already accepted or refunded', status: 2 })
