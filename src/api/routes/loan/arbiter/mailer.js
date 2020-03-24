@@ -30,11 +30,6 @@ function defineMailerRouter (router) {
         params: { address }
       } = req
 
-      const exists = await AddressEmail.exists({ address })
-      if (!exists) {
-        return next(res.createError(401, `Preferences for address ${address} does not exist.`))
-      }
-
       const signature = req.header('X-Signature')
       const timestamp = parseInt(req.header('X-Timestamp'))
 
@@ -65,6 +60,9 @@ function defineMailerRouter (router) {
       }
 
       const data = await AddressEmail.findOne({ address }).exec()
+      if (!data) {
+        return res.json({})
+      }
 
       res.json(data.json())
     })
