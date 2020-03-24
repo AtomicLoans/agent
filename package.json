@@ -129,7 +129,7 @@
     "fastq": "^1.6.0",
     "fs": "0.0.1-security",
     "gh-release": "^3.5.0",
-    "helmet": "^3.18.0",
+    "helmet": "^3.22.0",
     "http-errors": "^1.7.3",
     "ioredis": "^4.11.2",
     "is-ci": "^2.0.0",
