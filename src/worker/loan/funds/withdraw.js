@@ -1,6 +1,7 @@
 const Fund = require('../../../models/Fund')
 const EthTx = require('../../../models/EthTx')
 const Withdraw = require('../../../models/Withdraw')
+const AgendaJob = require('../../../models/AgendaJob')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { getEthSigner } = require('../../../utils/address')
@@ -64,7 +65,11 @@ function defineFundWithdrawJobs (agenda) {
         await bumpTxFee(ethTx)
         await sendTransaction(ethTx, withdraw, agenda, done, txSuccess, txFailure)
       } else {
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-withdraw', { withdrawModelId })
+        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-fund-withdraw', nextRunAt: { $ne: null }, data: { withdrawModelId }}).exec()
+
+        if (alreadyQueuedJobs.length <= 1) {
+          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-withdraw', { withdrawModelId })
+        }
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')

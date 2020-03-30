@@ -1,6 +1,7 @@
 const Fund = require('../../../models/Fund')
 const EthTx = require('../../../models/EthTx')
 const Deposit = require('../../../models/Deposit')
+const AgendaJob = require('../../../models/AgendaJob')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { numToBytes32 } = require('../../../utils/finance')
@@ -63,7 +64,11 @@ function defineFundDepositJobs (agenda) {
         await bumpTxFee(ethTx)
         await sendTransaction(ethTx, deposit, agenda, done, txSuccess, txFailure)
       } else {
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-deposit', { depositModelId })
+        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-fund-deposit', nextRunAt: { $ne: null }, data: { depositModelId }}).exec()
+
+        if (alreadyQueuedJobs.length <= 1) {
+          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-deposit', { depositModelId })
+        }
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')

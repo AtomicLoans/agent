@@ -4,6 +4,7 @@ const Loan = require('../../../models/Loan')
 const Sale = require('../../../models/Sale')
 const LoanMarket = require('../../../models/LoanMarket')
 const EthTx = require('../../../models/EthTx')
+const AgendaJob = require('../../../models/AgendaJob')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
@@ -70,7 +71,11 @@ function defineSalesAcceptJobs (agenda) {
         await bumpTxFee(ethTx)
         await sendTransaction(ethTx, sale, agenda, done, txSuccess, txFailure)
       } else {
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-sale', { saleModelId })
+        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-accept-sale', nextRunAt: { $ne: null }, data: { saleModelId }}).exec()
+
+        if (alreadyQueuedJobs.length <= 1) {
+          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-sale', { saleModelId })
+        }
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')

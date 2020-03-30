@@ -152,7 +152,7 @@ function testSales (web3Chain, ethNode, btcChain) {
       const market = markets.find((market) => market.to === principal)
       const { rate } = market
 
-      await medianizer.methods.poke(numToBytes32(toWei((rate * 0.7).toString(), 'ether'))).send({ gas: 200000 })
+      await medianizer.methods.poke(numToBytes32(toWei((rate * 0.62).toString(), 'ether'))).send({ gas: 200000 })
 
       const liquidatorSecrets = await chains.bitcoinLiquidator.client.loan.secrets.generateSecrets('test', 1)
       const liquidatorSecret = liquidatorSecrets[0]
