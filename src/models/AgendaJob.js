@@ -17,7 +17,7 @@ const AgendaJobSchema = new mongoose.Schema({
     pubKeyId: String,
     depositModelId: String
   }
-}, { collection: 'agendaJob' })
+}, { collection: 'agendaJobs' })
 
 AgendaJobSchema.methods.json = function () {
   const json = this.toJSON()
