@@ -6,6 +6,7 @@ const BN = require('bignumber.js')
 const EthTx = require('../../../models/EthTx')
 const LoanMarket = require('../../../models/LoanMarket')
 const OracleUpdate = require('../../../models/OracleUpdate')
+const AgendaJob = require('../../../models/AgendaJob')
 const { numToBytes32 } = require('../../../utils/finance')
 const { BlockchainInfo, CoinMarketCap, CryptoCompare, Gemini, BitBay, Bitstamp, Coinbase, CryptoWatch, Coinpaprika, Kraken } = require('../../../utils/getPrices')
 const { getObject, getContract, loadObject } = require('../../../utils/contracts')
@@ -189,7 +190,11 @@ function defineOracleJobs (agenda) {
           await bumpTxFee(ethTx)
           await sendTransaction(ethTx, oracleUpdate, agenda, done, txSuccess, txFailure)
         } else {
-          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-check-arbiter-oracle', { oracleUpdateId })
+          const alreadyQueuedJobs = AgendaJob.find({ name: 'verify-check-arbiter-oracle', nextRunAt: { $ne: null }, data: { oracleUpdateId }}).exec()
+
+          if (alreadyQueuedJobs.length <= 1) {
+            await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-check-arbiter-oracle', { oracleUpdateId })
+          }
         }
       } else if (receipt.status === false) {
         console.log('RECEIPT STATUS IS FALSE')

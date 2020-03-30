@@ -3,6 +3,7 @@ const BN = require('bignumber.js')
 const LoanMarket = require('../../../models/LoanMarket')
 const EthTx = require('../../../models/EthTx')
 const Approve = require('../../../models/Approve')
+const AgendaJob = require('../../../models/AgendaJob')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
@@ -79,7 +80,11 @@ function defineAgentApproveJobs (agenda) {
         await bumpTxFee(ethTx)
         await sendTransaction(ethTx, approve, agenda, done, txSuccess, txFailure)
       } else {
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-tokens', { approveModelId })
+        const alreadyQueuedJobs = AgendaJob.find({ name: 'verify-approve-tokens', nextRunAt: { $ne: null }, data: { approveModelId }}).exec()
+
+        if (alreadyQueuedJobs.length <= 1) {
+          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-tokens', { approveModelId })
+        }
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')
