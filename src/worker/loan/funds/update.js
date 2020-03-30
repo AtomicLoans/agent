@@ -61,6 +61,8 @@ function defineFundUpdateJobs (agenda) {
       } else {
         const alreadyQueuedJobs = AgendaJob.find({ name: 'verify-fund-update', nextRunAt: { $ne: null }, data: { updateModelId }}).exec()
 
+        console.log('alreadyQueuedJobs', alreadyQueuedJobs)
+
         if (alreadyQueuedJobs.length <= 1) {
           await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-update', { updateModelId })
         }
