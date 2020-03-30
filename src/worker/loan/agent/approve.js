@@ -80,7 +80,7 @@ function defineAgentApproveJobs (agenda) {
         await bumpTxFee(ethTx)
         await sendTransaction(ethTx, approve, agenda, done, txSuccess, txFailure)
       } else {
-        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-approve-tokens', nextRunAt: { $ne: null }, data: { approveModelId }}).exec()
+        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-approve-tokens', nextRunAt: { $ne: null }, data: { approveModelId } }).exec()
 
         if (alreadyQueuedJobs.length <= 1) {
           await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-tokens', { approveModelId })

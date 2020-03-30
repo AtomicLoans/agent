@@ -65,7 +65,7 @@ function defineFundWithdrawJobs (agenda) {
         await bumpTxFee(ethTx)
         await sendTransaction(ethTx, withdraw, agenda, done, txSuccess, txFailure)
       } else {
-        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-fund-withdraw', nextRunAt: { $ne: null }, data: { withdrawModelId }}).exec()
+        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-fund-withdraw', nextRunAt: { $ne: null }, data: { withdrawModelId } }).exec()
 
         if (alreadyQueuedJobs.length <= 1) {
           await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-withdraw', { withdrawModelId })

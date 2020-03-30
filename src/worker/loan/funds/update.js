@@ -59,7 +59,7 @@ function defineFundUpdateJobs (agenda) {
         await bumpTxFee(ethTx)
         await sendTransaction(ethTx, update, agenda, done, txSuccess, txFailure)
       } else {
-        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-fund-update', nextRunAt: { $ne: null }, data: { updateModelId }}).exec()
+        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-fund-update', nextRunAt: { $ne: null }, data: { updateModelId } }).exec()
 
         if (alreadyQueuedJobs.length <= 1) {
           await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-fund-update', { updateModelId })
