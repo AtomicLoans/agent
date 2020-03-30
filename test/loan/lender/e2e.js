@@ -211,6 +211,7 @@ async function testSetup (web3Chain, btcChain) {
   await restartJobs(server)
   await restartJobs(arbiterServer)
   await createCustomFund(web3Chain, arbiterChain, 200, 'USDC') // Create Custom Loan Fund with 200 USDC
+  await increaseTime(3600)
 }
 
 // function testSetupArbiter () {
