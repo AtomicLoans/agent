@@ -59,6 +59,9 @@ function defineFundUpdateJobs (agenda) {
         await bumpTxFee(ethTx)
         await sendTransaction(ethTx, update, agenda, done, txSuccess, txFailure)
       } else {
+        const testingQueuedJobs = await AgendaJob.find({}).exec()
+        console.log('testingQueuedJobs.length', testingQueuedJobs.length)
+
         const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-fund-update', nextRunAt: { $ne: null }, data: { updateModelId }}).exec()
 
         console.log('alreadyQueuedJobs', alreadyQueuedJobs)
