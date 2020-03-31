@@ -100,7 +100,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
         await bumpTxFee(ethTx)
         await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
       } else {
-        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-accept-or-cancel-loan', nextRunAt: { $ne: null }, data: { loanModelId }}).exec()
+        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-accept-or-cancel-loan', nextRunAt: { $ne: null }, data: { loanModelId } }).exec()
 
         if (alreadyQueuedJobs.length <= 1) {
           await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan', { loanModelId })

@@ -35,7 +35,7 @@ function customFundWithFundExpiryIn100DaysAndCompoundEnabled (currentTime, princ
     custom: true,
     compoundEnabled: true,
     amount: 0,
-    maxLoanDuration: 0,
+    maxLoanDuration: toSecs({ days: 100 }),
     fundExpiry: currentTime + toSecs({ days: 100 }),
     liquidationRatio: 150, // 150% collateralization ratio
     interest: 16.5, // 16.5% APR
@@ -51,7 +51,7 @@ function fundWithFundExpiryIn100DaysAndCompoundEnabled (currentTime, principal) 
     custom: false,
     compoundEnabled: true,
     amount: 0,
-    maxLoanDuration: 0,
+    maxLoanDuration: toSecs({ days: 100 }),
     fundExpiry: currentTime + toSecs({ days: 100 })
   }
 }
