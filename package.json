@@ -96,7 +96,7 @@
     "@liquality/client": "^0.4.18",
     "@liquality/crypto": "^0.4.18",
     "@liquality/ethereum-erc20-provider": "^0.4.18",
-    "@liquality/ethereum-networks": "^0.4.18",
+    "@liquality/ethereum-networks": "^0.4.24",
     "@liquality/ethereum-rpc-provider": "^0.4.18",
     "@liquality/ethereum-swap-provider": "^0.4.18",
     "@liquality/ethereum-utils": "^0.4.18",
