@@ -7,6 +7,7 @@ const { checksumEncode } = require('@liquality/ethereum-utils')
 const { sleep } = require('@liquality/utils')
 const { generateMnemonic } = require('bip39')
 const isCI = require('is-ci')
+const toSecs = require('@mblackmblack/to-seconds')
 
 const { chains, rewriteEnv, connectMetaMask, importBitcoinAddresses, fundUnusedBitcoinAddress } = require('../../common')
 const { fundArbiter, fundAgent, fundTokens, getAgentAddress, generateSecretHashesArbiter, getTestContract, getTestObjects, cancelLoans, removeFunds, removeLoans, cancelJobs, restartJobs, fundWeb3Address, increaseTime } = require('../loanCommon')
@@ -49,7 +50,7 @@ function testFunds (web3Chain, ethNode) {
 
       expect(fromWei(balance, 'wei')).to.equal(amountDeposited)
       expect(lender).to.equal(checksumEncode(agentAddress))
-      expect(maxLoanDur).to.equal(BN(2).pow(256).minus(1).toFixed())
+      expect(maxLoanDur).to.equal(toSecs({ days: 100 }).toString())
       expect(actualFundExpiry).to.equal(fundExpiry.toString())
       expect(actualLiquidationRatio).to.equal(toWei((liquidationRatio / 100).toString(), 'gether'))
       expect(actualInterest).to.equal(toWei(rateToSec(interest.toString()), 'gether'))
@@ -77,7 +78,7 @@ function testFunds (web3Chain, ethNode) {
 
       expect(fromWei(cBalance, 'wei')).to.equal(expectedCBalance)
       expect(lender).to.equal(checksumEncode(agentAddress))
-      expect(maxLoanDur).to.equal(BN(2).pow(256).minus(1).toFixed())
+      expect(maxLoanDur).to.equal(toSecs({ days: 100 }).toString())
       expect(actualFundExpiry).to.equal(fundExpiry.toString())
       expect(actualLiquidationRatio).to.equal(toWei((liquidationRatio / 100).toString(), 'gether'))
       expect(actualInterest).to.equal(toWei(rateToSec(interest.toString()), 'gether'))
@@ -121,7 +122,7 @@ function testFunds (web3Chain, ethNode) {
 
       expect(fromWei(balance, 'wei')).to.equal(amountToDeposit)
       expect(lender).to.equal(checksumEncode(agentPrincipalAddress))
-      expect(maxLoanDur).to.equal(BN(2).pow(256).minus(1).toFixed())
+      expect(maxLoanDur).to.equal(toSecs({ days: 100 }).toString())
       expect(actualFundExpiry).to.equal(fundExpiry.toString())
     })
   })
@@ -145,7 +146,7 @@ function testFunds (web3Chain, ethNode) {
 
       expect(fromWei(cBalance, 'wei')).to.equal(expectedCBalance)
       expect(lender).to.equal(checksumEncode(agentAddress))
-      expect(maxLoanDur).to.equal(BN(2).pow(256).minus(1).toFixed())
+      expect(maxLoanDur).to.equal(toSecs({ days: 100 }).toString())
       expect(actualFundExpiry).to.equal(fundExpiry.toString())
     })
   })
@@ -259,7 +260,7 @@ function testFunds (web3Chain, ethNode) {
 
       expect(fromWei(cBalance, 'wei')).to.equal(expectedCBalance)
       expect(lender).to.equal(checksumEncode(agentAddress))
-      expect(maxLoanDur).to.equal(BN(2).pow(256).minus(1).toFixed())
+      expect(maxLoanDur).to.equal(toSecs({ days: 100 }).toString())
       expect(actualFundExpiry).to.equal(fundExpiry.toString())
 
       const amountToWithdraw = 100
@@ -309,7 +310,7 @@ function testFunds (web3Chain, ethNode) {
 
       expect(fromWei(cBalance, 'wei')).to.equal(expectedCBalance)
       expect(lender).to.equal(checksumEncode(agentAddress))
-      expect(maxLoanDur).to.equal(BN(2).pow(256).minus(1).toFixed())
+      expect(maxLoanDur).to.equal(toSecs({ days: 100 }).toString())
       expect(actualFundExpiry).to.equal(fundExpiry.toString())
 
       const currentTimeUpdate = Math.floor(new Date().getTime() / 1000)
