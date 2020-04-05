@@ -155,7 +155,7 @@
     "@liquality/bitcoin-ledger-provider": "^0.4.18",
     "@liquality/bitcoin-node-wallet-provider": "^0.4.18",
     "@liquality/ethereum-js-wallet-provider": "^0.4.18",
-    "@liquality/ethereum-metamask-provider": "^0.4.18",
+    "@liquality/ethereum-metamask-provider": "^0.4.25",
     "@mblackmblack/bitcoinjs-lib": "^5.1.6",
     "chai": "^4.2.0",
     "chai-http": "^4.3.0",
