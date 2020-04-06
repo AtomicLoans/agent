@@ -29,6 +29,7 @@
     "test:lender:funds": "mocha test/loan/lender/funds $npm_package_options_mocha",
     "test:lender:loans": "mocha test/loan/lender/loans $npm_package_options_mocha",
     "test:lender:sales": "mocha test/loan/lender/sales $npm_package_options_mocha",
+    "test:lender:second_sales": "mocha test/loan/lender/secondSales $npm_package_options_mocha",
     "test:lender:collateral": "mocha test/loan/lender/collateral $npm_package_options_mocha",
     "test:lender:e2e": "mocha test/loan/lender/e2e $npm_package_options_mocha",
     "test:lender:tx": "mocha test/loan/lender/tx $npm_package_options_mocha",

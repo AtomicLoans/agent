@@ -77,9 +77,10 @@ async function checkFundCreated (fundModelId) {
     if (status === 'CREATED') {
       created = true
       fundId = body.fundId
-    } else if (status === 'FAILED') {
-      created = true
     }
+    // else if (status === 'FAILED') {
+    //   created = true
+    // }
   }
 
   return fundId

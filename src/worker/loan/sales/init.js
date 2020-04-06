@@ -141,6 +141,7 @@ function defineSalesInitJobs (agenda) {
         }
 
         const latestCollateralBlock = await loan.collateralClient().getMethod('getBlockHeight')()
+        console.log('init latestCollateralBlock', latestCollateralBlock)
         sale.latestCollateralBlock = latestCollateralBlock
         await sale.save()
 

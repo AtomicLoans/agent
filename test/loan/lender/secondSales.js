@@ -152,7 +152,7 @@ function testSales (web3Chain, ethNode, btcChain) {
       const market = markets.find((market) => market.to === principal)
       const { rate } = market
 
-      await medianizer.methods.poke(numToBytes32(toWei((rate * 0.57).toString(), 'ether'))).send({ gas: 200000 })
+      await medianizer.methods.poke(numToBytes32(toWei((rate * 0.55).toString(), 'ether'))).send({ gas: 200000 })
 
       const liquidatorSecrets = await chains.bitcoinLiquidator.client.loan.secrets.generateSecrets('test', 1)
       const liquidatorSecret = liquidatorSecrets[0]
@@ -220,19 +220,45 @@ function testSales (web3Chain, ethNode, btcChain) {
 
       console.log('claimParams', claimParams)
 
-      const claimTxHash = await await chains.bitcoinLiquidator.client.loan.collateralSwap.claim(...claimParams)
+      await secondsCountDown(10)
 
-      console.log('claimTxHash', claimTxHash)
+      const blockHeight = await chains.bitcoinWithJs.client.chain.getBlockHeight()
+      const { timestamp: timestamp1 } = await chains.bitcoinWithJs.client.chain.getBlockByNumber(blockHeight)
+      console.log('timestamp1', timestamp1)
+      await increaseTime(3600)
+      const blockHeight2 = await chains.bitcoinWithJs.client.chain.getBlockHeight()
+      const { timestamp: timestamp2 } = await chains.bitcoinWithJs.client.chain.getBlockByNumber(blockHeight2)
+      console.log('timestamp2', timestamp2)
+      await increaseTime(3600)
+      await increaseTime(120)
 
-      await secondsCountDown(5)
-
+      await secondsCountDown(10)
       await chains.bitcoinWithNode.client.chain.generateBlock(1)
 
-      await checkSaleAccepted(saleId, principal)
 
-      const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
+      // should move back
+      console.log('Should revert collateral')
+      await secondsCountDown(10)
 
-      expect(accepted).to.equal(true)
+
+      await checkSaleReverted(saleId, principal)
+
+      console.log('sale reverted!')
+
+
+      // const claimTxHash = await await chains.bitcoinLiquidator.client.loan.collateralSwap.claim(...claimParams)
+
+      // console.log('claimTxHash', claimTxHash)
+
+      // await secondsCountDown(5)
+
+      // await chains.bitcoinWithNode.client.chain.generateBlock(1)
+
+      // await checkSaleAccepted(saleId, principal)
+
+      // const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
+
+      // expect(accepted).to.equal(true)
     })
   })
 }
@@ -272,6 +298,21 @@ async function checkSaleAccepted (saleId, principal) {
       console.log(saleStatus)
       if (saleStatus === 'ACCEPTED') {
         accepted = true
+      }
+    }
+  }
+}
+
+async function checkSaleReverted (saleId, principal) {
+  let reverted = false
+  while (!reverted) {
+    await sleep(1000)
+    const { body, status } = await chai.request(arbiterServer).get(`/sales/contract/${principal}/${saleId}`)
+    if (status === 200) {
+      const { status: saleStatus } = body
+      console.log(saleStatus)
+      if (saleStatus === 'COLLATERAL_REVERTED') {
+        reverted = true
       }
     }
   }

@@ -183,7 +183,13 @@ function defineLoanStatusJobs (agenda) {
                 console.log('accept or cancel 3')
               }
             } else if (sale) {
-              const saleModel = await Sale.findOne({ loanModelId: loan.id }).exec()
+              const saleModels = await Sale.find({ loanModelId: loan.id }).sort({ saleId: 'descending' }).exec()
+
+              console.log('saleModels', saleModels)
+
+              const saleModel = saleModels[0]
+
+              // const saleModel = await Sale.findOne({ loanModelId: loan.id }).exec()
 
               if (isArbiter() && saleModel && saleModel.status !== 'FAILED') {
                 const collateralBlockHeight = await saleModel.collateralClient().getMethod('getBlockHeight')()
@@ -194,12 +200,14 @@ function defineLoanStatusJobs (agenda) {
                 } else if (saleModel && status === 'COLLATERAL_CLAIMED' && claimTxHash) {
                   console.log('COLLATERAL WAS CLAIMED, SPIN UP JOB TO ACCEPT')
                   agenda.now('accept-sale', { saleModelId: saleModel.id })
+                } else if (saleModel && status === 'COLLATERAL_REVERTING' && (collateralBlockHeight - latestCollateralBlock) >= 3 && claimTxHash) {
+                  // Send bitcoin back to original address
+                  // Spin up job
+                  // Then verify that liquidate occurs and create new sale record
                 }
               } else if (!isArbiter() && !saleModel) {
                 await agenda.now('init-liquidation', { loanModelId: loan.id })
               } else if (!isArbiter() && saleModel && saleModel.status !== 'FAILED') {
-                console.log('Try to deposit')
-
                 const sales = getObject('sales', principal)
                 const token = getObject('erc20', principal)
                 const { accepted } = await sales.methods.sales(numToBytes32(saleModel.saleId)).call()
