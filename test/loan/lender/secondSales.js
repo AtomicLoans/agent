@@ -148,12 +148,6 @@ function testSales (web3Chain, ethNode, btcChain) {
 
       const medianizer = await testLoadObject('medianizer', getTestContract('medianizer', principal), chains.web3WithNode, ensure0x(ethereumWithNodeAddress))
 
-      const { body: markets } = await chai.request(swapServer).get('/marketinfo')
-      const market = markets.find((market) => market.to === principal)
-      const { rate } = market
-
-      await medianizer.methods.poke(numToBytes32(toWei((rate * 0.55).toString(), 'ether'))).send({ gas: 200000 })
-
       const liquidatorSecrets = await chains.bitcoinLiquidator.client.loan.secrets.generateSecrets('test', 1)
       const liquidatorSecret = liquidatorSecrets[0]
       console.log('liquidatorSecret', liquidatorSecret)
@@ -183,6 +177,12 @@ function testSales (web3Chain, ethNode, btcChain) {
       await increaseTime(3600)
       await increaseTime(3600)
 
+      const { body: markets } = await chai.request(swapServer).get('/marketinfo')
+      const market = markets.find((market) => market.to === principal)
+      const { rate } = market
+
+      await medianizer.methods.poke(numToBytes32(toWei((rate * 0.55).toString(), 'ether'))).send({ gas: 200000 })
+
       const safe = await liquidatorLoans.methods.safe(numToBytes32(loanId)).call()
       console.log('safe', safe)
 
@@ -195,32 +195,32 @@ function testSales (web3Chain, ethNode, btcChain) {
 
       await checkSaleInitiated(saleId, principal)
 
-      const secretB = await getSecret(server, principal, saleId, 'B')
-      const secretC = await getSecret(arbiterServer, principal, saleId, 'C')
-      const secretD = liquidatorSecret
+      // const secretB = await getSecret(server, principal, saleId, 'B')
+      // const secretC = await getSecret(arbiterServer, principal, saleId, 'C')
+      // const secretD = liquidatorSecret
 
-      console.log('secretB', secretB)
-      console.log('secretC', secretC)
-      console.log('secretD', secretD)
+      // console.log('secretB', secretB)
+      // console.log('secretC', secretC)
+      // console.log('secretD', secretD)
 
-      const multisigSendTxHash = await getMultisigSendTxHash(server, principal, saleId)
+      // const multisigSendTxHash = await getMultisigSendTxHash(server, principal, saleId)
 
-      const { borrowerPubKey, lenderPubKey, arbiterPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
+      // const { borrowerPubKey, lenderPubKey, arbiterPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
 
-      const { secretHashA, secretHashB, secretHashC, secretHashD } = await sales.methods.secretHashes(numToBytes32(saleId)).call()
+      // const { secretHashA, secretHashB, secretHashC, secretHashD } = await sales.methods.secretHashes(numToBytes32(saleId)).call()
 
-      const swapExpiration = await sales.methods.swapExpiration(numToBytes32(saleId)).call()
-      const liquidationExpiration = await loans.methods.liquidationExpiration(numToBytes32(loanId)).call()
+      // const swapExpiration = await sales.methods.swapExpiration(numToBytes32(saleId)).call()
+      // const liquidationExpiration = await loans.methods.liquidationExpiration(numToBytes32(loanId)).call()
 
-      const claimPubKeys = { borrowerPubKey: remove0x(borrowerPubKey), lenderPubKey: remove0x(lenderPubKey), arbiterPubKey: remove0x(arbiterPubKey), liquidatorPubKey, liquidatorPubKeyHash }
-      const claimSecretHashes = { secretHashA1: remove0x(secretHashA), secretHashB1: remove0x(secretHashB), secretHashC1: remove0x(secretHashC), secretHashD1: remove0x(secretHashD) }
-      const claimExpirations = { swapExpiration, liquidationExpiration }
+      // const claimPubKeys = { borrowerPubKey: remove0x(borrowerPubKey), lenderPubKey: remove0x(lenderPubKey), arbiterPubKey: remove0x(arbiterPubKey), liquidatorPubKey, liquidatorPubKeyHash }
+      // const claimSecretHashes = { secretHashA1: remove0x(secretHashA), secretHashB1: remove0x(secretHashB), secretHashC1: remove0x(secretHashC), secretHashD1: remove0x(secretHashD) }
+      // const claimExpirations = { swapExpiration, liquidationExpiration }
 
-      const claimParams = [multisigSendTxHash, claimPubKeys, [secretB, secretC, secretD], claimSecretHashes, claimExpirations]
+      // const claimParams = [multisigSendTxHash, claimPubKeys, [secretB, secretC, secretD], claimSecretHashes, claimExpirations]
 
-      console.log('claimParams', claimParams)
+      // console.log('claimParams', claimParams)
 
-      await secondsCountDown(10)
+      await secondsCountDown(30)
 
       const blockHeight = await chains.bitcoinWithJs.client.chain.getBlockHeight()
       const { timestamp: timestamp1 } = await chains.bitcoinWithJs.client.chain.getBlockByNumber(blockHeight)
@@ -235,30 +235,67 @@ function testSales (web3Chain, ethNode, btcChain) {
       await secondsCountDown(10)
       await chains.bitcoinWithNode.client.chain.generateBlock(1)
 
-
       // should move back
       console.log('Should revert collateral')
       await secondsCountDown(10)
-
 
       await checkSaleReverted(saleId, principal)
 
       console.log('sale reverted!')
 
+      await increaseTime(3600)
+      await increaseTime(3600)
+      await increaseTime(120)
 
-      // const claimTxHash = await await chains.bitcoinLiquidator.client.loan.collateralSwap.claim(...claimParams)
+      await medianizer.methods.poke(numToBytes32(toWei((rate * 0.55).toString(), 'ether'))).send({ gas: 200000 })
 
-      // console.log('claimTxHash', claimTxHash)
+      const saleIdBytes32A2 = await liquidatorLoans.methods.liquidate(numToBytes32(loanId), ensure0x(liquidatorSecretHash), ensure0x(liquidatorPubKeyHash)).call()
+      const saleIdA2 = hexToNumber(saleIdBytes32A2)
+      await liquidatorLoans.methods.liquidate(numToBytes32(loanId), ensure0x(liquidatorSecretHash), ensure0x(liquidatorPubKeyHash)).send({ gas: 1000000 })
+      console.log('saleIdA2', saleIdA2)
 
-      // await secondsCountDown(5)
+      await secondsCountDown(5)
 
-      // await chains.bitcoinWithNode.client.chain.generateBlock(1)
+      await checkSaleInitiated(saleIdA2, principal)
 
-      // await checkSaleAccepted(saleId, principal)
+      const secretB = await getSecret(server, principal, saleIdA2, 'B')
+      const secretC = await getSecret(arbiterServer, principal, saleIdA2, 'C')
+      const secretD = liquidatorSecret
 
-      // const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
+      console.log('secretB', secretB)
+      console.log('secretC', secretC)
+      console.log('secretD', secretD)
 
-      // expect(accepted).to.equal(true)
+      const multisigSendTxHash = await getMultisigSendTxHash(server, principal, saleIdA2)
+
+      const { borrowerPubKey, lenderPubKey, arbiterPubKey } = await loans.methods.pubKeys(numToBytes32(loanId)).call()
+
+      const { secretHashA, secretHashB, secretHashC, secretHashD } = await sales.methods.secretHashes(numToBytes32(saleIdA2)).call()
+
+      const swapExpiration = await sales.methods.swapExpiration(numToBytes32(saleIdA2)).call()
+      const liquidationExpiration = await loans.methods.liquidationExpiration(numToBytes32(loanId)).call()
+
+      const claimPubKeys = { borrowerPubKey: remove0x(borrowerPubKey), lenderPubKey: remove0x(lenderPubKey), arbiterPubKey: remove0x(arbiterPubKey), liquidatorPubKey, liquidatorPubKeyHash }
+      const claimSecretHashes = { secretHashA1: remove0x(secretHashA), secretHashB1: remove0x(secretHashB), secretHashC1: remove0x(secretHashC), secretHashD1: remove0x(secretHashD) }
+      const claimExpirations = { swapExpiration, liquidationExpiration }
+
+      const claimParams = [multisigSendTxHash, claimPubKeys, [secretB, secretC, secretD], claimSecretHashes, claimExpirations]
+
+      console.log('claimParams', claimParams)
+
+      const claimTxHash = await chains.bitcoinLiquidator.client.loan.collateralSwap.claim(...claimParams)
+
+      console.log('claimTxHash', claimTxHash)
+
+      await secondsCountDown(5)
+
+      await chains.bitcoinWithNode.client.chain.generateBlock(1)
+
+      await checkSaleAccepted(saleIdA2, principal)
+
+      const { accepted } = await sales.methods.sales(numToBytes32(saleIdA2)).call()
+
+      expect(accepted).to.equal(true)
     })
   })
 }
@@ -311,6 +348,9 @@ async function checkSaleReverted (saleId, principal) {
     if (status === 200) {
       const { status: saleStatus } = body
       console.log(saleStatus)
+      if (saleStatus === 'COLLATERAL_REVERTING') {
+        await chains.bitcoinWithNode.client.chain.generateBlock(1)
+      }
       if (saleStatus === 'COLLATERAL_REVERTED') {
         reverted = true
       }

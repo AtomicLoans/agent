@@ -24,7 +24,7 @@ function defineSalesClaimJobs (agenda) {
     const { timestamp: collateralBlockHeightTimestamp } = await sale.collateralClient().getMethod('getBlockByNumber')(parseInt(collateralBlockHeight))
     const { timestamp: latestCollateralBlockTimestamp } = await sale.collateralClient().getMethod('getBlockByNumber')(parseInt(latestCollateralBlock))
 
-    const minTimePassed = 60 * 15 // 2 hours
+    const minTimePassed = 60 * 105 // 1 hour 45 minutes
     const minTimeHasPassed = (collateralBlockHeightTimestamp - latestCollateralBlockTimestamp) >= minTimePassed
     console.log('collateralBlockHeightTimestamp', collateralBlockHeightTimestamp)
     console.log('latestCollateralBlockTimestamp', latestCollateralBlockTimestamp)
@@ -32,12 +32,12 @@ function defineSalesClaimJobs (agenda) {
     const minBlocksPassed = 3 // at least 2 block confirmations on the collateral before reverting
     const minBlocksHavePassed = (collateralBlockHeight - latestCollateralBlock) >= minBlocksPassed
 
-    const refundableUnspent = await sale.collateralClient().getMethod('getUnspentTransactions')([collateralSwapRefundableP2SHAddress])
+    const refundableSwapUnspent = await sale.collateralClient().getMethod('getUnspentTransactions')([collateralSwapRefundableP2SHAddress])
 
     console.log('minTimeHasPassed', minTimeHasPassed)
     console.log('minBlocksHavePassed', minBlocksHavePassed)
 
-    if (minTimeHasPassed && minBlocksHavePassed && refundableUnspent.length > 0) {
+    if (minTimeHasPassed && minBlocksHavePassed && refundableSwapUnspent.length > 0) {
       // revert collateral
       agenda.now('revert-init-liquidation', { saleModelId: sale.id })
 

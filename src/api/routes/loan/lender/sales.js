@@ -11,7 +11,7 @@ function defineSalesRouter (router) {
 
     const { params, body } = req
     const { principal, saleId } = params
-    const { arbiterSigs, refundableAmount, seizableAmount } = body
+    const { arbiterSigs } = body
 
     const sale = await Sale.findOne({ principal, saleId }).exec()
     if (!sale) return next(res.createError(401, 'Sale not found'))
@@ -44,28 +44,28 @@ function defineSalesRouter (router) {
           refundable: [Buffer.from(arbiterSigs.refundableSig, 'hex'), Buffer.from(lenderSigs.refundableSig, 'hex')],
           seizable: [Buffer.from(arbiterSigs.seizableSig, 'hex'), Buffer.from(lenderSigs.seizableSig, 'hex')]
         }
-  
+
         console.log('lockTxHash, sigs, ...swapParams, outputs', lockTxHash, sigs, ...swapParams, outputs)
         const multisigSendTxRaw = await loan.collateralClient().loan.collateralSwap.multisigMake(lockTxHash, sigs, ...swapParams, outputs)
         console.log('multisigSendTxRaw', multisigSendTxRaw)
-  
+
         const txHash = await loan.collateralClient().chain.sendRawTransaction(multisigSendTxRaw)
         console.log('txHash', txHash)
-  
+
         res.json({ txHash })
-      } catch(e) {
+      } catch (e) {
         const sigs = {
           refundable: [Buffer.from(lenderSigs.refundableSig, 'hex'), Buffer.from(arbiterSigs.refundableSig, 'hex')],
           seizable: [Buffer.from(lenderSigs.seizableSig, 'hex'), Buffer.from(arbiterSigs.seizableSig, 'hex')]
         }
-  
+
         console.log('lockTxHash, sigs, ...swapParams, outputs', lockTxHash, sigs, ...swapParams, outputs)
         const multisigSendTxRaw = await loan.collateralClient().loan.collateralSwap.multisigMake(lockTxHash, sigs, ...swapParams, outputs)
         console.log('multisigSendTxRaw', multisigSendTxRaw)
-  
+
         const txHash = await loan.collateralClient().chain.sendRawTransaction(multisigSendTxRaw)
         console.log('txHash', txHash)
-  
+
         res.json({ txHash })
       }
     } else {

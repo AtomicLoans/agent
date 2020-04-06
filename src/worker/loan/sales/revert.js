@@ -1,21 +1,13 @@
 const axios = require('axios')
-const { sha256 } = require('@liquality/crypto')
 const Sale = require('../../../models/Sale')
 const Loan = require('../../../models/Loan')
-const Secret = require('../../../models/Secret')
 const Agent = require('../../../models/Agent')
 const AgendaJob = require('../../../models/AgendaJob')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { getLockArgs } = require('../utils/collateral')
 const { getInitArgs } = require('../utils/collateralSwap')
-const { isArbiter } = require('../../../utils/env')
-const { getEndpoint } = require('../../../utils/endpoints')
 const handleError = require('../../../utils/handleError')
-
-const web3 = require('web3')
-const { hexToNumber } = web3.utils
 
 function defineSalesRevertJobs (agenda) {
   agenda.define('revert-init-liquidation', async (job, done) => {
@@ -26,7 +18,7 @@ function defineSalesRevertJobs (agenda) {
       const { saleModelId } = data
 
       const sale = await Sale.findOne({ _id: saleModelId }).exec()
-      const { loanModelId, collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress, saleId } = sale
+      const { loanModelId, collateralSwapRefundableP2SHAddress, saleId } = sale
 
       const loan = await Loan.findOne({ _id: loanModelId }).exec()
       const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress, loanId, principal, collateral } = loan
@@ -92,12 +84,14 @@ function defineSalesRevertJobs (agenda) {
           await sale.save()
 
           await agenda.schedule(getInterval('CHECK_BTC_TX_INTERVAL'), 'verify-revert-init-liquidation', { saleModelId })
-        } catch(e) {
+        } catch (e) {
           console.log('AGENT NOT FOUND OR OFFLINE')
         }
       }
     } catch (e) {
-      console.log('e', e)
+      handleError(e)
+      console.log('REVERT-INIT-ERROR')
+      console.log(e)
     }
 
     done()
@@ -134,7 +128,7 @@ function defineSalesRevertJobs (agenda) {
         await sale.save()
       } else {
         // TODO: check if actually claimed instead
-        
+
         const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-revert-init-liquidation', nextRunAt: { $ne: null }, data: { saleModelId } }).exec()
 
         if (alreadyQueuedJobs.length <= 0) {
@@ -142,9 +136,11 @@ function defineSalesRevertJobs (agenda) {
         }
       }
     } catch (e) {
-      console.log('e', e)
+      handleError(e)
+      console.log('VERIFY-REVERT-INIT-ERROR')
+      console.log(e)
     }
-    
+
     done()
   })
 }
