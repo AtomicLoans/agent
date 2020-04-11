@@ -184,7 +184,7 @@ function testFunds (web3Chain, ethNode) {
       const message = 'Create Non-Custom USDC Loan Fund backed by BTC with Compound Disabled and Maximum Loan Duration of 0 seconds which expires at timestamp 0 and deposit 0 USDC'
       const signature = await web3Chain.client.eth.personal.sign(message, address)
 
-      const { fundParams, fundModelId } = await createFundFromFixture(web3Chain, fixture, 'USDC', 200, message, signature)
+      const { fundParams, fundModelId } = await createFundFromFixture(web3Chain, fixture, 'USDC', 200, message, signature, true)
       console.log(fundParams)
 
       await sleep(5000)
@@ -352,7 +352,7 @@ function testFunds (web3Chain, ethNode) {
   // })
 }
 
-async function createFundFromFixture (web3Chain, fixture, principal_, amount, message, signature) {
+async function createFundFromFixture (web3Chain, fixture, principal_, amount, message, signature, canBeFailed) {
   const currentTime = Math.floor(new Date().getTime() / 1000)
   const agentPrincipalAddress = await getAgentAddress(server)
   const address = await getWeb3Address(web3Chain)
@@ -369,7 +369,7 @@ async function createFundFromFixture (web3Chain, fixture, principal_, amount, me
   const { body } = await chai.request(server).post('/funds/new').send(fundParams)
   const { id: fundModelId } = body
 
-  const fundId = await checkFundCreated(fundModelId)
+  const fundId = await checkFundCreated(fundModelId, canBeFailed)
 
   if (!fundId) {
     return { fundParams, agentAddress: agentPrincipalAddress, amountDeposited: amountToDeposit, fundModelId }
