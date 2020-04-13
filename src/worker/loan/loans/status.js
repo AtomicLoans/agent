@@ -185,8 +185,6 @@ function defineLoanStatusJobs (agenda) {
             } else if (sale) {
               const saleModels = await Sale.find({ loanModelId: loan.id }).sort({ saleId: 'descending' }).exec()
 
-              console.log('saleModels', saleModels)
-
               const saleModel = saleModels[0]
 
               if (isArbiter() && saleModel && saleModel.status !== 'FAILED') {
