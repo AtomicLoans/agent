@@ -8,7 +8,7 @@ function defineMailerJobs (agenda) {
     const { data } = job.attrs
     const { emails, amount, asset } = data
 
-    const subject = `Your loan has been approved. ${amount} ${asset.toUpperCase()} is available to withdraw!`
+    const subject = `Your BTC collateral has been deposited. ${amount} ${asset.toUpperCase()} is available to withdraw!`
     const templateId = process.env.SENDGRID_COLLATERAL_LOCKED_TEMPLATE_ID
 
     sendEmail(emails, subject, data, templateId)
