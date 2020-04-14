@@ -87,7 +87,7 @@
     "@atomicloans/bitcoin-collateral-swap-provider": "^0.4.0",
     "@atomicloans/eth-contracts": "^0.1.1",
     "@atomicloans/loan-client": "^0.4.0",
-    "@bugsnag/js": "^6.4.2",
+    "@bugsnag/js": "^7.0.0",
     "@bugsnag/plugin-express": "^6.4.1",
     "@liquality/bitcoin-esplora-api-provider": "^0.4.18",
     "@liquality/bitcoin-js-wallet-provider": "^0.4.18",
