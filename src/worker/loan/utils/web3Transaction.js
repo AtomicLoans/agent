@@ -101,9 +101,9 @@ async function bumpTxFee (ethTx) {
   }
 
   if (fastPriceInWei > (currentGasPrice * 1.5)) {
-    ethTx.gasPrice = Math.min(Math.ceil(fastPriceInWei), toWei('50', 'gwei'))
+    ethTx.gasPrice = Math.min(Math.ceil(fastPriceInWei), toWei('300', 'gwei'))
   } else {
-    ethTx.gasPrice = Math.min(Math.ceil(currentGasPrice * 1.51), toWei('50', 'gwei'))
+    ethTx.gasPrice = Math.min(Math.ceil(currentGasPrice * 1.51), toWei('300', 'gwei'))
   }
 
   await ethTx.save()
@@ -165,6 +165,8 @@ async function handleWeb3TransactionError (error, ethTx, instance, agenda, done,
   } else if (String(error).indexOf('Transaction has been reverted by the EVM') >= 0) {
     console.log('Transaction has been reverted by the EVM')
     ethTx.failed = false
+    await ethTx.save()
+    await errorCallback(error, instance)
   } else if (String(error).indexOf('Transaction with the same hash was already imported') >= 0) {
     console.log('Transaction with the same hash was already imported')
   } else if (String(error).indexOf('transaction underpriced') >= 0) {

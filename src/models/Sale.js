@@ -68,17 +68,23 @@ const SaleSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  revertTxhash: {
+    type: String,
+    index: true
+  },
   latestCollateralBlock: {
     type: Number,
     index: true
   },
   status: {
     type: String,
-    enum: ['INITIATED', 'COLLATERAL_SENDING', 'COLLATERAL_SENT', 'SECRETS_PROVIDED', 'COLLATERAL_CLAIMED', 'ACCEPTING', 'ACCEPTED', 'CANCELLING', 'CANCELLED', 'FAILED'],
+    enum: ['INITIATED', 'COLLATERAL_SENDING', 'COLLATERAL_SENT', 'SECRETS_PROVIDED', 'COLLATERAL_CLAIMED', 'COLLATERAL_REVERTING', 'COLLATERAL_REVERTED', 'ACCEPTING', 'ACCEPTED', 'CANCELLING', 'CANCELLED', 'FAILED'],
     index: true,
     default: 'INITIATED'
   }
 })
+
+SaleSchema.index({ principal: 1, saleId: 1 }, { unique: true, partialFilterExpression: { principal: { $type: 'string' }, saleId: { $type: 'int' } } })
 
 SaleSchema.methods.principalClient = function () {
   return clients[currencies[this.principal].chain]

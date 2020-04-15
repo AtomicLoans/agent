@@ -1,5 +1,6 @@
 const Loan = require('../../../models/Loan')
 const EthTx = require('../../../models/EthTx')
+const AgendaJob = require('../../../models/AgendaJob')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
@@ -77,7 +78,11 @@ function defineLoanRequestJobs (agenda) {
         await bumpTxFee(ethTx)
         await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
       } else {
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan', { loanModelId })
+        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-request-loan', nextRunAt: { $ne: null }, data: { loanModelId } }).exec()
+
+        if (alreadyQueuedJobs.length <= 1) {
+          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan', { loanModelId })
+        }
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')

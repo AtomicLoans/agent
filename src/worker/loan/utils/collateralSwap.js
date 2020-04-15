@@ -15,7 +15,7 @@ async function getInitArgs (loanId, saleId, principal, collateral) {
 
   const pubKeys = { borrowerPubKey: remove0x(borrowerPubKey), lenderPubKey: remove0x(lenderPubKey), arbiterPubKey: remove0x(arbiterPubKey), liquidatorPubKeyHash: remove0x(pubKeyHash) }
   const secretHashes = { secretHashA1: remove0x(secretHashA), secretHashB1: remove0x(secretHashB), secretHashC1: remove0x(secretHashC), secretHashD1: remove0x(secretHashD) }
-  const expirations = { swapExpiration, liquidationExpiration }
+  const expirations = { swapExpiration: parseInt(swapExpiration), liquidationExpiration: parseInt(liquidationExpiration) }
 
   return [pubKeys, secretHashes, expirations]
 }

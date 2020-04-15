@@ -4,6 +4,7 @@ const { ensure0x } = require('@liquality/ethereum-utils')
 const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
 const EthTx = require('../../../models/EthTx')
+const AgendaJob = require('../../../models/AgendaJob')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
@@ -83,7 +84,11 @@ function defineFundCreateJobs (agenda) {
         await bumpTxFee(ethTx)
         await sendTransaction(ethTx, fund, agenda, done, txSuccess, txFailure)
       } else {
-        await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId })
+        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-create-fund', nextRunAt: { $ne: null }, data: { fundModelId } }).exec()
+
+        if (alreadyQueuedJobs.length <= 1) {
+          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId })
+        }
       }
     } else if (receipt.status === false) {
       console.log('RECEIPT STATUS IS FALSE')

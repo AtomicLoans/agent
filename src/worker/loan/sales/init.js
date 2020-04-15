@@ -141,6 +141,7 @@ function defineSalesInitJobs (agenda) {
         }
 
         const latestCollateralBlock = await loan.collateralClient().getMethod('getBlockHeight')()
+        console.log('init latestCollateralBlock', latestCollateralBlock)
         sale.latestCollateralBlock = latestCollateralBlock
         await sale.save()
 
@@ -224,7 +225,12 @@ function defineSalesInitJobs (agenda) {
           const { loanModelId } = sale
 
           const loan = await Loan.findOne({ _id: loanModelId }).exec()
-          const secret = loan.lenderSecrets[1]
+          const { loanId } = loan
+
+          const sales = getObject('sales', principal)
+          const next = await sales.methods.next(numToBytes32(loanId)).call()
+
+          const secret = loan.lenderSecrets[parseInt(next)]
 
           if (sha256(secret) === sale.secretHashB) {
             console.log('LENDER SECRET MATCHES')

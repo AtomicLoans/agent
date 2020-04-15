@@ -183,13 +183,15 @@ function defineLoanStatusJobs (agenda) {
                 console.log('accept or cancel 3')
               }
             } else if (sale) {
-              const saleModel = await Sale.findOne({ loanModelId: loan.id }).exec()
+              const saleModels = await Sale.find({ loanModelId: loan.id }).sort({ saleId: 'descending' }).exec()
+
+              const saleModel = saleModels[0]
 
               if (isArbiter() && saleModel && saleModel.status !== 'FAILED') {
                 const collateralBlockHeight = await saleModel.collateralClient().getMethod('getBlockHeight')()
-                const { latestCollateralBlock, claimTxHash, status } = saleModel
+                const { latestCollateralBlock, claimTxHash, revertTxHash, status } = saleModel
 
-                if (saleModel && collateralBlockHeight > latestCollateralBlock && !claimTxHash) {
+                if (saleModel && collateralBlockHeight > latestCollateralBlock && !claimTxHash && !revertTxHash) {
                   agenda.now('verify-collateral-claim', { saleModelId: saleModel.id })
                 } else if (saleModel && status === 'COLLATERAL_CLAIMED' && claimTxHash) {
                   console.log('COLLATERAL WAS CLAIMED, SPIN UP JOB TO ACCEPT')
@@ -198,31 +200,37 @@ function defineLoanStatusJobs (agenda) {
               } else if (!isArbiter() && !saleModel) {
                 await agenda.now('init-liquidation', { loanModelId: loan.id })
               } else if (!isArbiter() && saleModel && saleModel.status !== 'FAILED') {
-                console.log('Try to deposit')
-
                 const sales = getObject('sales', principal)
                 const token = getObject('erc20', principal)
-                const { accepted } = await sales.methods.sales(numToBytes32(saleModel.saleId)).call()
-                if (accepted) {
-                  saleModel.status = 'ACCEPTED'
-                  await saleModel.save()
 
-                  const fundModel = await Fund.findOne({ principal }).exec()
-                  const deposit = await Deposit.findOne({ fundModelId: fundModel.id, saleId: saleModel.saleId }).exec()
+                const next = await sales.methods.next(numToBytes32(loanId)).call()
+                console.log('next', next)
+                console.log('saleModels.length', saleModels.length)
+                if (parseInt(next) !== saleModels.length) {
+                  await agenda.now('init-liquidation', { loanModelId: loan.id })
+                } else {
+                  const { accepted } = await sales.methods.sales(numToBytes32(saleModel.saleId)).call()
+                  if (accepted) {
+                    saleModel.status = 'ACCEPTED'
+                    await saleModel.save()
 
-                  if (!deposit) {
-                    const owedToLender = await loans.methods.owedToLender(numToBytes32(loanId)).call()
-                    const tokenBalance = await token.methods.balanceOf(principalAddress).call()
+                    const fundModel = await Fund.findOne({ principal }).exec()
+                    const deposit = await Deposit.findOne({ fundModelId: fundModel.id, saleId: saleModel.saleId }).exec()
 
-                    if (tokenBalance >= owedToLender) {
-                      const unit = currencies[principal].unit
+                    if (!deposit) {
+                      const owedToLender = await loans.methods.owedToLender(numToBytes32(loanId)).call()
+                      const tokenBalance = await token.methods.balanceOf(principalAddress).call()
 
-                      const amountToDeposit = fromWei(owedToLender.toString(), unit)
-                      await agenda.now('fund-deposit', { fundModelId: fundModel.id, amountToDeposit, saleId: saleModel.saleId })
+                      if (tokenBalance >= owedToLender) {
+                        const unit = currencies[principal].unit
+
+                        const amountToDeposit = fromWei(owedToLender.toString(), unit)
+                        await agenda.now('fund-deposit', { fundModelId: fundModel.id, amountToDeposit, saleId: saleModel.saleId })
+                      }
+                    } else {
+                      loan.status = 'LIQUIDATED'
+                      await loan.save()
                     }
-                  } else {
-                    loan.status = 'LIQUIDATED'
-                    await loan.save()
                   }
                 }
               }
