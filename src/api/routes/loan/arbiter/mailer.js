@@ -39,7 +39,7 @@ function defineMailerRouter (router) {
         return next(res.createError(401, e.message))
       }
 
-      await AddressEmail.findOneAndUpdate({ address }, { email, enabled }, { new: true }).exec()
+      await AddressEmail.findOneAndUpdate({ address }, { email, enabled }, { upsert: true }).exec()
 
       res.json({ message: 'success' })
     })
