@@ -160,7 +160,7 @@
     "@mblackmblack/bitcoinjs-lib": "^5.1.6",
     "chai": "^4.2.0",
     "chai-http": "^4.3.0",
-    "coveralls": "^3.0.9",
+    "coveralls": "^3.0.14",
     "mocha": "^7.0.0",
     "nodemon": "^2.0.2",
     "nyc": "^15.0.0",
