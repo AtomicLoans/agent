@@ -1,5 +1,15 @@
 const bugsnag = require('@bugsnag/js')
-const bugsnagClient = bugsnag(process.env.BUGSNAG_API)
+
+let bugsnagClient
+if (process.env.BUGSNAG_API) {
+  bugsnagClient = bugsnag(process.env.BUGSNAG_API)
+} else {
+  bugsnagClient = {}
+  bugsnagClient.notify = function (e) {
+    console.log('notify', e)
+  }
+}
+
 const { getAgentUrl } = require('./url')
 
 function handleError (e) {
