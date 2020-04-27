@@ -7,7 +7,7 @@ const { fromWei } = web3().utils
 
 const Agent = require('../../../../models/Agent')
 
-function defineAgentsRouter (router) {
+function defineLiquidatorsRouter (router) {
   router.post('/liquidators/new', asyncHandler(async (req, res, next) => {
     console.log('start /liquidators/new')
     const { body } = req
@@ -100,4 +100,4 @@ function defineAgentsRouter (router) {
   }))
 }
 
-module.exports = defineAgentsRouter
+module.exports = defineLiquidatorsRouter

@@ -1,4 +1,5 @@
 const defineAgentsRouter = require('./agents')
+const defineLiquidatorsRouter = require('./liquidators')
 const defineLoansRouter = require('./loans')
 const defineSalesRouter = require('./sales')
 const defineMailerRouter = require('./mailer')
@@ -7,6 +8,7 @@ const defineMailerRouter = require('./mailer')
 
 function defineArbiterRoutes (router) {
   defineAgentsRouter(router)
+  defineLiquidatorsRouter(router)
   defineLoansRouter(router)
   defineSalesRouter(router)
   defineMailerRouter(router)
