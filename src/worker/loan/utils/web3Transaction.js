@@ -7,8 +7,8 @@ const { toWei } = web3().utils
 
 const { NETWORK, BUGSNAG_API } = process.env
 
-const bugsnag = require('@bugsnag/js')
-const bugsnagClient = bugsnag(BUGSNAG_API)
+const Bugsnag = require('@bugsnag/js')
+Bugsnag.start(BUGSNAG_API)
 
 async function setTxParams (data, from, to, instance) {
   const txParams = { data, from, to }
@@ -181,12 +181,9 @@ async function handleWeb3TransactionError (error, ethTx, instance, agenda, done,
 
     const agentUrl = getAgentUrl()
 
-    bugsnagClient.metaData = {
-      ethTx,
-      instance,
-      agentUrl
-    }
-    bugsnagClient.notify(error)
+    Bugsnag.addMetadata(ethTx, instance, agentUrl)
+
+    Bugsnag.notify(error)
 
     await errorCallback(error, instance)
     handleError(error)

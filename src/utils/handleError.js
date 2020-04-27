@@ -1,16 +1,15 @@
 const Bugsnag = require('@bugsnag/js')
 const { getAgentUrl } = require('./url')
+const { BUGSNAG_API } = process.env
 
-if (process.env.BUGSNAG_API) {
-  Bugsnag.start(process.env.BUGSNAG_API)
+if (BUGSNAG_API) {
+  Bugsnag.start(BUGSNAG_API)
 }
 
 function handleError (e) {
   const agentUrl = getAgentUrl()
 
-  Bugsnag.metaData = {
-    agentUrl
-  }
+  Bugsnag.addMetadata(agentUrl)
 
   Bugsnag.notify(e)
 }
