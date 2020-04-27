@@ -10,8 +10,8 @@ const path = require('path')
 const reactViews = require('express-react-views')
 const basicAuth = require('express-basic-auth')
 
-const bugsnag = require('@bugsnag/js')
-const bugsnagExpress = require('@bugsnag/plugin-express')
+const Bugsnag = require('@bugsnag/js')
+const BugsnagPluginExpress = require('@bugsnag/plugin-express')
 
 const cors = require('../middlewares/cors')
 const httpHelpers = require('../middlewares/httpHelpers')
@@ -27,7 +27,10 @@ if (RUN_SINGLE_PROCESS || (HEROKU_APP !== undefined && HEROKU_APP !== 'undefined
   require('../worker/index')
 }
 
-const bugsnagClient = bugsnag(BUGSNAG_API)
+Bugsnag.start({
+  apiKey: BUGSNAG_API,
+  plugins: [BugsnagPluginExpress]
+})
 
 let agenda
 if (PARTY !== 'arbiter') {
@@ -40,8 +43,7 @@ migrate()
 
 const app = express()
 
-bugsnagClient.use(bugsnagExpress)
-const middleware = bugsnagClient.getPlugin('express')
+const middleware = Bugsnag.getPlugin('express')
 
 app.use(middleware.requestHandler)
 
