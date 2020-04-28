@@ -98,7 +98,7 @@
     "@liquality/crypto": "^0.4.18",
     "@liquality/ethereum-erc20-provider": "^0.4.18",
     "@liquality/ethereum-networks": "^0.4.18",
-    "@liquality/ethereum-rpc-provider": "^0.4.18",
+    "@liquality/ethereum-rpc-provider": "^0.4.29",
     "@liquality/ethereum-swap-provider": "^0.4.18",
     "@liquality/ethereum-utils": "^0.4.18",
     "@mblackmblack/migrate-mongo": "^6.0.8",
