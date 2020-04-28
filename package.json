@@ -153,7 +153,7 @@
     "web3": "^1.2.1"
   },
   "devDependencies": {
-    "@liquality/bitcoin-ledger-provider": "^0.4.18",
+    "@liquality/bitcoin-ledger-provider": "^0.4.29",
     "@liquality/bitcoin-node-wallet-provider": "^0.4.18",
     "@liquality/ethereum-js-wallet-provider": "^0.4.18",
     "@liquality/ethereum-metamask-provider": "^0.4.18",
