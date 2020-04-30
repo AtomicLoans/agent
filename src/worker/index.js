@@ -27,7 +27,6 @@ async function start () {
     await agenda.every(getInterval('ARBITER_ORACLE_INTERVAL'), 'check-arbiter-oracle')
     await agenda.every(getInterval('AGENT_UPDATES_INTERVAL'), 'check-agent-updates')
   } else {
-    // TODO: check every 30 seconds to changes to open loans and react
     await agenda.now('notify-arbiter')
   }
 

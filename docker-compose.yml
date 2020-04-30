@@ -10,14 +10,14 @@ services:
     - PORT=3030
     - PROCESS_TYPE=api
     env_file:
-    - ./.env
+    - ./.env.lender
     ports:
     - "3030:3030"
     restart: unless-stopped
     networks:
       - app-network
     volumes:
-      - ./.env:/app/.env
+      - ./.env.lender:/app/.env
     command: ["bin/atomicagent", "api"]
   worker:
     build: .
@@ -29,9 +29,9 @@ services:
       - PORT=3032
       - PROCESS_TYPE=worker
     env_file:
-    - ./.env
+    - ./.env.lender
     volumes:
-    - ./.env:/app/.env
+    - ./.env.lender:/app/.env
     ports:
     - "3032:3032"
     networks:

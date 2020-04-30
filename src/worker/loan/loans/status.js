@@ -331,7 +331,6 @@ async function repopulateLoan (loanMarket, params, minCollateralAmount, loanId, 
     loan.status = 'CANCELLED'
   } else if (sale) {
     loan.status = 'WITHDRAWN'
-    // TODO: add Sale records
     const next = await sales.methods.next(numToBytes32(loanId)).call()
     const saleIndexByLoan = next - 1
     const saleIdBytes32 = await sales.methods.saleIndexByLoan(numToBytes32(loanId), saleIndexByLoan).call()

@@ -8,12 +8,20 @@ const { fromWei } = web3().utils
 
 const Agent = require('../../../../models/Agent')
 const AgentFund = require('../../../../models/AgentFund')
+const { verifyTimestampedSignatureUsingExpected } = require('../../../../utils/signatures')
 
 function defineAgentsRouter (router) {
   router.post('/agents/new', asyncHandler(async (req, res, next) => {
     console.log('start /agents/new')
     const { body } = req
-    const { ethSigner, principalAddress, collateralPublicKey, url } = body
+    const { ethSigner, principalAddress, collateralPublicKey, url, signature } = body
+
+    try {
+      verifyTimestampedSignatureUsingExpected(signature, `Register new agent (${principalAddress} ${collateralPublicKey} ${ethSigner} ${url}) ${timestamp}`, timestamp, principalAddress)
+    } catch (e) {
+      return next(res.createError(401, e.message))
+    }
+
     const endpoint = requestIp.getClientIp(req)
 
     // TODO verify signature when creating new agent

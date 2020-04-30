@@ -2,6 +2,8 @@ const axios = require('axios')
 
 const { getEndpoint } = require('../../../utils/endpoints')
 const LoanMarket = require('../../../models/LoanMarket')
+const { getInterval } = require('../../../utils/intervals')
+const web3 = require('../../../utils/web3')
 
 const { NETWORK, HEROKU_APP, AL_APP, AGENT_URL } = process.env
 
@@ -27,7 +29,18 @@ function defineNewAgentJobs (agenda) {
 
     const ethSigner = process.env.METAMASK_ETH_ADDRESS
 
-    await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/agents/new`, { collateralPublicKey, principalAddress, ethSigner, url })
+    const timestamp = Math.floor(new Date().getTime() / 1000)
+    const message = `Register new agent (${principalAddress} ${collateralPublicKey} ${ethSigner} ${url}) ${timestamp}`
+    const signature = await web3().eth.personal.sign(message, (await web3().currentProvider.getAddresses())[0])
+
+    try {
+      console.log("posting...")
+      await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/agents/new`, { collateralPublicKey, principalAddress, ethSigner, url, signature, timestamp })
+    } catch(e) {
+      console.log("`notify-arbiter` failed. Retrying...")
+      agenda.schedule(getInterval('ACTION_INTERVAL') , 'notify-arbiter')
+      console.log(e)
+    }
     // TODO: verify that this was done correctly, and create an endpoint for checking this
 
     done()
