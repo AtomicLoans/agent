@@ -33,7 +33,7 @@ async function start () {
   await agenda.every(getInterval('SANITIZE_TX_INTERVAL'), 'sanitize-eth-txs')
 
   agenda.define('restart', async (job, done) => {
-    console.log("Restarting agenda...")
+    console.log('Restarting agenda...')
     await start()
     done()
   })
