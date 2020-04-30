@@ -6,7 +6,7 @@
   "scripts": {
     "coverage": "nyc report $npm_package_options_coverage | coveralls",
     "lint": "standard --fix $npm_package_options_standard",
-    "lender": "RUN_SINGLE_PROCESS=true PARTY=lender PORT=3030 PROCESS_TYPE=api nodemon src/index.js",
+    "lender": "RUN_SINGLE_PROCESS=true PARTY=lender PORT=3030 AGENT_URL=http://localhost:3030 PROCESS_TYPE=api nodemon src/index.js",
     "arbiter": "RUN_SINGLE_PROCESS=true PARTY=arbiter PORT=3040 PROCESS_TYPE=api nodemon src/index.js",
     "lender:test": "NODE_ENV=test RUN_SINGLE_PROCESS=true PARTY=lender PORT=3030 PROCESS_TYPE=api nodemon src/index.js",
     "arbiter:test": "NODE_ENV=test RUN_SINGLE_PROCESS=true PARTY=arbiter PORT=3032 PROCESS_TYPE=api nodemon src/index.js",

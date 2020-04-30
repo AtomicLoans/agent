@@ -63,10 +63,13 @@ function defineAgentsRouter (router) {
           agentWithUrlExists.collateralPublicKey = collateralPublicKey
           await agentWithUrlExists.save()
           res.json(agentWithUrlExists.json())
+        } else {
+          res.json(agentWithUrlExists.json())
         }
       } else { return next(res.createError(401, 'Url Invalid or Lender Agent offline')) }
     } catch (e) {
       console.log('Error:', e)
+      return next(res.createError(401, e.message))
     }
 
     // TODO: implement verify signature

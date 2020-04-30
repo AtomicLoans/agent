@@ -36,14 +36,14 @@ function defineNewAgentJobs (agenda) {
     try {
       console.log('posting...')
       await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/agents/new`, { collateralPublicKey, principalAddress, ethSigner, url, signature, timestamp })
+      done()
     } catch (e) {
       console.log('`notify-arbiter` failed. Retrying...')
       agenda.schedule(getInterval('ACTION_INTERVAL'), 'notify-arbiter')
       console.log(e)
+      done(e)
     }
     // TODO: verify that this was done correctly, and create an endpoint for checking this
-
-    done()
   })
 }
 

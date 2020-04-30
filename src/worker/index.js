@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 const Agenda = require('agenda')
 const express = require('express')
 
-const agenda = new Agenda({ mongo: mongoose.connection, maxConcurrency: 1000, defaultConcurrency: 1000, defaultLockLifetime: 500 })
+const agenda = new Agenda({ mongo: mongoose.connection, maxConcurrency: 1000, defaultConcurrency: 1000, defaultLockLifetime: 10000 })
 
 const { getInterval } = require('../utils/intervals')
 
@@ -27,12 +27,14 @@ async function start () {
     await agenda.every(getInterval('ARBITER_ORACLE_INTERVAL'), 'check-arbiter-oracle')
     await agenda.every(getInterval('AGENT_UPDATES_INTERVAL'), 'check-agent-updates')
   } else {
+    console.log("Running")
     await agenda.now('notify-arbiter')
   }
 
   await agenda.every(getInterval('SANITIZE_TX_INTERVAL'), 'sanitize-eth-txs')
 
   agenda.define('restart', async (job, done) => {
+    console.log("Restarting")
     await start()
     done()
   })
