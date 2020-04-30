@@ -34,11 +34,11 @@ function defineNewAgentJobs (agenda) {
     const signature = await web3().eth.personal.sign(message, (await web3().currentProvider.getAddresses())[0])
 
     try {
-      console.log("posting...")
+      console.log('posting...')
       await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/agents/new`, { collateralPublicKey, principalAddress, ethSigner, url, signature, timestamp })
-    } catch(e) {
-      console.log("`notify-arbiter` failed. Retrying...")
-      agenda.schedule(getInterval('ACTION_INTERVAL') , 'notify-arbiter')
+    } catch (e) {
+      console.log('`notify-arbiter` failed. Retrying...')
+      agenda.schedule(getInterval('ACTION_INTERVAL'), 'notify-arbiter')
       console.log(e)
     }
     // TODO: verify that this was done correctly, and create an endpoint for checking this

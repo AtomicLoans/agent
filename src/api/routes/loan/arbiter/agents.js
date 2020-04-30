@@ -14,7 +14,7 @@ function defineAgentsRouter (router) {
   router.post('/agents/new', asyncHandler(async (req, res, next) => {
     console.log('start /agents/new')
     const { body } = req
-    const { ethSigner, principalAddress, collateralPublicKey, url, signature } = body
+    const { ethSigner, principalAddress, collateralPublicKey, url, signature, timestamp } = body
 
     try {
       verifyTimestampedSignatureUsingExpected(signature, `Register new agent (${principalAddress} ${collateralPublicKey} ${ethSigner} ${url}) ${timestamp}`, timestamp, principalAddress)
