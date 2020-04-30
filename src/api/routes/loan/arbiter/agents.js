@@ -24,8 +24,6 @@ function defineAgentsRouter (router) {
 
     const endpoint = requestIp.getClientIp(req)
 
-    // TODO verify signature when creating new agent
-
     try {
       const { status, data: loanMarkets } = await axios.get(`${url}/loanmarketinfo`)
       console.log('status', status)
@@ -72,7 +70,6 @@ function defineAgentsRouter (router) {
       return next(res.createError(401, e.message))
     }
 
-    // TODO: implement verify signature
     console.log('end /agents/new')
   }))
 
