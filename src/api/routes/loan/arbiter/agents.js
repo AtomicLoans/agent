@@ -8,12 +8,20 @@ const { fromWei } = web3().utils
 
 const Agent = require('../../../../models/Agent')
 const AgentFund = require('../../../../models/AgentFund')
+const { verifyTimestampedSignatureUsingExpected } = require('../../../../utils/signatures')
 
 function defineAgentsRouter (router) {
   router.post('/agents/new', asyncHandler(async (req, res, next) => {
     console.log('start /agents/new')
     const { body } = req
-    const { ethSigner, principalAddress, collateralPublicKey, url } = body
+    const { ethSigner, principalAddress, collateralPublicKey, url, signature, timestamp } = body
+
+    try {
+      verifyTimestampedSignatureUsingExpected(signature, `Register new agent (${principalAddress} ${collateralPublicKey} ${ethSigner} ${url}) ${timestamp}`, timestamp, principalAddress)
+    } catch (e) {
+      return next(res.createError(401, e.message))
+    }
+
     const endpoint = requestIp.getClientIp(req)
 
     // TODO verify signature when creating new agent
@@ -55,10 +63,13 @@ function defineAgentsRouter (router) {
           agentWithUrlExists.collateralPublicKey = collateralPublicKey
           await agentWithUrlExists.save()
           res.json(agentWithUrlExists.json())
+        } else {
+          res.json(agentWithUrlExists.json())
         }
       } else { return next(res.createError(401, 'Url Invalid or Lender Agent offline')) }
     } catch (e) {
       console.log('Error:', e)
+      return next(res.createError(401, e.message))
     }
 
     // TODO: implement verify signature
