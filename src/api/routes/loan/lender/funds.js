@@ -35,7 +35,7 @@ function defineFundsRouter (router) {
     const agenda = req.app.get('agenda')
     const address = getEthSigner()
     const { body } = req
-    const { principal, collateral, custom, signature, message } = body
+    const { principal, collateral, custom, signature, message, maxLoanDuration, fundExpiry, compoundEnabled, amount } = body
 
     fund = await Fund.findOne({ principal, collateral, status: { $ne: 'FAILED' } }).exec()
     if (fund && fund.status === 'CREATED') return next(res.createError(401, 'Fund was already created. Agent can only have one Loan Fund'))
@@ -44,13 +44,17 @@ function defineFundsRouter (router) {
     if (!loanMarket) return next(res.createError(401, `LoanMarket not found with ${principal} principal and ${collateral} collateral`))
 
     if (custom) {
-      // TODO: verify signature for custom funds
+      const { liquidationRatio, interest, penalty, fee } = body
+      const expectMessage = `Create Custom ${principal} Loan Fund backed by ${collateral} with ${compoundEnabled ? 'Compound Enabled' : 'Compound Disabled'} and Maximum Loan Duration of ${maxLoanDuration} seconds which expires at timestamp ${fundExpiry}, a liquidation ratio of ${liquidationRatio}, interest of ${interest}, penalty ${penalty}, fee ${fee}, and deposit ${amount} ${principal}`
+
+      if (!process.env.NODE_ENV === 'test') {
+        if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
+        if (!(message === expectMessage)) return next(res.createError(401, `Message doesn't match params (Expected Message: ${expectMessage}... Actual Message: ${message})`))
+      }
 
       fund = Fund.fromCustomFundParams(body)
     } else {
-      const { maxLoanDuration, fundExpiry, compoundEnabled, amount } = body
-
-      const expectMessage = `Create ${custom ? 'Custom' : 'Non-Custom'} ${principal} Loan Fund backed by ${collateral} with ${compoundEnabled ? 'Compound Enabled' : 'Compound Disabled'} and Maximum Loan Duration of ${maxLoanDuration} seconds which expires at timestamp ${fundExpiry} and deposit ${amount} ${principal}`
+      const expectMessage = `Create Non-Custom ${principal} Loan Fund backed by ${collateral} with ${compoundEnabled ? 'Compound Enabled' : 'Compound Disabled'} and Maximum Loan Duration of ${maxLoanDuration} seconds which expires at timestamp ${fundExpiry} and deposit ${amount} ${principal}`
 
       if (!verifySignature(signature, message, address)) return next(res.createError(401, 'Signature doesn\'t match address'))
       if (!(message === expectMessage)) return next(res.createError(401, `Message doesn't match params (Expected Message: ${expectMessage}... Actual Message: ${message})`))

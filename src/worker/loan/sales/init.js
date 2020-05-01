@@ -1,4 +1,5 @@
 const axios = require('axios')
+const stringify = require('json-stable-stringify')
 const { sha256 } = require('@liquality/crypto')
 const Sale = require('../../../models/Sale')
 const Loan = require('../../../models/Loan')
@@ -10,6 +11,7 @@ const { getLockArgs } = require('../utils/collateral')
 const { getInitArgs } = require('../utils/collateralSwap')
 const { isArbiter } = require('../../../utils/env')
 const { getEndpoint } = require('../../../utils/endpoints')
+const { sign } = require('../../../utils/signatures')
 const handleError = require('../../../utils/handleError')
 
 const web3 = require('web3')
@@ -137,7 +139,11 @@ function defineSalesInitJobs (agenda) {
         } else {
           console.log(`${getEndpoint('ARBITER_ENDPOINT')}/sales/new`)
           console.log({ principal, loanId, lenderSigs: agentSigs, refundableAmount, seizableAmount })
-          await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/sales/new`, { principal, loanId, lenderSigs: agentSigs, refundableAmount, seizableAmount })
+
+          const message = `New sale (${principal} ${loanId} ${stringify(agentSigs)} ${refundableAmount} ${seizableAmount})`
+
+          const { signature, address, timestamp } = await sign(message)
+          await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/sales/new`, { principal, loanId, lenderSigs: agentSigs, refundableAmount, seizableAmount, signature, address, timestamp })
         }
 
         const latestCollateralBlock = await loan.collateralClient().getMethod('getBlockHeight')()
