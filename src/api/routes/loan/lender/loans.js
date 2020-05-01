@@ -168,7 +168,7 @@ function defineLoansRouter (router) {
     const { off, paid } = await loans.methods.bools(numToBytes32(loanId)).call()
 
     if (!off && paid) {
-      await agenda.now('accept-loan', { loanModelId: loan.id })
+      await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
 
       res.json({ message: 'Accepting Loan', status: 0 })
     } else if (!off && !paid) {

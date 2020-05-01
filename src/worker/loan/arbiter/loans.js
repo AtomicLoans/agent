@@ -65,7 +65,6 @@ function defineArbiterLoanJobs (agenda) {
             status = 'AWAITING_COLLATERAL'
           } else {
             status = 'CANCELLING'
-            // TODO: ARBITER SHOULD CREATE JOB TO CANCEL LOAN
           }
         } else if (!withdrawn) {
           status = 'APPROVED'
@@ -83,7 +82,6 @@ function defineArbiterLoanJobs (agenda) {
         } else if (!sale && !off) {
           if (currentTime < acceptExpiration) {
             status = 'REPAID'
-            // TODO: ARBITER SHOULD CREATE JOB TO ACCEPT LOAN
           } else {
             // BAD FUCK UP
           }
