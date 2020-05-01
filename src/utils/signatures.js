@@ -1,6 +1,7 @@
 const ethJsUtil = require('ethereumjs-util')
 const { getEthSigner } = require('./address')
 const { ensure0x, checksumEncode } = require('@liquality/ethereum-utils')
+const web3 = require('./web3')
 
 function verifySignature (signature, message, address) {
   const msgBuffer = ethJsUtil.toBuffer(message)
@@ -38,8 +39,16 @@ function verifyTimestampedSignatureUsingExpected (signature, expected, timestamp
   if (!(typeof timestamp === 'number')) { throw new Error('Timestamp is not a number') }
 }
 
+async function sign (message) {
+  const timestamp = Math.floor(new Date().getTime() / 1000)
+  const address = (await web3().currentProvider.getAddresses())[0]
+  const signature = await web3().eth.personal.sign(`${message} ${timestamp}`, address)
+  return { address, signature, timestamp }
+}
+
 module.exports = {
   verifySignature,
   verifyTimestampedSignature,
-  verifyTimestampedSignatureUsingExpected
+  verifyTimestampedSignatureUsingExpected,
+  sign
 }

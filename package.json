@@ -134,6 +134,7 @@
     "http-errors": "^1.7.3",
     "ioredis": "^4.11.2",
     "is-ci": "^2.0.0",
+    "json-stable-stringify": "^1.0.1",
     "keccak256": "^1.0.0",
     "level": "^6.0.0",
     "moment": "^2.24.0",

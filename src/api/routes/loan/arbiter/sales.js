@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler')
-
+const stringify = require('json-stable-stringify')
+const { verifyTimestampedSignatureUsingExpected } = require('../../../../utils/signatures')
 const Loan = require('../../../../models/Loan')
 
 function defineSalesRouter (router) {
@@ -7,9 +8,13 @@ function defineSalesRouter (router) {
     console.log('start /sales/new')
     const agenda = req.app.get('agenda')
     const { body } = req
-    const { principal, loanId, lenderSigs, refundableAmount, seizableAmount } = body
+    const { principal, loanId, lenderSigs, refundableAmount, seizableAmount, signature, address, timestamp } = body
 
-    // TODO: implement verify signature for creating a new sales
+    try {
+      verifyTimestampedSignatureUsingExpected(signature, `New sale (${principal} ${loanId} ${stringify(lenderSigs)} ${refundableAmount} ${seizableAmount}) ${timestamp}`, timestamp, address)
+    } catch (e) {
+      return next(res.createError(401, e.message))
+    }
 
     const loan = await Loan.findOne({ principal, loanId }).exec()
     if (!loan) return next(res.createError(401, 'Loan not found'))
