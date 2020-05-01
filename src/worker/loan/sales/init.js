@@ -142,7 +142,7 @@ function defineSalesInitJobs (agenda) {
 
           const message = `New sale (${principal} ${loanId} ${stringify(agentSigs)} ${refundableAmount} ${seizableAmount})`
 
-          const { signature, address, timestamp } = sign(message)
+          const { signature, address, timestamp } = await sign(message)
           await axios.post(`${getEndpoint('ARBITER_ENDPOINT')}/sales/new`, { principal, loanId, lenderSigs: agentSigs, refundableAmount, seizableAmount, signature, address, timestamp })
         }
 
