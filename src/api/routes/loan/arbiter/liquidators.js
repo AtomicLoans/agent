@@ -6,15 +6,20 @@ const web3 = require('../../../../utils/web3')
 const { fromWei } = web3().utils
 
 const Agent = require('../../../../models/Agent')
+const { verifyTimestampedSignatureUsingExpected } = require('../../../../utils/signatures')
 
 function defineLiquidatorsRouter (router) {
   router.post('/liquidators/new', asyncHandler(async (req, res, next) => {
     console.log('start /liquidators/new')
     const { body } = req
-    const { ethSigner, principalAddress, collateralPublicKey, url } = body
+    const { ethSigner, principalAddress, collateralPublicKey, url, signature, timestamp } = body
     const endpoint = requestIp.getClientIp(req)
 
-    // TODO verify signature when creating new agent
+    try {
+      verifyTimestampedSignatureUsingExpected(signature, `Register new liquidator (${principalAddress} ${collateralPublicKey} ${ethSigner} ${url}) ${timestamp}`, timestamp, principalAddress)
+    } catch (e) {
+      return next(res.createError(401, e.message))
+    }
 
     try {
       const { status, data: loanMarkets } = await axios.get(`${url}/loanmarketinfo`)
