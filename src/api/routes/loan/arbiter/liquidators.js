@@ -5,7 +5,7 @@ const requestIp = require('request-ip')
 const web3 = require('../../../../utils/web3')
 const { fromWei } = web3().utils
 
-const Agent = require('../../../../models/Agent')
+const Liquidator = require('../../../../models/Liquidator')
 const { verifyTimestampedSignatureUsingExpected } = require('../../../../utils/signatures')
 
 function defineLiquidatorsRouter (router) {
@@ -31,14 +31,14 @@ function defineLiquidatorsRouter (router) {
         const { data: { version } } = await axios.get(`${url}/version`)
         console.log('agent', agent)
 
-        const agentWithUrlExists = await Agent.findOne({ url }).exec()
-        const agentWithEthSignerExists = await Agent.findOne({ ethSigner }).exec()
-        const agentWithPrincipalAddressExists = await Agent.findOne({ principalAddress }).exec()
+        const agentWithUrlExists = await Liquidator.findOne({ url }).exec()
+        const agentWithEthSignerExists = await Liquidator.findOne({ ethSigner }).exec()
+        const agentWithPrincipalAddressExists = await Liquidator.findOne({ principalAddress }).exec()
 
         if (!agentWithUrlExists && !agentWithEthSignerExists && !agentWithPrincipalAddressExists) {
           const ethBalance = await web3().eth.getBalance(principalAddress)
           const params = { ethSigner, principalAddress, collateralPublicKey, url, endpoint, ethBalance: fromWei(ethBalance.toString(), 'ether'), version }
-          const agent = Agent.fromAgentParams(params)
+          const agent = Liquidator.fromAgentParams(params)
           await agent.save()
           res.json(agent.json())
         } else if (!agentWithUrlExists && !agentWithEthSignerExists && agentWithPrincipalAddressExists) {
@@ -71,7 +71,7 @@ function defineLiquidatorsRouter (router) {
   router.get('/liquidators/:agentModelId', asyncHandler(async (req, res, next) => {
     const { params } = req
 
-    const agent = await Agent.findOne({ _id: params.agentModelId }).exec()
+    const agent = await Liquidator.findOne({ _id: params.agentModelId }).exec()
     if (!agent) return next(res.createError(401, 'Agent not found'))
 
     res.json(agent.json())
@@ -81,7 +81,7 @@ function defineLiquidatorsRouter (router) {
     const { params } = req
     const { ethSigner } = params
 
-    const agent = await Agent.findOne({ ethSigner }).exec()
+    const agent = await Liquidator.findOne({ ethSigner }).exec()
     if (!agent) return next(res.createError(401, 'Agent not found'))
 
     res.json(agent.json())
@@ -92,14 +92,14 @@ function defineLiquidatorsRouter (router) {
     const { params } = req
     const { principalAddress } = params
 
-    const agent = await Agent.findOne({ principalAddress }).exec()
+    const agent = await Liquidator.findOne({ principalAddress }).exec()
     if (!agent) return next(res.createError(401, 'Agent not found'))
 
     res.json(agent.json())
   }))
 
   router.get('/liquidators', asyncHandler(async (req, res) => {
-    const result = await Agent.find().exec()
+    const result = await Liquidator.find().exec()
 
     res.json(result.map(r => r.json()))
   }))
