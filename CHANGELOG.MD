@@ -1,3 +1,8 @@
+## [0.1.59](https://github.com/AtomicLoans/agent/compare/v0.1.58...v0.1.59) - 2020-04-03
+
+- Add signature checks
+- Update agenda job handling
+
 ## [0.1.58](https://github.com/AtomicLoans/agent/compare/v0.1.57...v0.1.58) - 2020-02-26
 - Unique loanIds as index
 - Fix total collateral value
