@@ -1,8 +1,10 @@
+const { ensure0x } = require('@liquality/ethereum-utils')
+const log = require('@mblackmblack/node-pretty-log')
+
 const Loan = require('../../../models/Loan')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { ensure0x } = require('@liquality/ethereum-utils')
 const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
 const handleError = require('../../../utils/handleError')
 
@@ -63,7 +65,7 @@ async function txSuccess (transactionHash, ethTx, instance, agenda) {
   })
 }
 
-async function txFailure (error, instance) {
+async function txFailure (error, instance, ethTx) {
   const loan = instance
 
   log('error', `Approve Loan Job | EthTx Model ID: ${ethTx.id} | Tx create failed`)

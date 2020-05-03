@@ -1,3 +1,5 @@
+const log = require('@mblackmblack/node-pretty-log')
+
 const Loan = require('../../../models/Loan')
 const { getCurrentTime } = require('../../../utils/time')
 const { numToBytes32 } = require('../../../utils/finance')
