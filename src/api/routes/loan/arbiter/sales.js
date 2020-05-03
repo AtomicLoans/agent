@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler')
-// const stringify = require('json-stable-stringify')
-// const { verifyTimestampedSignatureUsingExpected } = require('../../../../utils/signatures')
+const stringify = require('json-stable-stringify')
+const { verifyTimestampedSignatureUsingExpected } = require('../../../../utils/signatures')
 const Loan = require('../../../../models/Loan')
 
 function defineSalesRouter (router) {
@@ -12,13 +12,12 @@ function defineSalesRouter (router) {
 
     console.log('principal, loanId, lenderSigs, refundableAmount, seizableAmount, signature, address, timestamp', principal, loanId, lenderSigs, refundableAmount, seizableAmount, signature, address, timestamp)
 
-    // TODO: re-enable once lender agents have updated
-    // try {
-    //   verifyTimestampedSignatureUsingExpected(signature, `New sale (${principal} ${loanId} ${stringify(lenderSigs)} ${refundableAmount} ${seizableAmount}) ${timestamp}`, timestamp, address)
-    // } catch (e) {
-    //   console.log('Error: ', e)
-    //   return next(res.createError(401, e.message))
-    // }
+    try {
+      verifyTimestampedSignatureUsingExpected(signature, `New sale (${principal} ${loanId} ${stringify(lenderSigs)} ${refundableAmount} ${seizableAmount}) ${timestamp}`, timestamp, address)
+    } catch (e) {
+      console.log('Error: ', e)
+      return next(res.createError(401, e.message))
+    }
 
     const loan = await Loan.findOne({ principal, loanId }).exec()
     if (!loan) {
