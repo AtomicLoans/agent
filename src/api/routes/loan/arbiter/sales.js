@@ -10,14 +10,21 @@ function defineSalesRouter (router) {
     const { body } = req
     const { principal, loanId, lenderSigs, refundableAmount, seizableAmount, signature, address, timestamp } = body
 
+    console.log('principal, loanId, lenderSigs, refundableAmount, seizableAmount, signature, address, timestamp', principal, loanId, lenderSigs, refundableAmount, seizableAmount, signature, address, timestamp)
+
     try {
+      console.log('signature, `New sale (${principal} ${loanId} ${stringify(lenderSigs)} ${refundableAmount} ${seizableAmount}) ${timestamp}`, timestamp, address', signature, `New sale (${principal} ${loanId} ${stringify(lenderSigs)} ${refundableAmount} ${seizableAmount}) ${timestamp}`, timestamp, address)
       verifyTimestampedSignatureUsingExpected(signature, `New sale (${principal} ${loanId} ${stringify(lenderSigs)} ${refundableAmount} ${seizableAmount}) ${timestamp}`, timestamp, address)
     } catch (e) {
+      console.log('Error: ', e)
       return next(res.createError(401, e.message))
     }
 
     const loan = await Loan.findOne({ principal, loanId }).exec()
-    if (!loan) return next(res.createError(401, 'Loan not found'))
+    if (!loan) {
+      console.log('/sales/new loan not found')
+      return next(res.createError(401, 'Loan not found'))
+    }
 
     await agenda.now('init-liquidation', { loanModelId: loan.id, lenderSigs, refundableAmount, seizableAmount })
 
