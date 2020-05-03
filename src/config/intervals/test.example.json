@@ -7,6 +7,7 @@
   "REPAID_TX_INTERVAL": "in 30 seconds",
   "ARBITER_STATUS_INTERVAL": "30 seconds",
   "SECRETS_BUMP_TX_INTERVAL": "in 15 seconds",
+  "LIQUIDATOR_CHECK_INTERVAL": "25 seconds",
   "LENDER_CHECK_INTERVAL": "25 seconds",
   "SANITIZE_TX_INTERVAL": "2 minutes",
   "AGENT_UPDATES_INTERVAL": "2 minutes",

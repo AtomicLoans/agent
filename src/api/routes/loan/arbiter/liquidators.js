@@ -38,7 +38,7 @@ function defineLiquidatorsRouter (router) {
         if (!agentWithUrlExists && !agentWithEthSignerExists && !agentWithPrincipalAddressExists) {
           const ethBalance = await web3().eth.getBalance(principalAddress)
           const params = { ethSigner, principalAddress, collateralPublicKey, url, endpoint, ethBalance: fromWei(ethBalance.toString(), 'ether'), version }
-          const agent = Liquidator.fromAgentParams(params)
+          const agent = Liquidator.fromLiquidatorParams(params)
           await agent.save()
           res.json(agent.json())
         } else if (!agentWithUrlExists && !agentWithEthSignerExists && agentWithPrincipalAddressExists) {
@@ -58,14 +58,20 @@ function defineLiquidatorsRouter (router) {
           agentWithUrlExists.collateralPublicKey = collateralPublicKey
           await agentWithUrlExists.save()
           res.json(agentWithUrlExists.json())
+        } else if (agentWithUrlExists) {
+          res.json(agentWithUrlExists.json())
         }
-      } else { return next(res.createError(401, 'Url Invalid or Lender Agent offline')) }
+      } else {
+        return next(res.createError(401, 'Url Invalid or Lender Agent offline'))
+      }
     } catch (e) {
       console.log('Error:', e)
+      return next(res.createError(401, 'Something went wrong'))
     }
 
-    // TODO: implement verify signature
     console.log('end /liquidators/new')
+
+    return next(res.createError(401, 'Something went wrong'))
   }))
 
   router.get('/liquidators/:agentModelId', asyncHandler(async (req, res, next) => {

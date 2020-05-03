@@ -11,7 +11,8 @@ const LiquidatorSchema = new mongoose.Schema({
   },
   url: {
     type: String,
-    index: true
+    index: true,
+    unique: true
   },
   principalAddress: {
     type: String,
