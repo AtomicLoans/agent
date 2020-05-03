@@ -13,7 +13,6 @@ function defineSalesRouter (router) {
     console.log('principal, loanId, lenderSigs, refundableAmount, seizableAmount, signature, address, timestamp', principal, loanId, lenderSigs, refundableAmount, seizableAmount, signature, address, timestamp)
 
     try {
-      console.log('signature, `New sale (${principal} ${loanId} ${stringify(lenderSigs)} ${refundableAmount} ${seizableAmount}) ${timestamp}`, timestamp, address', signature, `New sale (${principal} ${loanId} ${stringify(lenderSigs)} ${refundableAmount} ${seizableAmount}) ${timestamp}`, timestamp, address)
       verifyTimestampedSignatureUsingExpected(signature, `New sale (${principal} ${loanId} ${stringify(lenderSigs)} ${refundableAmount} ${seizableAmount}) ${timestamp}`, timestamp, address)
     } catch (e) {
       console.log('Error: ', e)
