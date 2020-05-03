@@ -1,29 +1,27 @@
 const Loan = require('../../../models/Loan')
-const EthTx = require('../../../models/EthTx')
-const AgendaJob = require('../../../models/AgendaJob')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { ensure0x } = require('@liquality/ethereum-utils')
-const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
+const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
 const handleError = require('../../../utils/handleError')
-const web3 = require('../../../utils/web3')
-const date = require('date.js')
 
 function defineLoanApproveJobs (agenda) {
   agenda.define('approve-loan', async (job, done) => {
     const { data } = job.attrs
     const { loanModelId } = data
 
+    log('info', `Approve Loan Job | Loan Model ID: ${loanModelId} | Starting`)
+
     const loan = await Loan.findOne({ _id: loanModelId }).exec()
-    if (!loan) return console.log('Error: Loan not found')
+    if (!loan) return log('error', `Approve Loan Job | Loan not found with Loan Model ID: ${loanModelId}`)
 
     const { loanId, principal, lenderPrincipalAddress } = loan
     const loans = getObject('loans', principal)
     const approved = await loans.methods.approved(numToBytes32(loanId)).call()
 
     if (approved === true) {
-      console.log('Loan already approved')
+      log('warn', `Approve Loan Job | Loan Model ID: ${loanModelId} | Loan already approved`)
       done()
     } else {
       const txData = loans.methods.approve(numToBytes32(loanId)).encodeABI()
@@ -31,57 +29,22 @@ function defineLoanApproveJobs (agenda) {
       await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
     }
   })
+}
 
-  agenda.define('verify-approve-loan', async (job, done) => {
-    const { data } = job.attrs
-    const { loanModelId } = data
+async function verifySuccess (instance) {
+  const loan = instance
 
-    const loan = await Loan.findOne({ _id: loanModelId }).exec()
-    if (!loan) return console.log('Error: Loan not found')
-    const { approveTxHash } = loan
+  const { principal, loanId } = loan
+  const loans = getObject('loans', principal)
+  const approved = await loans.methods.approved(numToBytes32(loanId)).call()
 
-    console.log('CHECKING LOAN APPROVE')
-
-    const receipt = await web3().eth.getTransactionReceipt(approveTxHash)
-
-    if (receipt === null) {
-      console.log('RECEIPT IS NULL')
-
-      const ethTx = await EthTx.findOne({ _id: loan.ethTxId }).exec()
-      if (!ethTx) return console.log('Error: EthTx not found')
-
-      if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && loan.status !== 'FAILED') {
-        console.log('BUMPING TX FEE')
-
-        await bumpTxFee(ethTx)
-        await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
-      } else {
-        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-approve-loan', nextRunAt: { $ne: null }, data: { loanModelId } }).exec()
-
-        if (alreadyQueuedJobs.length <= 1) {
-          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-loan', { loanModelId })
-        }
-      }
-    } else if (receipt.status === false) {
-      console.log('RECEIPT STATUS IS FALSE')
-      console.log('TX WAS MINED BUT TX FAILED')
-    } else {
-      console.log('RECEIPT IS NOT NULL')
-
-      const { principal, loanId } = loan
-      const loans = getObject('loans', principal)
-      const approved = await loans.methods.approved(numToBytes32(loanId)).call()
-
-      if (approved) {
-        console.log('APPROVED')
-        loan.status = 'APPROVED'
-        await loan.save()
-        done()
-      } else {
-        console.log('TX WAS NOT APPROVED')
-      }
-    }
-  })
+  if (approved) {
+    log('success', `Approve Loan Job | Loan Model ID: ${loan.id} | Tx confirmed and Loan #${loan.loanId} Approved | TxHash: ${loan.approveTxHash}`)
+    loan.status = 'APPROVED'
+    await loan.save()
+  } else {
+    log('error', `Approve Loan Job | Loan Model ID: ${loan.id} | Tx confirmed but Loan #${loan.loanId} was not Approved | TxHash: ${loan.approveTxHash}`)
+  }
 }
 
 async function txSuccess (transactionHash, ethTx, instance, agenda) {
@@ -91,14 +54,19 @@ async function txSuccess (transactionHash, ethTx, instance, agenda) {
   loan.approveTxHash = transactionHash
   loan.status = 'APPROVING'
   loan.save()
-  console.log('APPROVING')
-  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-loan', { loanModelId: loan.id })
+  log('success', `Approve Job | Loan Model ID: ${loan.id} | Approve Tx created successfully | TxHash: ${transactionHash}`)
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-approve-loan', {
+    jobName: 'approve',
+    modelName: 'Loan',
+    modelId: loan.id,
+    txHashName: 'approveTxHash'
+  })
 }
 
 async function txFailure (error, instance) {
-  console.log('APPROVE LOAN FAILED')
-
   const loan = instance
+
+  log('error', `Approve Loan Job | EthTx Model ID: ${ethTx.id} | Tx create failed`)
 
   loan.status = 'FAILED'
   await loan.save()
@@ -107,5 +75,8 @@ async function txFailure (error, instance) {
 }
 
 module.exports = {
-  defineLoanApproveJobs
+  defineLoanApproveJobs,
+  txSuccess,
+  txFailure,
+  verifySuccess
 }
