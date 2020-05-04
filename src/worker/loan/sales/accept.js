@@ -23,13 +23,27 @@ function defineSalesAcceptJobs (agenda) {
 
     const { claimTxHash, saleId, principal } = sale
     const sales = getObject('sales', principal)
-    const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
+    const { accepted, off } = await sales.methods.sales(numToBytes32(saleId)).call()
 
     if (accepted === true) {
       sale.status = 'ACCEPTED'
       await sale.save()
       log('info', `Accept Sale Job | Sale Model ID: ${saleModelId} | Sale was already accepted`)
       done()
+    } else if (off === true) {
+      const { collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress } = sale
+
+      const collateralSwapBalance = await sale.collateralClient().chain.getBalance([collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress])
+
+      if (collateralSwapBalance.toNumber() === 0) {
+        sale.status = 'COLLATERAL_REVERTED'
+        await sale.save()
+        log('info', `Accept Sale Job | Sale Model ID: ${saleModelId} | Collateral already reverted`)
+        done()
+      } else {
+        log('info', `Accept Sale Job | Sale Model ID: ${saleModelId} | Collateral needs to be reverted`)
+        // TODO: revert liquidation
+      }
     } else {
       const claimTx = await sale.collateralClient().getMethod('getTransactionByHash')(claimTxHash)
       const claimArgs = claimTx._raw.vin[0].txinwitness
@@ -37,6 +51,8 @@ function defineSalesAcceptJobs (agenda) {
       const secretB = claimArgs[4]
       const secretC = claimArgs[3]
       const secretD = claimArgs[2]
+
+      log('info', `Accept Sale Job | Sale Model ID: ${saleModelId} | Accepting Sale #${saleId} with Secret B ${secretB}, Secret C ${secretC}, Secret D ${secretD}`)
 
       const txData = sales.methods.provideSecretsAndAccept(numToBytes32(saleId), [ensure0x(secretB), ensure0x(secretC), ensure0x(secretD)]).encodeABI()
 
