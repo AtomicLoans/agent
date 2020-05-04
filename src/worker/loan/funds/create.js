@@ -1,137 +1,94 @@
 const keccak256 = require('keccak256')
 const { ensure0x } = require('@liquality/ethereum-utils')
+const log = require('@mblackmblack/node-pretty-log')
 
 const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
-const EthTx = require('../../../models/EthTx')
-const AgendaJob = require('../../../models/AgendaJob')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
+const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
 const { getFundParams } = require('../utils/fundParams')
 const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 const { hexToNumber } = web3().utils
 
-const date = require('date.js')
-
 function defineFundCreateJobs (agenda) {
   agenda.define('create-fund', async (job, done) => {
-    console.log('create-fund')
-
-    try {
-      const { data } = job.attrs
-      const { fundModelId } = data
-
-      const fund = await Fund.findOne({ _id: fundModelId }).exec()
-      if (!fund) return console.log('Error: Fund not found')
-
-      const { principal, custom } = fund
-
-      const approves = await Approve.find({ principal, status: { $nin: ['FAILED'] } }).exec()
-
-      if (approves.length > 0) {
-        const funds = getObject('funds', principal)
-        const { fundParams, lenderAddress } = await getFundParams(fund)
-
-        let txData
-        if (custom) {
-          txData = funds.methods.createCustom(...fundParams).encodeABI()
-        } else {
-          txData = funds.methods.create(...fundParams).encodeABI()
-        }
-
-        const ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
-
-        fund.ethTxId = ethTx.id
-        await fund.save()
-
-        await sendTransaction(ethTx, fund, agenda, done, txSuccess, txFailure)
-      } else {
-        console.log('Rescheduling fund create because erc20 approve hasn\'t finished')
-
-        fund.status = 'WAITING_FOR_APPROVE'
-        await fund.save()
-      }
-    } catch (e) {
-      console.log('ERROR CREATING FUND')
-      console.log('e', e)
-    }
-    done()
-  })
-
-  agenda.define('verify-create-fund', async (job, done) => {
     const { data } = job.attrs
     const { fundModelId } = data
+    log('info', `Create Fund Job | Fund Model ID: ${fundModelId} | Starting`)
 
     const fund = await Fund.findOne({ _id: fundModelId }).exec()
-    if (!fund) return console.log('Error: Fund not found')
-    const { createTxHash } = fund
+    if (!fund) return log('error', `Create Fund Job | Fund not found with Fund Model ID: ${fundModelId}`)
 
-    console.log('CHECKING RECEIPT')
+    const { principal, custom } = fund
 
-    const receipt = await web3().eth.getTransactionReceipt(createTxHash)
+    const approves = await Approve.find({ principal, status: { $nin: ['FAILED'] } }).exec()
 
-    if (receipt === null) {
-      console.log('RECEIPT IS NULL')
+    if (approves.length > 0) {
+      const funds = getObject('funds', principal)
+      const { fundParams, lenderAddress } = await getFundParams(fund)
 
-      const ethTx = await EthTx.findOne({ _id: fund.ethTxId }).exec()
-      if (!ethTx) return console.log('Error: EthTx not found')
-
-      if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && fund.status !== 'FAILED') {
-        console.log('BUMPING TX FEE')
-
-        await bumpTxFee(ethTx)
-        await sendTransaction(ethTx, fund, agenda, done, txSuccess, txFailure)
+      let txData
+      if (custom) {
+        txData = funds.methods.createCustom(...fundParams).encodeABI()
       } else {
-        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-create-fund', nextRunAt: { $ne: null }, data: { fundModelId } }).exec()
-
-        if (alreadyQueuedJobs.length <= 1) {
-          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId })
-        }
+        txData = funds.methods.create(...fundParams).encodeABI()
       }
-    } else if (receipt.status === false) {
-      console.log('RECEIPT STATUS IS FALSE')
-      console.log('TX WAS MINED BUT TX FAILED')
-      fund.status = 'FAILED'
-      fund.save()
+
+      const ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
+
+      fund.ethTxId = ethTx.id
+      await fund.save()
+
+      await sendTransaction(ethTx, fund, agenda, done, txSuccess, txFailure)
     } else {
-      console.log('RECEIPT IS NOT NULL')
-      const fundCreateLog = receipt.logs.filter(log => log.topics[0] === ensure0x(keccak256('Create(bytes32)').toString('hex')))
+      log('info', `Create Fund Job | Fund Model ID: ${fundModelId} | Rescheduling Create Fund because ERC20 Approve hasn't finished`)
 
-      if (fundCreateLog.length > 0) {
-        const { data: fundId } = fundCreateLog[0]
-
-        fund.fundId = hexToNumber(fundId)
-        fund.status = 'CREATED'
-        fund.save()
-        console.log(`${fund.principal} FUND #${fund.fundId} CREATED`)
-        done()
-      } else {
-        console.error('Error: Fund Id could not be found in transaction logs')
-      }
+      fund.status = 'WAITING_FOR_APPROVE'
+      await fund.save()
     }
-
-    done()
   })
+}
+
+async function verifySuccess (instance, _, receipt) {
+  const fund = instance
+
+  const fundCreateLog = receipt.logs.filter(log => log.topics[0] === ensure0x(keccak256('Create(bytes32)').toString('hex')))
+
+  if (fundCreateLog.length > 0) {
+    const { data: fundId } = fundCreateLog[0]
+
+    fund.fundId = hexToNumber(fundId)
+    fund.status = 'CREATED'
+    fund.save()
+    log('success', `Verify Create Fund Job | Fund Model ID: ${fund.id} | Tx confirmed and Fund #${fund.fundId} Created | TxHash: ${fund.createTxHash}`)
+  } else {
+    log('error', `Verify Create Fund Job | Fund Model ID: ${fund.id} | Tx confirmed but Fund Id could not be found in transaction logs | TxHash: ${fund.createTxHash}`)
+  }
 }
 
 async function txSuccess (transactionHash, ethTx, instance, agenda) {
   const fund = instance
 
-  console.log('transactionHash', transactionHash)
   fund.ethTxId = ethTx.id
   fund.createTxHash = transactionHash
   fund.status = 'CREATING'
   await fund.save()
-  console.log(`${fund.principal} FUND CREATING`)
-  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', { fundModelId: fund.id })
+  log('success', `Create Fund Job | Fund Model ID: ${fund.id} | Create Tx created successfully | TxHash: ${transactionHash}`)
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-create-fund', {
+    jobName: 'create',
+    modelName: 'Fund',
+    modelId: fund.id,
+    txHashName: 'createTxHash'
+  })
 }
 
-async function txFailure (error, instance) {
+async function txFailure (error, instance, ethTx) {
   const fund = instance
 
-  console.log(`${fund.principal} FUND CREATION FAILED`)
+  log('error', `Create Fund Job | EthTx Model ID: ${ethTx.id} | Tx create failed`)
+
   fund.status = 'FAILED'
   await fund.save()
 
@@ -139,5 +96,8 @@ async function txFailure (error, instance) {
 }
 
 module.exports = {
-  defineFundCreateJobs
+  defineFundCreateJobs,
+  txSuccess,
+  txFailure,
+  verifySuccess
 }

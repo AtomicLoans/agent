@@ -1,36 +1,49 @@
 const { ensure0x } = require('@liquality/ethereum-utils')
-const date = require('date.js')
+const log = require('@mblackmblack/node-pretty-log')
+
 const Loan = require('../../../models/Loan')
 const Sale = require('../../../models/Sale')
 const LoanMarket = require('../../../models/LoanMarket')
-const EthTx = require('../../../models/EthTx')
-const AgendaJob = require('../../../models/AgendaJob')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
+const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
 const handleError = require('../../../utils/handleError')
-const web3 = require('../../../utils/web3')
 const getMailer = require('../utils/mailer')
 
 function defineSalesAcceptJobs (agenda) {
-  const mailer = getMailer(agenda)
   agenda.define('accept-sale', async (job, done) => {
     const { data } = job.attrs
     const { saleModelId } = data
 
+    log('info', `Accept Sale Job | Sale Model ID: ${saleModelId} | Starting`)
+
     const sale = await Sale.findOne({ _id: saleModelId }).exec()
-    if (!sale) return console.log('Error: Sale not found')
+    if (!sale) return log('error', `Accept Sale Job | Fund not found with Fund Model ID: ${saleModelId}`)
 
     const { claimTxHash, saleId, principal } = sale
     const sales = getObject('sales', principal)
-    const { accepted } = await sales.methods.sales(numToBytes32(saleId)).call()
+    const { accepted, off } = await sales.methods.sales(numToBytes32(saleId)).call()
 
     if (accepted === true) {
       sale.status = 'ACCEPTED'
       await sale.save()
-      console.log('Sale was already accepted')
+      log('info', `Accept Sale Job | Sale Model ID: ${saleModelId} | Sale was already accepted`)
       done()
+    } else if (off === true) {
+      const { collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress } = sale
+
+      const collateralSwapBalance = await sale.collateralClient().chain.getBalance([collateralSwapRefundableP2SHAddress, collateralSwapSeizableP2SHAddress])
+
+      if (collateralSwapBalance.toNumber() === 0) {
+        sale.status = 'COLLATERAL_REVERTED'
+        await sale.save()
+        log('info', `Accept Sale Job | Sale Model ID: ${saleModelId} | Collateral already reverted`)
+        done()
+      } else {
+        log('info', `Accept Sale Job | Sale Model ID: ${saleModelId} | Collateral needs to be reverted`)
+        // TODO: revert liquidation
+      }
     } else {
       const claimTx = await sale.collateralClient().getMethod('getTransactionByHash')(claimTxHash)
       const claimArgs = claimTx._raw.vin[0].txinwitness
@@ -38,6 +51,8 @@ function defineSalesAcceptJobs (agenda) {
       const secretB = claimArgs[4]
       const secretC = claimArgs[3]
       const secretD = claimArgs[2]
+
+      log('info', `Accept Sale Job | Sale Model ID: ${saleModelId} | Accepting Sale #${saleId} with Secret B ${secretB}, Secret C ${secretC}, Secret D ${secretD}`)
 
       const txData = sales.methods.provideSecretsAndAccept(numToBytes32(saleId), [ensure0x(secretB), ensure0x(secretC), ensure0x(secretD)]).encodeABI()
 
@@ -48,59 +63,27 @@ function defineSalesAcceptJobs (agenda) {
       await sendTransaction(ethTx, sale, agenda, done, txSuccess, txFailure)
     }
   })
+}
 
-  agenda.define('verify-accept-sale', async (job, done) => {
-    const { data } = job.attrs
-    const { saleModelId } = data
+async function verifySuccess (instance, agenda, _) {
+  const mailer = getMailer(agenda)
+  const sale = instance
 
-    const sale = await Sale.findOne({ _id: saleModelId }).exec()
-    if (!sale) return console.log('Error: Sale not found')
-    const { acceptTxHash } = sale
+  log('success', `Verify Accept Sale Job | Sale Model ID: ${sale.id} | Tx confirmed and Fund #${sale.saleId} Created | TxHash: ${sale.acceptTxHash}`)
 
-    const receipt = await web3().eth.getTransactionReceipt(acceptTxHash)
+  sale.status = 'ACCEPTED'
+  await sale.save()
 
-    if (receipt === null) {
-      console.log('RECEIPT IS NULL')
+  const loan = await Loan.findOne({ _id: sale.loanModelId }).exec()
+  if (!loan) return log('error', `Verify Accept Sale Job | Loan not found with Loan Model ID: ${sale.loanModelId}`)
 
-      const ethTx = await EthTx.findOne({ _id: sale.ethTxId }).exec()
-      if (!ethTx) return console.log('Error: EthTx not found')
-
-      if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && sale.status !== 'FAILED') {
-        console.log('BUMPING TX FEE')
-
-        await bumpTxFee(ethTx)
-        await sendTransaction(ethTx, sale, agenda, done, txSuccess, txFailure)
-      } else {
-        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-accept-sale', nextRunAt: { $ne: null }, data: { saleModelId } }).exec()
-
-        if (alreadyQueuedJobs.length <= 1) {
-          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-sale', { saleModelId })
-        }
-      }
-    } else if (receipt.status === false) {
-      console.log('RECEIPT STATUS IS FALSE')
-      console.log('TX WAS MINED BUT TX FAILED')
-    } else {
-      console.log('RECEIPT IS NOT NULL')
-      console.log('ACCEPTED')
-
-      sale.status = 'ACCEPTED'
-      await sale.save()
-
-      const loan = await Loan.findOne({ _id: sale.loanModelId }).exec()
-      if (!loan) return console.log('Error: Loan not found')
-
-      mailer.notify(loan.borrowerPrincipalAddress, 'loan-liquidated', {
-        loanId: loan.loanId,
-        asset: loan.principal
-      })
-
-      loan.status = 'LIQUIDATED'
-      await loan.save()
-    }
-
-    done()
+  mailer.notify(loan.borrowerPrincipalAddress, 'loan-liquidated', {
+    loanId: loan.loanId,
+    asset: loan.principal
   })
+
+  loan.status = 'LIQUIDATED'
+  await loan.save()
 }
 
 async function txSuccess (transactionHash, ethTx, instance, agenda) {
@@ -109,15 +92,21 @@ async function txSuccess (transactionHash, ethTx, instance, agenda) {
   sale.ethTxId = ethTx.id
   sale.acceptTxHash = transactionHash
   sale.status = 'ACCEPTING'
-  console.log('ACCEPTING')
+  log('success', `Accept Sale Job | Sale Model ID: ${sale.id} | Create Tx created successfully | TxHash: ${sale.acceptTxHash}`)
   await sale.save()
-  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-sale', { saleModelId: sale.id })
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-sale', {
+    jobName: 'accept',
+    modelName: 'Sale',
+    modelId: sale.id,
+    txHashName: 'acceptTxHash'
+  })
 }
 
-async function txFailure (error, instance) {
+async function txFailure (error, instance, ethTx) {
   const accept = instance
 
-  console.log('FAILED TO ACCEPT')
+  log('error', `Accept Sale Job | EthTx Model ID: ${ethTx.id} | Tx create failed`)
+
   accept.status = 'FAILED'
   await accept.save()
 
@@ -125,5 +114,8 @@ async function txFailure (error, instance) {
 }
 
 module.exports = {
-  defineSalesAcceptJobs
+  defineSalesAcceptJobs,
+  txSuccess,
+  txFailure,
+  verifySuccess
 }

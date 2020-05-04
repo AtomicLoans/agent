@@ -1,30 +1,34 @@
 const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
 const axios = require('axios')
-const date = require('date.js')
+const log = require('@mblackmblack/node-pretty-log')
+
 const Agent = require('../../../models/Agent')
 const Loan = require('../../../models/Loan')
 const LoanMarket = require('../../../models/LoanMarket')
-const EthTx = require('../../../models/EthTx')
 const Secret = require('../../../models/Secret')
-const AgendaJob = require('../../../models/AgendaJob')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
+const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
 const { isArbiter } = require('../../../utils/env')
 const getMailer = require('../utils/mailer')
 const { isCollateralRequirementsSatisfied } = require('../utils/collateral')
 const handleError = require('../../../utils/handleError')
-const web3 = require('../../../utils/web3')
 
 function defineLoanAcceptOrCancelJobs (agenda) {
-  const mailer = getMailer(agenda)
+  // accept-or-cancel-loan is a job that spins up a
+  // accept or cancel Ethereum transaction which reveals a secret
+  // allowing the borrower to reclaim their Bitcoin collateral
+  //
+  // Note: can be initiated by Lender or Arbiter
   agenda.define('accept-or-cancel-loan', async (job, done) => {
     const { data } = job.attrs
     const { loanModelId } = data
 
+    log('info', `Accept Or Cancel Loan Job | Loan Model ID: ${loanModelId} | Starting`)
+
     const loan = await Loan.findOne({ _id: loanModelId }).exec()
-    if (!loan) return console.log('Error: Loan not found')
+    if (!loan) return log('error', `Accept Or Cancel Loan Job | Loan not found with Loan Model ID: ${loanModelId}`)
 
     const { loanId, principal, lenderSecrets } = loan
     const loans = getObject('loans', principal)
@@ -34,12 +38,10 @@ function defineLoanAcceptOrCancelJobs (agenda) {
     const { principalAddress } = await loanMarket.getAgentAddresses()
 
     if (off === true) {
-      console.log('Loan already accepted')
-      done()
+      log('info', `Accept Or Cancel Loan Job | Loan Model ID: ${loanModelId} | Loan already accepted`)
     } else {
-      // If Arbiter, check if lender agent is already accepting, if not accept
-      // If Lender, just accept
-
+      // If the current PARTY is Arbiter, check if lender agent is already accepting, if not accept the loan
+      // Else if Lender, just accept the loan
       let lenderAccepting = false
       if (isArbiter()) {
         const { lender } = await loans.methods.loans(numToBytes32(loanId)).call()
@@ -47,7 +49,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
         if (agent) {
           try {
             const { status, data } = await axios.get(`${agent.url}/loans/contract/${principal}/${loanId}`)
-            console.log(`${agent.url} status:`, status)
+            log('info', `Accept Or Cancel Loan Job | Loan Model ID: ${loanModelId} | ${agent.url} status: ${status}`)
             if (status === 200) {
               const { acceptOrCancelTxHash } = data
               if (acceptOrCancelTxHash) {
@@ -55,7 +57,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
               }
             }
           } catch (e) {
-            console.log(`Agent ${agent.url} not active`)
+            log('error', `Accept Or Cancel Loan Job | Loan Model ID: ${loanModelId} | Agent ${agent.url} not active`)
           }
         }
       }
@@ -72,78 +74,45 @@ function defineLoanAcceptOrCancelJobs (agenda) {
           txData = loans.methods.accept(numToBytes32(loanId), ensure0x(lenderSecrets[0])).encodeABI()
         }
         const ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('loans', principal), loan)
-        console.log('sending tx to accept')
         await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
       }
     }
-  })
-
-  agenda.define('verify-accept-or-cancel-loan', async (job, done) => {
-    const { data } = job.attrs
-    const { loanModelId } = data
-
-    const loan = await Loan.findOne({ _id: loanModelId }).exec()
-    if (!loan) return console.log('Error: Loan not found')
-    const { acceptOrCancelTxHash } = loan
-
-    const receipt = await web3().eth.getTransactionReceipt(acceptOrCancelTxHash)
-
-    if (receipt === null) {
-      console.log('RECEIPT IS NULL')
-
-      const ethTx = await EthTx.findOne({ _id: loan.ethTxId }).exec()
-      if (!ethTx) return console.log('Error: EthTx not found')
-
-      if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && loan.status !== 'FAILED') {
-        console.log('BUMPING TX FEE')
-
-        await bumpTxFee(ethTx)
-        await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
-      } else {
-        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-accept-or-cancel-loan', nextRunAt: { $ne: null }, data: { loanModelId } }).exec()
-
-        if (alreadyQueuedJobs.length <= 1) {
-          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan', { loanModelId })
-        }
-      }
-    } else if (receipt.status === false) {
-      console.log('RECEIPT STATUS IS FALSE')
-      console.log('TX WAS MINED BUT TX FAILED')
-    } else {
-      console.log('RECEIPT IS NOT NULL')
-
-      const { principal, loanId } = loan
-      const loans = getObject('loans', principal)
-      const { approved, paid } = await loans.methods.bools(numToBytes32(loanId)).call()
-
-      if (paid) {
-        console.log('ACCEPTED')
-        loan.status = 'ACCEPTED'
-        mailer.notify(loan.borrowerPrincipalAddress, 'loan-accepted', {
-          loanId: loan.loanId,
-          asset: loan.principal
-        })
-        await loan.save()
-      } else {
-        console.log('CANCELLED')
-        loan.status = 'CANCELLED'
-
-        const collateralRequirementsMet = await isCollateralRequirementsSatisfied(loan)
-
-        mailer.notify(loan.borrowerPrincipalAddress, 'loan-cancelled', {
-          loanId: loan.loanId,
-          asset: loan.principal,
-          approved,
-          collateralRequirementsMet,
-          minCollateralAmount: loan.minimumCollateralAmount
-        })
-
-        await loan.save()
-      }
-    }
-
     done()
   })
+}
+
+async function verifySuccess (instance, agenda, _) {
+  const mailer = getMailer(agenda)
+  const loan = instance
+
+  const { principal, loanId } = loan
+  const loans = getObject('loans', principal)
+  const { approved, paid } = await loans.methods.bools(numToBytes32(loanId)).call()
+
+  if (paid) {
+    log('success', `Verify Accept Or Cancel Loan Job | Loan Model ID: ${loan.id} | Loan #${loanId} Accepted | TxHash: ${loan.acceptOrCancelTxHash}`)
+    loan.status = 'ACCEPTED'
+    mailer.notify(loan.borrowerPrincipalAddress, 'loan-accepted', {
+      loanId: loan.loanId,
+      asset: loan.principal
+    })
+    await loan.save()
+  } else {
+    log('success', `Verify Accept Or Cancel Loan Job | Loan Model ID: ${loan.id} | Loan #${loanId} Cancelled | TxHash: ${loan.acceptOrCancelTxHash}`)
+    loan.status = 'CANCELLED'
+
+    const collateralRequirementsMet = await isCollateralRequirementsSatisfied(loan)
+
+    mailer.notify(loan.borrowerPrincipalAddress, 'loan-cancelled', {
+      loanId: loan.loanId,
+      asset: loan.principal,
+      approved,
+      collateralRequirementsMet,
+      minCollateralAmount: loan.minimumCollateralAmount
+    })
+
+    await loan.save()
+  }
 }
 
 async function txSuccess (transactionHash, ethTx, instance, agenda) {
@@ -156,25 +125,33 @@ async function txSuccess (transactionHash, ethTx, instance, agenda) {
   loan.acceptOrCancelTxHash = transactionHash
   if (paid) {
     loan.status = 'ACCEPTING'
-    console.log('ACCEPTING')
+    log('success', `Accept Or Cancel Loan Job | Loan Model ID: ${loan.id} | Accept Tx created successfully | TxHash: ${transactionHash}`)
   } else {
     loan.status = 'CANCELLING'
-    console.log('CANCELLING')
+    log('success', `Accept Or Cancel Loan Job | Loan Model ID: ${loan.id} | Cancel Tx created successfully | TxHash: ${transactionHash}`)
   }
   await loan.save()
-  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan', { loanModelId: loan.id })
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-accept-or-cancel-loan', {
+    jobName: 'accept-or-cancel',
+    modelName: 'Loan',
+    modelId: loan.id,
+    txHashName: 'acceptOrCancelTxHash'
+  })
 }
 
-async function txFailure (error, instance) {
-  const accept = instance
+async function txFailure (error, instance, ethTx) {
+  const loan = instance
 
-  console.log('FAILED TO ACCEPT OR CANCEL')
-  accept.status = 'FAILED'
-  await accept.save()
+  log('error', `Accept Or Cancel Loan Job | EthTx Model ID: ${ethTx.id} | Tx create failed`)
+  loan.status = 'FAILED'
+  await loan.save()
 
   handleError(error)
 }
 
 module.exports = {
-  defineLoanAcceptOrCancelJobs
+  defineLoanAcceptOrCancelJobs,
+  verifySuccess,
+  txSuccess,
+  txFailure
 }
