@@ -1,31 +1,29 @@
+const BN = require('bignumber.js')
+const keccak256 = require('keccak256')
+const log = require('@mblackmblack/node-pretty-log')
+const { ensure0x } = require('@liquality/ethereum-utils')
+
 const Loan = require('../../../models/Loan')
-const EthTx = require('../../../models/EthTx')
-const AgendaJob = require('../../../models/AgendaJob')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
-const { ensure0x } = require('@liquality/ethereum-utils')
-const keccak256 = require('keccak256')
 const { currencies } = require('../../../utils/fx')
 const clients = require('../../../utils/clients')
-const BN = require('bignumber.js')
 const { getMarketModels } = require('../utils/models')
 const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
-const { setTxParams, bumpTxFee, sendTransaction } = require('../utils/web3Transaction')
+const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
 const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 const { hexToNumber } = web3().utils
-const date = require('date.js')
 
 function defineLoanRequestJobs (agenda) {
   agenda.define('request-loan', async (job, done) => {
     const { data } = job.attrs
     const { loanModelId } = data
-
-    console.log('requesting loan')
+    log('info', `Request Loan Job | Loan Model ID: ${loanModelId} | Starting`)
 
     const loan = await Loan.findOne({ _id: loanModelId }).exec()
-    if (!loan) return console.log('Error: Loan not found')
+    if (!loan) return log('error', `Request Loan Job | Loan not found with Loan Model ID: ${loanModelId}`)
     const {
       principal, collateral, principalAmount, collateralAmount, borrowerPrincipalAddress, borrowerSecretHashes, lenderSecretHashes,
       lenderPrincipalAddress, requestLoanDuration, borrowerCollateralPublicKey, lenderCollateralPublicKey, requestCreatedAt
@@ -54,78 +52,32 @@ function defineLoanRequestJobs (agenda) {
 
     await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
   })
+}
 
-  agenda.define('verify-request-loan', async (job, done) => {
-    const { data } = job.attrs
-    const { loanModelId } = data
+async function verifySuccess (instance, _, receipt) {
+  const loan = instance
 
-    const loan = await Loan.findOne({ _id: loanModelId }).exec()
-    if (!loan) return console.log('Error: Loan not found')
-    const { loanRequestTxHash } = loan
+  const { principal, collateral } = loan
+  const { market } = await getMarketModels(principal, collateral)
+  const { rate } = market
 
-    console.log('CHECKING LOAN REQUEST RECEIPT')
+  const loanCreateLog = receipt.logs.filter(log => log.topics[0] === ensure0x(keccak256('Create(bytes32)').toString('hex')))
 
-    const receipt = await web3().eth.getTransactionReceipt(loanRequestTxHash)
+  if (loanCreateLog.length > 0) {
+    const { data: loanId } = loanCreateLog[0]
 
-    if (receipt === null) {
-      console.log('RECEIPT IS NULL')
+    const lockArgs = await getLockArgs(numToBytes32(loanId), principal, collateral)
+    const addresses = await clients[collateral].loan.collateral.getLockAddresses(...lockArgs)
+    const amounts = await getCollateralAmounts(numToBytes32(loanId), loan, rate)
 
-      const ethTx = await EthTx.findOne({ _id: loan.ethTxId }).exec()
-      if (!ethTx) return console.log('Error: EthTx not found')
-
-      if (date(getInterval('BUMP_TX_INTERVAL')) > ethTx.updatedAt && loan.status !== 'FAILED') {
-        console.log('BUMPING TX FEE')
-        await bumpTxFee(ethTx)
-        await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
-      } else {
-        const alreadyQueuedJobs = await AgendaJob.find({ name: 'verify-request-loan', nextRunAt: { $ne: null }, data: { loanModelId } }).exec()
-
-        if (alreadyQueuedJobs.length <= 1) {
-          await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan', { loanModelId })
-        }
-      }
-    } else if (receipt.status === false) {
-      console.log('RECEIPT STATUS IS FALSE')
-      console.log('TX WAS MINED BUT TX FAILED')
-
-      loan.status = 'FAILED'
-      await loan.save()
-
-      const ethTx = await EthTx.findOne({ _id: loan.ethTxId }).exec()
-      if (!ethTx) return console.log('Error: EthTx not found')
-
-      ethTx.failed = false
-      ethTx.error = 'Transaction has been reverted by the EVM'
-      await ethTx.save()
-      done()
-    } else {
-      console.log('RECEIPT IS NOT NULL')
-
-      const { principal, collateral } = loan
-      const { market } = await getMarketModels(principal, collateral)
-      const { rate } = market
-
-      const loanCreateLog = receipt.logs.filter(log => log.topics[0] === ensure0x(keccak256('Create(bytes32)').toString('hex')))
-
-      if (loanCreateLog.length > 0) {
-        const { data: loanId } = loanCreateLog[0]
-
-        const lockArgs = await getLockArgs(numToBytes32(loanId), principal, collateral)
-        const addresses = await clients[collateral].loan.collateral.getLockAddresses(...lockArgs)
-        const amounts = await getCollateralAmounts(numToBytes32(loanId), loan, rate)
-
-        loan.setCollateralAddressValues(addresses, amounts)
-        loan.loanId = hexToNumber(loanId)
-        loan.status = 'AWAITING_COLLATERAL'
-        console.log(`${loan.principal} LOAN #${loan.loanId} CREATED/REQUESTED`)
-        console.log('AWAITING_COLLATERAL')
-        loan.save()
-      } else {
-        console.error('Error: Loan Id could not be found in transaction logs')
-      }
-    }
-    done()
-  })
+    loan.setCollateralAddressValues(addresses, amounts)
+    loan.loanId = hexToNumber(loanId)
+    loan.status = 'AWAITING_COLLATERAL'
+    log('success', `Verify Request Loan Job | Loan Model ID: ${loan.id} | Tx confirmed and Loan #${loan.loanId} Created | TxHash: ${loan.loanRequestTxHash}`)
+    loan.save()
+  } else {
+    log('error', `Verify Request Loan Job | Loan Model ID: ${loan.id} | Tx confirmed but Loan Id could not be found in transaction logs | TxHash: ${loan.loanRequestTxHash}`)
+  }
 }
 
 async function txSuccess (transactionHash, ethTx, instance, agenda) {
@@ -135,14 +87,19 @@ async function txSuccess (transactionHash, ethTx, instance, agenda) {
   loan.loanRequestTxHash = transactionHash
   loan.status = 'REQUESTING'
   await loan.save()
-  console.log('LOAN REQUESTING')
-  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan', { loanModelId: loan.id })
+  log('success', `Request Loan Job | Loan Model ID: ${loan.id} | Request Tx created successfully | TxHash: ${transactionHash}`)
+  await agenda.schedule(getInterval('CHECK_TX_INTERVAL'), 'verify-request-loan', {
+    jobName: 'request',
+    modelName: 'Loan',
+    modelId: loan.id,
+    txHashName: 'loanRequestTxHash'
+  })
 }
 
-async function txFailure (error, instance) {
-  console.log('REQUEST LOAN FAIL')
-
+async function txFailure (error, instance, ethTx) {
   const loan = instance
+
+  log('error', `Request Loan Job | EthTx Model ID: ${ethTx.id} | Tx create failed`)
 
   loan.status = 'FAILED'
   await loan.save()
@@ -151,5 +108,8 @@ async function txFailure (error, instance) {
 }
 
 module.exports = {
-  defineLoanRequestJobs
+  defineLoanRequestJobs,
+  txSuccess,
+  txFailure,
+  verifySuccess
 }

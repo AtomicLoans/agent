@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-const AgentSchema = new mongoose.Schema({
+const LiquidatorSchema = new mongoose.Schema({
   ethSigner: {
     type: String,
     index: true
@@ -38,7 +38,7 @@ const AgentSchema = new mongoose.Schema({
   }
 })
 
-AgentSchema.methods.json = function () {
+LiquidatorSchema.methods.json = function () {
   const json = this.toJSON()
   json.id = json._id
 
@@ -48,8 +48,8 @@ AgentSchema.methods.json = function () {
   return json
 }
 
-AgentSchema.static('fromAgentParams', function (params) {
-  return new Agent({
+LiquidatorSchema.static('fromLiquidatorParams', function (params) {
+  return new Liquidator({
     ethSigner: params.ethSigner,
     endpoint: params.endpoint,
     url: params.url,
@@ -61,5 +61,5 @@ AgentSchema.static('fromAgentParams', function (params) {
   })
 })
 
-const Agent = mongoose.model('Agent', AgentSchema)
-module.exports = Agent
+const Liquidator = mongoose.model('Liquidator', LiquidatorSchema)
+module.exports = Liquidator

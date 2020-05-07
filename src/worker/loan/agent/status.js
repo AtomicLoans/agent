@@ -2,6 +2,7 @@ const axios = require('axios')
 const BN = require('bignumber.js')
 const Agent = require('../../../models/Agent')
 const AgentFund = require('../../../models/AgentFund')
+const Liquidator = require('../../../models/Liquidator')
 const { getObject } = require('../../../utils/contracts')
 const { currencies } = require('../../../utils/fx')
 const { getCurrentTime } = require('../../../utils/time')
@@ -16,6 +17,17 @@ function defineAgentStatusJobs (agenda) {
     for (let i = 0; i < agents.length; i++) {
       const agent = agents[i]
       await agenda.now('check-agent', { agentModelId: agent.id })
+    }
+
+    done()
+  })
+
+  agenda.define('check-liquidator-status', async (job, done) => {
+    const agents = await Liquidator.find().exec()
+
+    for (let i = 0; i < agents.length; i++) {
+      const agent = agents[i]
+      await agenda.now('check-liquidator', { agentModelId: agent.id })
     }
 
     done()
@@ -160,6 +172,55 @@ function defineAgentStatusJobs (agenda) {
         agentFund.status = 'INACTIVE'
         await agentFund.save()
       }
+    }
+    await agent.save()
+
+    done()
+  })
+
+  agenda.define('check-liquidator', async (job, done) => {
+    const { data } = job.attrs
+    const { agentModelId } = data
+
+    const agent = await Liquidator.findOne({ _id: agentModelId }).exec()
+
+    let liquidatorStatus, loanMarkets, agentVersion, versionStatus
+    try {
+      const { data: versionData, status: versionStatusInternal } = await axios.get(`${agent.url}/version`)
+      const { version } = versionData
+      agentVersion = version
+      versionStatus = versionStatusInternal
+
+      const { status, data } = await axios.get(`${agent.url}/loanmarketinfo`)
+
+      console.log(`${agent.url} status:`, status)
+
+      loanMarkets = data
+
+      if (!(loanMarkets.length > 0)) {
+        throw Error('Loan Markets not set')
+      }
+
+      liquidatorStatus = status
+    } catch (e) {
+      console.log(`Agent ${agent.url} not active`)
+      liquidatorStatus = 401
+    }
+
+    if (liquidatorStatus === 200) {
+      try {
+        if (versionStatus === 200) {
+          agent.version = agentVersion
+        }
+      } catch (e) {
+        handleError(e)
+      }
+
+      agent.status = 'ACTIVE'
+
+      // get agent principal address, and check if a fund exists for each loanmarket, if a fund does exist, update the balance
+    } else {
+      agent.status = 'INACTIVE'
     }
     await agent.save()
 

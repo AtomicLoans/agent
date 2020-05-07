@@ -24,6 +24,7 @@ async function start () {
   if (PARTY === 'arbiter') {
     await agenda.every(getInterval('ARBITER_STATUS_INTERVAL'), 'check-arbiter-status')
     await agenda.every(getInterval('LENDER_CHECK_INTERVAL'), 'check-lender-status')
+    await agenda.every(getInterval('LIQUIDATOR_CHECK_INTERVAL'), 'check-liquidator-status')
     await agenda.every(getInterval('ARBITER_ORACLE_INTERVAL'), 'check-arbiter-oracle')
     await agenda.every(getInterval('AGENT_UPDATES_INTERVAL'), 'check-agent-updates')
   } else {

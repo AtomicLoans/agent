@@ -113,7 +113,6 @@ async function sendTransaction (ethTx, instance, agenda, done, successCallback, 
   try {
     web3().eth.sendTransaction(ethTx.json())
       .on('transactionHash', async (transactionHash) => {
-        console.log('transactionHash', transactionHash)
         await successCallback(transactionHash, ethTx, instance, agenda)
         done()
       })
@@ -166,7 +165,7 @@ async function handleWeb3TransactionError (error, ethTx, instance, agenda, done,
     console.log('Transaction has been reverted by the EVM')
     ethTx.failed = false
     await ethTx.save()
-    await errorCallback(error, instance)
+    await errorCallback(error, instance, ethTx)
   } else if (String(error).indexOf('Transaction with the same hash was already imported') >= 0) {
     console.log('Transaction with the same hash was already imported')
   } else if (String(error).indexOf('transaction underpriced') >= 0) {
@@ -188,7 +187,7 @@ async function handleWeb3TransactionError (error, ethTx, instance, agenda, done,
     }
     bugsnagClient.notify(error)
 
-    await errorCallback(error, instance)
+    await errorCallback(error, instance, ethTx)
     handleError(error)
     done(error)
   }

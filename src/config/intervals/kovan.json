@@ -6,6 +6,7 @@
   "BUMP_TX_INTERVAL": "4 minute ago",
   "ARBITER_STATUS_INTERVAL": "45 seconds",
   "SECRETS_BUMP_TX_INTERVAL": "in 3 minutes",
+  "LIQUIDATOR_CHECK_INTERVAL": "2 minutes",
   "LENDER_CHECK_INTERVAL": "2 minutes",
   "ARBITER_ORACLE_INTERVAL": "2 minutes",
   "SANITIZE_TX_INTERVAL": "10 minutes",

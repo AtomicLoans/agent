@@ -2,6 +2,8 @@ const axios = require('axios')
 const BN = require('bignumber.js')
 const { remove0x } = require('@liquality/ethereum-utils')
 const { sha256 } = require('@liquality/crypto')
+const log = require('@mblackmblack/node-pretty-log')
+
 const Agent = require('../../../models/Agent')
 const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
@@ -28,7 +30,7 @@ const { hexToNumber, fromWei } = web3().utils
 function defineLoanStatusJobs (agenda) {
   const mailer = getMailer(agenda)
   agenda.define('check-loan-statuses-and-update', async (job, done) => {
-    console.log('check-loan-statuses-and-update')
+    log('info', 'Check Loan Statuses and Update Job | Starting')
 
     try {
       const loanMarkets = await LoanMarket.find().exec()
@@ -75,8 +77,8 @@ function defineLoanStatusJobs (agenda) {
 
             // Cancel loan if not withdrawn within 22 hours after approveExpiration
             if ((currentTime > (parseInt(approveExpiration) + 79200)) && !withdrawn) {
+              log('info', `Check Loan Statuses and Update Job | ${principal} Loan #${loanId} was not withdrawn within 22 hours | Cancelling loan`)
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
-              console.log('accept or cancel 4')
             }
 
             if (isArbiter() && !loan.off && !loan.sale) {

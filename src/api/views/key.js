@@ -5,7 +5,6 @@ class App extends React.Component {
     var initScript = `
       document.getElementById('submit').onclick = function() {
         var apiKey = document.getElementById("apikey").value;
-        console.log(apiKey)
 
         window.ethereum.enable().then(() => {
           const currentTime = Math.floor(new Date().getTime() / 1000)
@@ -21,7 +20,6 @@ class App extends React.Component {
               xmlhttp.onload = function() {
                 if (xmlhttp.status === 200) {
                   const response = JSON.parse(xmlhttp.responseText)
-                  console.log('response', response)
                   window.open('/success', '_self')
                 } else if (xmlhttp.status !== 200) {
                   alert('An error occured')
