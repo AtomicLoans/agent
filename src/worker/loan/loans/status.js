@@ -84,9 +84,7 @@ function defineLoanStatusJobs (agenda) {
             if (isArbiter() && !loan.off && !loan.sale) {
               // Warn if loan is about to expire in a day
               if (((Date.now() / 1000) - ((lastWarningSent / 1000) || 0) > 43200) && (currentTime > (parseInt(loanExpiration) - 86400))) {
-                const fromNow = moment()
-                .add(parseInt(loanExpiration), 'seconds')
-                .fromNow(true)
+                const fromNow = moment().to(moment.unix(parseInt(loanExpiration)), true)
 
                 mailer.notify(loan.borrowerPrincipalAddress, 'loan-expiring', {
                   loanId: loan.loanId,
