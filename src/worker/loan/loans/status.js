@@ -17,6 +17,7 @@ const { getInterval } = require('../../../utils/intervals')
 const { isArbiter } = require('../../../utils/env')
 const { currencies } = require('../../../utils/fx')
 const { getEndpoint } = require('../../../utils/endpoints')
+const moment = require('moment')
 const { getLockArgs, getCollateralAmounts, isCollateralRequirementsSatisfied } = require('../utils/collateral')
 const getMailer = require('../utils/mailer')
 const handleError = require('../../../utils/handleError')
@@ -80,10 +81,15 @@ function defineLoanStatusJobs (agenda) {
 
             if (isArbiter() && !loan.off && !loan.sale) {
               // Warn if loan is about to expire in a day
-              if (((Date.now() / 1000) - ((lastWarningSent / 1000) || 0) > 86400) && (currentTime > (parseInt(loanExpiration) - 86400))) {
+              if (((Date.now() / 1000) - ((lastWarningSent / 1000) || 0) > 43200) && (currentTime > (parseInt(loanExpiration) - 86400))) {
+                const fromNow = moment()
+                .add(parseInt(loanExpiration), 'seconds')
+                .fromNow(true)
+
                 mailer.notify(loan.borrowerPrincipalAddress, 'loan-expiring', {
                   loanId: loan.loanId,
-                  asset: loan.principal
+                  asset: loan.principal,
+                  fromNow
                 })
                 loan.lastWarningSent = Date.now()
                 await loan.save()
