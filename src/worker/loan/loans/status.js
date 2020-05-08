@@ -330,7 +330,7 @@ async function repopulateLoan (loanMarket, params, minCollateralAmount, loanId, 
   } else if (off && !withdrawn) {
     loan.status = 'CANCELLED'
   } else if (sale) {
-    loan.status = 'WITHDRAWN'
+    loan.status = 'LIQUIDATING'
     const next = await sales.methods.next(numToBytes32(loanId)).call()
     const saleIndexByLoan = next - 1
     const saleIdBytes32 = await sales.methods.saleIndexByLoan(numToBytes32(loanId), saleIndexByLoan).call()
