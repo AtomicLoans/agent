@@ -100,7 +100,7 @@
     "@liquality/ethereum-networks": "^0.4.18",
     "@liquality/ethereum-rpc-provider": "^0.4.18",
     "@liquality/ethereum-swap-provider": "^0.4.18",
-    "@liquality/ethereum-utils": "^0.4.18",
+    "@liquality/ethereum-utils": "^0.4.30",
     "@mblackmblack/migrate-mongo": "^6.0.8",
     "@mblackmblack/node-pretty-log": "^1.1.0",
     "@mblackmblack/to-seconds": "^0.1.0",
