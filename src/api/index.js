@@ -16,7 +16,7 @@ const bugsnagExpress = require('@bugsnag/plugin-express')
 const cors = require('../middlewares/cors')
 const httpHelpers = require('../middlewares/httpHelpers')
 const handleError = require('../middlewares/handleError')
-const hError = require('..//utils/handleError')
+const hError = require('../utils/handleError')
 
 const { migrate } = require('../migrate/migrate')
 
