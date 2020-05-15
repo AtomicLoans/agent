@@ -123,7 +123,7 @@
     "date.js": "^0.3.3",
     "decimal.js": "^10.2.0",
     "dotenv": "^8.0.0",
-    "ethereumjs-util": "^6.1.0",
+    "ethereumjs-util": "^7.0.1",
     "express": "^4.17.1",
     "express-async-handler": "^1.1.4",
     "express-basic-auth": "^1.2.0",
