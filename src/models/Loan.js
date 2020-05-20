@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const BN = require('bignumber.js')
 const { sha256 } = require('@liquality/crypto')
 
+const LoanMarket = require('../models/LoanMarket')
 const clients = require('../utils/clients')
 const { currencies } = require('../utils/fx')
 const web3 = require('../utils/web3')
@@ -195,10 +196,12 @@ LoanSchema.methods.json = function () {
 LoanSchema.methods.setAgentAddresses = async function () {
   if (this.lenderPrincipalAddress) throw new Error('Address exists')
 
-  const principalAddresses = await web3().currentProvider.getAddresses()
+  const loanMarket = await LoanMarket.find({ principal: this.principal, collateral: this.collateral }).exec()
+  const { principalAddress } = await loanMarket.getAgentAddresses()
+
   const collateralAddresses = await this.collateralClient().wallet.getAddresses()
 
-  this.lenderPrincipalAddress = principalAddresses[0]
+  this.lenderPrincipalAddress = principalAddress
   this.lenderCollateralPublicKey = collateralAddresses[0].publicKey.toString('hex')
 }
 

@@ -2,8 +2,11 @@ const { ensure0x } = require('@liquality/ethereum-utils')
 const log = require('@mblackmblack/node-pretty-log')
 
 const Loan = require('../../../models/Loan')
+const LoanMarket = require('../../../models/LoanMarket')
+const HotColdWalletProxy = require('../../../models/HotColdWalletProxy')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
+const { isProxyEnabled } = require('../../../utils/proxyEnabled')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
 const handleError = require('../../../utils/handleError')
@@ -18,7 +21,12 @@ function defineLoanApproveJobs (agenda) {
     const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return log('error', `Approve Loan Job | Loan not found with Loan Model ID: ${loanModelId}`)
 
-    const { loanId, principal, lenderPrincipalAddress } = loan
+    const { loanId, principal, collateral, lenderPrincipalAddress } = loan
+
+    const loanMarket = await LoanMarket.findOne({ principal, collateral }).exec()
+    if (!loanMarket) return log('error', `Request Loan Job | Loan Market not found with principal: ${principal}`)
+    const { principalAgentAddress } = await loanMarket.getAgentAddresses()
+
     const loans = getObject('loans', principal)
     const approved = await loans.methods.approved(numToBytes32(loanId)).call()
 
@@ -27,7 +35,22 @@ function defineLoanApproveJobs (agenda) {
       done()
     } else {
       const txData = loans.methods.approve(numToBytes32(loanId)).encodeABI()
-      const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), getContract('loans', principal), loan)
+
+      let ethTx
+      if (isProxyEnabled()) {
+        const hotColdWalletProxy = await HotColdWalletProxy.findOne({ principal, collateral }).exec()
+        const { contractAddress } = hotColdWalletProxy
+
+        const proxy = getObject('hotcoldwallet', contractAddress)
+        const proxyTxData = proxy.methods.loans(txData).encodeABI()
+
+        ethTx = await setTxParams(proxyTxData, ensure0x(principalAgentAddress), contractAddress, loan)
+      } else {
+        ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), getContract('loans', principal), loan)
+      }
+
+      await ethTx.save()
+
       await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
     }
   })
