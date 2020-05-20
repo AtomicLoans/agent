@@ -4,9 +4,11 @@ const log = require('@mblackmblack/node-pretty-log')
 const { ensure0x } = require('@liquality/ethereum-utils')
 
 const Loan = require('../../../models/Loan')
+const HotColdWalletProxy = require('../../../models/HotColdWalletProxy')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
+const { isProxyEnabled } = require('../../../utils/proxyEnabled')
 const { currencies } = require('../../../utils/fx')
 const clients = require('../../../utils/clients')
 const { getMarketModels } = require('../utils/models')
@@ -47,7 +49,14 @@ function defineLoanRequestJobs (agenda) {
 
     const txData = funds.methods.request(...loanParams).encodeABI()
 
-    const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), getContract('funds', principal), loan)
+    let ethTx
+    if (isProxyEnabled()) {
+      const hotColdWalletProxy = await HotColdWalletProxy.findOne({ principal, collateral }).exec()
+      const proxy = getObject('hotcoldwallet', )
+    } else {
+      const ethTx = await setTxParams(txData, ensure0x(lenderPrincipalAddress), getContract('funds', principal), loan)
+    }
+
     await ethTx.save()
 
     await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)

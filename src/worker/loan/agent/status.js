@@ -83,12 +83,24 @@ function defineAgentStatusJobs (agenda) {
           const multiplier = currencies[principal].multiplier
           const decimals = currencies[principal].decimals
 
-          const { data: { principalAddress, collateralPublicKey } } = await axios.get(`${agent.url}/agentinfo/${loanMarket.id}`)
+          const { data: { principalAddress, collateralPublicKey, proxyEnabled, principalAgentAddress } } = await axios.get(`${agent.url}/agentinfo/${loanMarket.id}`)
 
-          agent.principalAddress = principalAddress
+          console.log('principalAddress', principalAddress)
+          console.log('collateralPublicKey', collateralPublicKey)
+
+          agent.markets[`${loanMarket.principal.toLowerCase()}PrincipalAddress`] = principalAddress
+
+          agent.principalAgentAddress = principalAgentAddress
           agent.collateralPublicKey = collateralPublicKey
 
-          const ethBalance = await web3().eth.getBalance(principalAddress)
+          let agentAddress
+          if (proxyEnabled) {
+            agentAddress = principalAgentAddress
+          } else {
+            agentAddress = principalAddress
+          }
+
+          const ethBalance = await web3().eth.getBalance(agentAddress)
           agent.ethBalance = fromWei(ethBalance.toString(), 'ether')
 
           const funds = getObject('funds', principal)

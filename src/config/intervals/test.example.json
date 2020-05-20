@@ -11,5 +11,6 @@
   "LENDER_CHECK_INTERVAL": "25 seconds",
   "SANITIZE_TX_INTERVAL": "2 minutes",
   "AGENT_UPDATES_INTERVAL": "2 minutes",
+  "REQUEUE_NOTIFY_INTERVAL": "in 30 seconds",
   "LOAN_SECRET_HASH_COUNT": 3
 }

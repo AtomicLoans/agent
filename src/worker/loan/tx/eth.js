@@ -15,21 +15,23 @@ function defineTxEthJobs (agenda) {
     const loanMarket = await LoanMarket.findOne().exec()
     const { principalAddress } = await loanMarket.getAgentAddresses()
 
-    const txCount = await web3().eth.getTransactionCount(principalAddress)
+    if (principalAddress) {
+      const txCount = await web3().eth.getTransactionCount(principalAddress)
 
-    const oneHourAgo = new Date(Date.now() - parseInt(sanitizedTimePeriod))
+      const oneHourAgo = new Date(Date.now() - parseInt(sanitizedTimePeriod))
 
-    const ethTxs = await EthTx.find({ nonce: { $gte: txCount }, createdAt: { $lt: oneHourAgo }, failed: false }).exec()
-    for (let i = 0; i < ethTxs.length; i++) {
-      const ethTx = ethTxs[i]
+      const ethTxs = await EthTx.find({ nonce: { $gte: txCount }, createdAt: { $lt: oneHourAgo }, failed: false }).exec()
+      for (let i = 0; i < ethTxs.length; i++) {
+        const ethTx = ethTxs[i]
 
-      console.log('ethTx one hour ago', ethTx)
+        console.log('ethTx one hour ago', ethTx)
 
-      ethTx.failed = true
-      await ethTx.save()
+        ethTx.failed = true
+        await ethTx.save()
+      }
+      console.log('oneHourAgo', oneHourAgo)
+      console.log('txCount', txCount)
     }
-    console.log('oneHourAgo', oneHourAgo)
-    console.log('txCount', txCount)
 
     done()
   })

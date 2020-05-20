@@ -11,5 +11,6 @@
   "ARBITER_ORACLE_INTERVAL": "2 minutes",
   "SANITIZE_TX_INTERVAL": "10 minutes",
   "AGENT_UPDATES_INTERVAL": "2 minutes",
+  "REQUEUE_NOTIFY_INTERVAL": "in 30 seconds",
   "LOAN_SECRET_HASH_COUNT": 40
 }

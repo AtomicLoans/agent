@@ -39,241 +39,244 @@ function defineLoanStatusJobs (agenda) {
         const loanMarket = loanMarkets[i]
 
         const { principalAddress } = await loanMarket.getAgentAddresses()
-        const ethBalance = await web3().eth.getBalance(principalAddress)
 
-        if (ethBalance > 0) {
-          const { principal, collateral } = loanMarket
+        if (principalAddress) {
+          const ethBalance = await web3().eth.getBalance(principalAddress)
 
-          const loans = getObject('loans', principal)
-          const sales = getObject('sales', principal)
+          if (ethBalance > 0) {
+            const { principal, collateral } = loanMarket
 
-          if (!isArbiter()) {
-            await approveTokens(loanMarket, agenda)
+            const loans = getObject('loans', principal)
+            const sales = getObject('sales', principal)
 
-            const fundModel = await Fund.findOne({ principal }).exec()
-            if (!fundModel) {
-              await repopulateLenderFund(loanMarket)
+            if (!isArbiter()) {
+              await approveTokens(loanMarket, agenda)
+
+              const fundModel = await Fund.findOne({ principal }).exec()
+              if (!fundModel) {
+                await repopulateLenderFund(loanMarket)
+              }
+
+              const lenderLoanCount = await loans.methods.lenderLoanCount(principalAddress).call()
+              const loanModels = await Loan.find({ principal }).exec()
+              if (lenderLoanCount > 0 && loanModels.length === 0) {
+                await repopulateLenderLoans(loanMarket, principal, principalAddress, collateral, lenderLoanCount, loans, sales)
+              }
             }
 
-            const lenderLoanCount = await loans.methods.lenderLoanCount(principalAddress).call()
-            const loanModels = await Loan.find({ principal }).exec()
-            if (lenderLoanCount > 0 && loanModels.length === 0) {
-              await repopulateLenderLoans(loanMarket, principal, principalAddress, collateral, lenderLoanCount, loans, sales)
-            }
-          }
+            const loanModels = await Loan.find({ principal, status: { $nin: ['QUOTE', 'REQUESTING', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] } })
 
-          const loanModels = await Loan.find({ principal, status: { $nin: ['QUOTE', 'REQUESTING', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] } })
+            for (let j = 0; j < loanModels.length; j++) {
+              const loan = loanModels[j]
+              const { loanId, loanExpiration, lastWarningSent } = loan
 
-          for (let j = 0; j < loanModels.length; j++) {
-            const loan = loanModels[j]
-            const { loanId, loanExpiration, lastWarningSent } = loan
+              const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
 
-            const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
+              const [approveExpiration, currentTime] = await Promise.all([
+                loans.methods.approveExpiration(numToBytes32(loanId)).call(),
+                getCurrentTime()
+              ])
 
-            const [approveExpiration, currentTime] = await Promise.all([
-              loans.methods.approveExpiration(numToBytes32(loanId)).call(),
-              getCurrentTime()
-            ])
+              // Cancel loan if not withdrawn within 22 hours after approveExpiration
+              if ((currentTime > (parseInt(approveExpiration) + 79200)) && !withdrawn) {
+                log('info', `Check Loan Statuses and Update Job | ${principal} Loan #${loanId} was not withdrawn within 22 hours | Cancelling loan`)
+                await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
+              }
 
-            // Cancel loan if not withdrawn within 22 hours after approveExpiration
-            if ((currentTime > (parseInt(approveExpiration) + 79200)) && !withdrawn) {
-              log('info', `Check Loan Statuses and Update Job | ${principal} Loan #${loanId} was not withdrawn within 22 hours | Cancelling loan`)
-              await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
-            }
+              if (isArbiter() && !loan.off && !loan.sale) {
+                // Warn if loan is about to expire in a day
+                if (((Date.now() / 1000) - ((lastWarningSent / 1000) || 0) > 43200) && (currentTime > (parseInt(loanExpiration) - 86400))) {
+                  const fromNow = moment().to(moment.unix(parseInt(loanExpiration)), true)
 
-            if (isArbiter() && !loan.off && !loan.sale) {
-              // Warn if loan is about to expire in a day
-              if (((Date.now() / 1000) - ((lastWarningSent / 1000) || 0) > 43200) && (currentTime > (parseInt(loanExpiration) - 86400))) {
-                const fromNow = moment().to(moment.unix(parseInt(loanExpiration)), true)
+                  mailer.notify(loan.borrowerPrincipalAddress, 'loan-expiring', {
+                    loanId: loan.loanId,
+                    asset: loan.principal,
+                    fromNow
+                  })
+                  loan.lastWarningSent = Date.now()
+                  await loan.save()
+                }
+              }
 
-                mailer.notify(loan.borrowerPrincipalAddress, 'loan-expiring', {
-                  loanId: loan.loanId,
+              if (!approved && !withdrawn && !paid && !sale && !off) {
+                // CHECK LOCK COLLATERAL
+
+                // Cancel loan if collateral not locked before approve expiration
+                if ((currentTime > parseInt(approveExpiration)) && !approved) {
+                  // TODO: arbiter should check if lender agent has already tried cancelling
+                  await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
+                  console.log('accept or cancel 5')
+                } else {
+                  const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress, refundableCollateralAmount, seizableCollateralAmount } = loan
+                  const minConfirmations = loan.principalAmount >= 1000 ? 3 : 1 // 3 confirmations minimum if loan size is greaer than 1000
+
+                  const [refundableBalance, seizableBalance, refundableUnspent, seizableUnspent] = await Promise.all([
+                    loan.collateralClient().chain.getBalance([collateralRefundableP2SHAddress]),
+                    loan.collateralClient().chain.getBalance([collateralSeizableP2SHAddress]),
+                    loan.collateralClient().getMethod('getUnspentTransactions')([collateralRefundableP2SHAddress]),
+                    loan.collateralClient().getMethod('getUnspentTransactions')([collateralSeizableP2SHAddress])
+                  ])
+
+                  const collateralRequirementsMet = (refundableBalance.toNumber() >= refundableCollateralAmount && seizableBalance.toNumber() >= seizableCollateralAmount)
+                  const refundableConfirmationRequirementsMet = refundableUnspent.length === 0 ? false : refundableUnspent.every(unspent => unspent.confirmations >= minConfirmations)
+                  const seizableConfirmationRequirementsMet = seizableUnspent.length === 0 ? false : seizableUnspent.every(unspent => unspent.confirmations >= minConfirmations)
+
+                  if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet && loan.status === 'AWAITING_COLLATERAL') {
+                    console.log('COLLATERAL LOCKED')
+
+                    if (!isArbiter()) {
+                      await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-loan', { loanModelId: loan.id })
+                    }
+                  } else {
+                    console.log('COLLATERAL NOT LOCKED')
+                  }
+                }
+              } else if (withdrawn && !paid && !sale && !off) {
+                loan.status = 'WITHDRAWN'
+
+                const alertCollateralAmount = loan.minimumCollateralAmount * 1.1
+
+                const market = await Market.findOne({ from: loan.collateral, to: loan.principal }).exec()
+                const { rate } = market
+
+                if (isArbiter()) {
+                  if (((Date.now() / 1000) - ((lastWarningSent / 1000) || 0) > 86400) && loan.collateralAmount < alertCollateralAmount) {
+                    console.log('LIQPRICE-DEBUG:')
+                    console.log('rate:', rate)
+                    console.log('alertCollateralAmount:', alertCollateralAmount)
+                    console.log('minimumCollateralAmount:', loan.minimumCollateralAmount)
+                    console.log('loan.collateralAmount', loan.collateralAmount)
+
+                    const liquidationPrice = BN(loan.minimumCollateralAmount).dividedBy(loan.collateralAmount).times(rate).toFixed(2)
+
+                    if (liquidationPrice > 10000) {
+                      console.log('liqprice error:', liquidationPrice)
+                    } else {
+                      mailer.notify(loan.borrowerPrincipalAddress, 'loan-near-liquidation', {
+                        loanId: loan.loanId,
+                        asset: loan.principal,
+                        liquidation_price: liquidationPrice
+                      })
+                    }
+
+                    loan.lastWarningSent = Date.now()
+                  }
+                }
+
+                await loan.save()
+              } else if (withdrawn && paid && !sale && !off) {
+                loan.status = 'REPAID'
+                await loan.save()
+                console.log('REPAID')
+                if (isArbiter()) {
+                  const lender = await loans.methods.lender(numToBytes32(loanId)).call()
+
+                  const agent = await Agent.findOne({ principalAddress: lender }).exec()
+
+                  try {
+                    const { status, data: lenderLoanModel } = await axios.get(`${agent.url}/loans/contract/${principal}/${loanId}`)
+                    const { status: lenderLoanStatus } = lenderLoanModel
+
+                    // if it can't be reached or status currently isn't ACCEPTING / ACCEPTED then do something
+                    if (!(status === 200 && (lenderLoanStatus === 'ACCEPTING' || lenderLoanStatus === 'ACCEPTED'))) {
+                      await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
+                      console.log('accept or cancel 1')
+                    }
+                  } catch (e) {
+                    await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
+                    console.log('accept or cancel 2')
+                  }
+                } else {
+                  await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
+                  console.log('accept or cancel 3')
+                }
+              } else if (sale) {
+                const saleModels = await Sale.find({ loanModelId: loan.id }).sort({ saleId: 'descending' }).exec()
+
+                const saleModel = saleModels[0]
+
+                if (isArbiter() && saleModel && saleModel.status !== 'FAILED') {
+                  const collateralBlockHeight = await saleModel.collateralClient().getMethod('getBlockHeight')()
+                  const { latestCollateralBlock, claimTxHash, revertTxHash, status } = saleModel
+
+                  if (saleModel && collateralBlockHeight > latestCollateralBlock && !claimTxHash && !revertTxHash) {
+                    agenda.now('verify-collateral-claim', { saleModelId: saleModel.id })
+                  } else if (saleModel && status === 'COLLATERAL_CLAIMED' && claimTxHash) {
+                    console.log('COLLATERAL WAS CLAIMED, SPIN UP JOB TO ACCEPT')
+                    agenda.now('accept-sale', { saleModelId: saleModel.id })
+                  }
+                } else if (!isArbiter() && !saleModel) {
+                  await agenda.now('init-liquidation', { loanModelId: loan.id })
+                } else if (!isArbiter() && saleModel && saleModel.status !== 'FAILED') {
+                  const sales = getObject('sales', principal)
+                  const token = getObject('erc20', principal)
+
+                  const next = await sales.methods.next(numToBytes32(loanId)).call()
+                  console.log('next', next)
+                  console.log('saleModels.length', saleModels.length)
+                  if (parseInt(next) !== saleModels.length) {
+                    await agenda.now('init-liquidation', { loanModelId: loan.id })
+                  } else {
+                    const { accepted } = await sales.methods.sales(numToBytes32(saleModel.saleId)).call()
+                    if (accepted) {
+                      saleModel.status = 'ACCEPTED'
+                      await saleModel.save()
+
+                      const fundModel = await Fund.findOne({ principal }).exec()
+                      const deposit = await Deposit.findOne({ fundModelId: fundModel.id, saleId: saleModel.saleId }).exec()
+
+                      if (!deposit) {
+                        const owedToLender = await loans.methods.owedToLender(numToBytes32(loanId)).call()
+                        const tokenBalance = await token.methods.balanceOf(principalAddress).call()
+
+                        if (tokenBalance >= owedToLender) {
+                          const unit = currencies[principal].unit
+
+                          const amountToDeposit = fromWei(owedToLender.toString(), unit)
+                          await agenda.now('fund-deposit', { fundModelId: fundModel.id, amountToDeposit, saleId: saleModel.saleId })
+                        }
+                      } else {
+                        loan.status = 'LIQUIDATED'
+                        await loan.save()
+                      }
+                    }
+                  }
+                }
+              } else if (off) {
+                if (!paid) {
+                  const collateralRequirementsMet = await isCollateralRequirementsSatisfied(loan)
+
+                  mailer.notify(loan.borrowerPrincipalAddress, 'loan-cancelled', {
+                    loanId: loan.loanId,
+                    asset: loan.principal,
+                    approved,
+                    collateralRequirementsMet,
+                    minCollateralAmount: loan.minimumCollateralAmount
+                  })
+                  loan.status = 'CANCELLED'
+                } else {
+                  mailer.notify(loan.borrowerPrincipalAddress, 'loan-accepted', {
+                    loanId: loan.loanId,
+                    asset: loan.principal
+                  })
+                  loan.status = 'ACCEPTED'
+                }
+                await loan.save()
+                console.log('LOAN IS ACCEPTED, CANCELLED, OR REFUNDED')
+              } else if (approved && loan.status === 'AWAITING_COLLATERAL') {
+                mailer.notify(loan.borrowerPrincipalAddress, 'collateral-locked', {
+                  amount: loan.principalAmount,
                   asset: loan.principal,
-                  fromNow
+                  loanId: loan.loanId
                 })
-                loan.lastWarningSent = Date.now()
+
+                loan.status = 'APPROVED'
                 await loan.save()
               }
             }
 
-            if (!approved && !withdrawn && !paid && !sale && !off) {
-              // CHECK LOCK COLLATERAL
-
-              // Cancel loan if collateral not locked before approve expiration
-              if ((currentTime > parseInt(approveExpiration)) && !approved) {
-                // TODO: arbiter should check if lender agent has already tried cancelling
-                await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
-                console.log('accept or cancel 5')
-              } else {
-                const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress, refundableCollateralAmount, seizableCollateralAmount } = loan
-                const minConfirmations = loan.principalAmount >= 1000 ? 3 : 1 // 3 confirmations minimum if loan size is greaer than 1000
-
-                const [refundableBalance, seizableBalance, refundableUnspent, seizableUnspent] = await Promise.all([
-                  loan.collateralClient().chain.getBalance([collateralRefundableP2SHAddress]),
-                  loan.collateralClient().chain.getBalance([collateralSeizableP2SHAddress]),
-                  loan.collateralClient().getMethod('getUnspentTransactions')([collateralRefundableP2SHAddress]),
-                  loan.collateralClient().getMethod('getUnspentTransactions')([collateralSeizableP2SHAddress])
-                ])
-
-                const collateralRequirementsMet = (refundableBalance.toNumber() >= refundableCollateralAmount && seizableBalance.toNumber() >= seizableCollateralAmount)
-                const refundableConfirmationRequirementsMet = refundableUnspent.length === 0 ? false : refundableUnspent.every(unspent => unspent.confirmations >= minConfirmations)
-                const seizableConfirmationRequirementsMet = seizableUnspent.length === 0 ? false : seizableUnspent.every(unspent => unspent.confirmations >= minConfirmations)
-
-                if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet && loan.status === 'AWAITING_COLLATERAL') {
-                  console.log('COLLATERAL LOCKED')
-
-                  if (!isArbiter()) {
-                    await agenda.schedule(getInterval('ACTION_INTERVAL'), 'approve-loan', { loanModelId: loan.id })
-                  }
-                } else {
-                  console.log('COLLATERAL NOT LOCKED')
-                }
-              }
-            } else if (withdrawn && !paid && !sale && !off) {
-              loan.status = 'WITHDRAWN'
-
-              const alertCollateralAmount = loan.minimumCollateralAmount * 1.1
-
-              const market = await Market.findOne({ from: loan.collateral, to: loan.principal }).exec()
-              const { rate } = market
-
-              if (isArbiter()) {
-                if (((Date.now() / 1000) - ((lastWarningSent / 1000) || 0) > 86400) && loan.collateralAmount < alertCollateralAmount) {
-                  console.log('LIQPRICE-DEBUG:')
-                  console.log('rate:', rate)
-                  console.log('alertCollateralAmount:', alertCollateralAmount)
-                  console.log('minimumCollateralAmount:', loan.minimumCollateralAmount)
-                  console.log('loan.collateralAmount', loan.collateralAmount)
-
-                  const liquidationPrice = BN(loan.minimumCollateralAmount).dividedBy(loan.collateralAmount).times(rate).toFixed(2)
-
-                  if (liquidationPrice > 10000) {
-                    console.log('liqprice error:', liquidationPrice)
-                  } else {
-                    mailer.notify(loan.borrowerPrincipalAddress, 'loan-near-liquidation', {
-                      loanId: loan.loanId,
-                      asset: loan.principal,
-                      liquidation_price: liquidationPrice
-                    })
-                  }
-
-                  loan.lastWarningSent = Date.now()
-                }
-              }
-
-              await loan.save()
-            } else if (withdrawn && paid && !sale && !off) {
-              loan.status = 'REPAID'
-              await loan.save()
-              console.log('REPAID')
-              if (isArbiter()) {
-                const lender = await loans.methods.lender(numToBytes32(loanId)).call()
-
-                const agent = await Agent.findOne({ principalAddress: lender }).exec()
-
-                try {
-                  const { status, data: lenderLoanModel } = await axios.get(`${agent.url}/loans/contract/${principal}/${loanId}`)
-                  const { status: lenderLoanStatus } = lenderLoanModel
-
-                  // if it can't be reached or status currently isn't ACCEPTING / ACCEPTED then do something
-                  if (!(status === 200 && (lenderLoanStatus === 'ACCEPTING' || lenderLoanStatus === 'ACCEPTED'))) {
-                    await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
-                    console.log('accept or cancel 1')
-                  }
-                } catch (e) {
-                  await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
-                  console.log('accept or cancel 2')
-                }
-              } else {
-                await agenda.now('accept-or-cancel-loan', { loanModelId: loan.id })
-                console.log('accept or cancel 3')
-              }
-            } else if (sale) {
-              const saleModels = await Sale.find({ loanModelId: loan.id }).sort({ saleId: 'descending' }).exec()
-
-              const saleModel = saleModels[0]
-
-              if (isArbiter() && saleModel && saleModel.status !== 'FAILED') {
-                const collateralBlockHeight = await saleModel.collateralClient().getMethod('getBlockHeight')()
-                const { latestCollateralBlock, claimTxHash, revertTxHash, status } = saleModel
-
-                if (saleModel && collateralBlockHeight > latestCollateralBlock && !claimTxHash && !revertTxHash) {
-                  agenda.now('verify-collateral-claim', { saleModelId: saleModel.id })
-                } else if (saleModel && status === 'COLLATERAL_CLAIMED' && claimTxHash) {
-                  console.log('COLLATERAL WAS CLAIMED, SPIN UP JOB TO ACCEPT')
-                  agenda.now('accept-sale', { saleModelId: saleModel.id })
-                }
-              } else if (!isArbiter() && !saleModel) {
-                await agenda.now('init-liquidation', { loanModelId: loan.id })
-              } else if (!isArbiter() && saleModel && saleModel.status !== 'FAILED') {
-                const sales = getObject('sales', principal)
-                const token = getObject('erc20', principal)
-
-                const next = await sales.methods.next(numToBytes32(loanId)).call()
-                console.log('next', next)
-                console.log('saleModels.length', saleModels.length)
-                if (parseInt(next) !== saleModels.length) {
-                  await agenda.now('init-liquidation', { loanModelId: loan.id })
-                } else {
-                  const { accepted } = await sales.methods.sales(numToBytes32(saleModel.saleId)).call()
-                  if (accepted) {
-                    saleModel.status = 'ACCEPTED'
-                    await saleModel.save()
-
-                    const fundModel = await Fund.findOne({ principal }).exec()
-                    const deposit = await Deposit.findOne({ fundModelId: fundModel.id, saleId: saleModel.saleId }).exec()
-
-                    if (!deposit) {
-                      const owedToLender = await loans.methods.owedToLender(numToBytes32(loanId)).call()
-                      const tokenBalance = await token.methods.balanceOf(principalAddress).call()
-
-                      if (tokenBalance >= owedToLender) {
-                        const unit = currencies[principal].unit
-
-                        const amountToDeposit = fromWei(owedToLender.toString(), unit)
-                        await agenda.now('fund-deposit', { fundModelId: fundModel.id, amountToDeposit, saleId: saleModel.saleId })
-                      }
-                    } else {
-                      loan.status = 'LIQUIDATED'
-                      await loan.save()
-                    }
-                  }
-                }
-              }
-            } else if (off) {
-              if (!paid) {
-                const collateralRequirementsMet = await isCollateralRequirementsSatisfied(loan)
-
-                mailer.notify(loan.borrowerPrincipalAddress, 'loan-cancelled', {
-                  loanId: loan.loanId,
-                  asset: loan.principal,
-                  approved,
-                  collateralRequirementsMet,
-                  minCollateralAmount: loan.minimumCollateralAmount
-                })
-                loan.status = 'CANCELLED'
-              } else {
-                mailer.notify(loan.borrowerPrincipalAddress, 'loan-accepted', {
-                  loanId: loan.loanId,
-                  asset: loan.principal
-                })
-                loan.status = 'ACCEPTED'
-              }
-              await loan.save()
-              console.log('LOAN IS ACCEPTED, CANCELLED, OR REFUNDED')
-            } else if (approved && loan.status === 'AWAITING_COLLATERAL') {
-              mailer.notify(loan.borrowerPrincipalAddress, 'collateral-locked', {
-                amount: loan.principalAmount,
-                asset: loan.principal,
-                loanId: loan.loanId
-              })
-
-              loan.status = 'APPROVED'
-              await loan.save()
-            }
+            await checkCollateralLocked(loanMarket)
           }
-
-          await checkCollateralLocked(loanMarket)
         }
       }
 

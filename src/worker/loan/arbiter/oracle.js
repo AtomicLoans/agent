@@ -34,131 +34,133 @@ function defineOracleJobs (agenda) {
 
     const { principalAddress: arbiterAddress } = await loanMarket.getAgentAddresses()
 
-    const med = getObject('medianizer')
+    if (arbiterAddress) {
+      const med = getObject('medianizer')
 
-    if (NETWORK === 'mainnet') {
-      const currentTime = parseInt(await getCurrentTime())
-      console.log('currentTime', currentTime)
+      if (NETWORK === 'mainnet') {
+        const currentTime = parseInt(await getCurrentTime())
+        console.log('currentTime', currentTime)
 
-      const medianBtcPrice = await getMedianBtcPrice()
+        const medianBtcPrice = await getMedianBtcPrice()
 
-      console.log('medianBtcPrice', medianBtcPrice)
+        console.log('medianBtcPrice', medianBtcPrice)
 
-      const medPeek = await med.methods.peek().call()
-      const medPriceInBytes32 = medPeek[0]
-      const medPrice = parseFloat(fromWei(hexToNumberString(medPriceInBytes32), 'ether'))
-      console.log('medPrice', medPrice)
+        const medPeek = await med.methods.peek().call()
+        const medPriceInBytes32 = medPeek[0]
+        const medPrice = parseFloat(fromWei(hexToNumberString(medPriceInBytes32), 'ether'))
+        console.log('medPrice', medPrice)
 
-      const medHasPrice = medPeek[1]
-      console.log('medHasPrice', medHasPrice)
+        const medHasPrice = medPeek[1]
+        console.log('medHasPrice', medHasPrice)
 
-      if ((Math.abs(1 - (medianBtcPrice / medPrice)) * 100) > 1 || !medHasPrice) {
-        console.log('MEDIANIZER PRICE CHANGED')
+        if ((Math.abs(1 - (medianBtcPrice / medPrice)) * 100) > 1 || !medHasPrice) {
+          console.log('MEDIANIZER PRICE CHANGED')
 
-        let oracles = []
+          let oracles = []
 
-        for (let i = 0; i < 10; i++) {
-          const oracle = {}
+          for (let i = 0; i < 10; i++) {
+            const oracle = {}
 
-          const oracleAddress = await med.methods.oracles(i).call()
+            const oracleAddress = await med.methods.oracles(i).call()
 
-          const oracleContract = loadObject('oracle', oracleAddress)
+            const oracleContract = loadObject('oracle', oracleAddress)
 
-          const expiry = await oracleContract.methods.expiry().call()
-          const timeout = await oracleContract.methods.timeout().call()
-          const peek = await oracleContract.methods.peek().call()
+            const expiry = await oracleContract.methods.expiry().call()
+            const timeout = await oracleContract.methods.timeout().call()
+            const peek = await oracleContract.methods.peek().call()
 
-          const oraclePriceInBytes32 = peek[0]
-          const oraclePrice = parseFloat(fromWei(hexToNumberString(oraclePriceInBytes32), 'ether'))
+            const oraclePriceInBytes32 = peek[0]
+            const oraclePrice = parseFloat(fromWei(hexToNumberString(oraclePriceInBytes32), 'ether'))
 
-          let btcPrice = medianBtcPrice
-          try {
-            btcPrice = await apis[i]()
-            console.log('btcPrice', btcPrice)
+            let btcPrice = medianBtcPrice
+            try {
+              btcPrice = await apis[i]()
+              console.log('btcPrice', btcPrice)
 
-            oracle.priceChange = Math.abs(1 - (btcPrice / oraclePrice)) * 100
-          } catch (e) {
-            oracle.priceChange = 1.001
+              oracle.priceChange = Math.abs(1 - (btcPrice / oraclePrice)) * 100
+            } catch (e) {
+              oracle.priceChange = 1.001
+            }
+
+            oracle.index = i
+            oracle.pastExpiry = currentTime > parseInt(expiry)
+            oracle.pastTimeout = currentTime > parseInt(timeout)
+            oracle.oraclePrice = oraclePrice
+            oracle.btcPrice = btcPrice
+            oracle.currentTime = currentTime
+            oracle.expiry = expiry
+            oracle.timeout = timeout
+
+            oracles.push(oracle)
           }
 
-          oracle.index = i
-          oracle.pastExpiry = currentTime > parseInt(expiry)
-          oracle.pastTimeout = currentTime > parseInt(timeout)
-          oracle.oraclePrice = oraclePrice
-          oracle.btcPrice = btcPrice
-          oracle.currentTime = currentTime
-          oracle.expiry = expiry
-          oracle.timeout = timeout
+          oracles = oracles.sort((a, b) => b.priceChange - a.priceChange)
 
-          oracles.push(oracle)
-        }
+          const numExpired = oracles.filter(x => x.pastExpiry).length
+          const numOutOfDate = oracles.filter(x => x.priceChange > 1 && x.pastTimeout).length
 
-        oracles = oracles.sort((a, b) => b.priceChange - a.priceChange)
+          console.log('oracles', oracles)
+          console.log('numExpired', numExpired)
+          console.log('numOutOfDate', numOutOfDate)
 
-        const numExpired = oracles.filter(x => x.pastExpiry).length
-        const numOutOfDate = oracles.filter(x => x.priceChange > 1 && x.pastTimeout).length
+          if (!medHasPrice || (numExpired > 5 && numOutOfDate > 0)) {
+            oracles = oracles.filter(x => (x.pastExpiry || x.priceChange > 1) && x.pastTimeout)
+          } else {
+            oracles = oracles.filter(x => x.priceChange > 1 && x.pastTimeout)
+          }
 
-        console.log('oracles', oracles)
-        console.log('numExpired', numExpired)
-        console.log('numOutOfDate', numOutOfDate)
+          console.log('oracles', oracles)
 
-        if (!medHasPrice || (numExpired > 5 && numOutOfDate > 0)) {
-          oracles = oracles.filter(x => (x.pastExpiry || x.priceChange > 1) && x.pastTimeout)
-        } else {
-          oracles = oracles.filter(x => x.priceChange > 1 && x.pastTimeout)
-        }
+          for (let k = 0; k < oracles.length; k++) {
+            const oracle = oracles[k]
+            const { index, oraclePrice, btcPrice } = oracle
 
-        console.log('oracles', oracles)
+            try {
+              console.log('UPDATING ORACLES')
 
-        for (let k = 0; k < oracles.length; k++) {
-          const oracle = oracles[k]
-          const { index, oraclePrice, btcPrice } = oracle
+              const fundOracles = getObject('fundoracles')
 
-          try {
-            console.log('UPDATING ORACLES')
+              const payment = await fundOracles.methods.billWithEth(index).call()
+              const paymentEth = await fundOracles.methods.paymentWithEth(index, payment).call()
 
-            const fundOracles = getObject('fundoracles')
+              const txData = await fundOracles.methods.updateWithEth(index, payment, getContract('erc20', 'DAI')).encodeABI()
 
-            const payment = await fundOracles.methods.billWithEth(index).call()
-            const paymentEth = await fundOracles.methods.paymentWithEth(index, payment).call()
+              const oracleUpdate = OracleUpdate.fromOracleUpdate(oraclePrice, btcPrice)
+              await oracleUpdate.save()
 
-            const txData = await fundOracles.methods.updateWithEth(index, payment, getContract('erc20', 'DAI')).encodeABI()
+              const ethTx = await setTxParams(txData, arbiterAddress, getContract('fundoracles'), oracleUpdate)
 
-            const oracleUpdate = OracleUpdate.fromOracleUpdate(oraclePrice, btcPrice)
-            await oracleUpdate.save()
+              ethTx.value = index < 5 ? BN(paymentEth).plus(10e12).toString() : paymentEth
+              ethTx.gasLimit = 1500000
+              await ethTx.save()
 
-            const ethTx = await setTxParams(txData, arbiterAddress, getContract('fundoracles'), oracleUpdate)
+              console.log('ethTx', ethTx)
 
-            ethTx.value = index < 5 ? BN(paymentEth).plus(10e12).toString() : paymentEth
-            ethTx.gasLimit = 1500000
-            await ethTx.save()
-
-            console.log('ethTx', ethTx)
-
-            await sendTransaction(ethTx, oracleUpdate, agenda, done, txSuccess, txFailure)
-          } catch (e) {
-            console.log('e', e)
+              await sendTransaction(ethTx, oracleUpdate, agenda, done, txSuccess, txFailure)
+            } catch (e) {
+              console.log('e', e)
+            }
           }
         }
-      }
-    } else {
-      const peek = await med.methods.peek().call()
+      } else {
+        const peek = await med.methods.peek().call()
 
-      const oraclePriceInBytes32 = peek[0]
-      const oraclePrice = parseFloat(fromWei(hexToNumberString(oraclePriceInBytes32), 'ether'))
+        const oraclePriceInBytes32 = peek[0]
+        const oraclePrice = parseFloat(fromWei(hexToNumberString(oraclePriceInBytes32), 'ether'))
 
-      const { data } = await axios.get('https://api.kraken.com/0/public/Ticker?pair=XBTUSD')
-      const btcPrice = parseFloat(data.result.XXBTZUSD.c[0])
+        const { data } = await axios.get('https://api.kraken.com/0/public/Ticker?pair=XBTUSD')
+        const btcPrice = parseFloat(data.result.XXBTZUSD.c[0])
 
-      if ((Math.abs(1 - (btcPrice / oraclePrice)) * 100) > 1) {
-        const txData = med.methods.poke(ensure0x(numToBytes32(toWei(btcPrice.toString(), 'ether'))), true).encodeABI()
+        if ((Math.abs(1 - (btcPrice / oraclePrice)) * 100) > 1) {
+          const txData = med.methods.poke(ensure0x(numToBytes32(toWei(btcPrice.toString(), 'ether'))), true).encodeABI()
 
-        const oracleUpdate = OracleUpdate.fromOracleUpdate(oraclePrice, btcPrice)
-        await oracleUpdate.save()
+          const oracleUpdate = OracleUpdate.fromOracleUpdate(oraclePrice, btcPrice)
+          await oracleUpdate.save()
 
-        const ethTx = await setTxParams(txData, arbiterAddress, getContract('medianizer'), oracleUpdate)
+          const ethTx = await setTxParams(txData, arbiterAddress, getContract('medianizer'), oracleUpdate)
 
-        await sendTransaction(ethTx, oracleUpdate, agenda, done, txSuccess, txFailure)
+          await sendTransaction(ethTx, oracleUpdate, agenda, done, txSuccess, txFailure)
+        }
       }
     }
 

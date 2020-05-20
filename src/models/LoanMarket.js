@@ -4,6 +4,10 @@ const { checksumEncode } = require('@liquality/ethereum-utils')
 const clients = require('../utils/clients')
 const web3 = require('../utils/web3')
 
+const HotColdWalletProxy = require('../models/HotColdWalletProxy')
+
+const { HOT_COLD_WALLET_PROXY_ENABLED } = process.env
+
 const LoanMarketSchema = new mongoose.Schema({
   principal: {
     type: String,
@@ -84,14 +88,31 @@ LoanMarketSchema.methods.collateralClient = function () {
 }
 
 LoanMarketSchema.methods.getAgentAddresses = async function () {
-  const principalAddresses = await web3().currentProvider.getAddresses()
+  const principalHotAddresses = await web3().currentProvider.getAddresses()
   const collateralAddresses = await this.collateralClient().wallet.getAddresses()
 
-  return {
-    principalAddress: checksumEncode(principalAddresses[0]),
+  const agentAddresses = {
     collateralAddress: collateralAddresses[0].address,
-    collateralPublicKey: collateralAddresses[0].publicKey.toString('hex')
+    collateralPublicKey: collateralAddresses[0].publicKey.toString('hex'),
+    proxyEnabled: HOT_COLD_WALLET_PROXY_ENABLED
   }
+
+  if (HOT_COLD_WALLET_PROXY_ENABLED) {
+    agentAddresses.principalHotAddress = checksumEncode(principalHotAddresses[0])
+    agentAddresses.principalAgentAddress = checksumEncode(principalHotAddresses[0])
+
+    const { principal, collateral } = this
+    const hotColdWallet = await HotColdWalletProxy.findOne({ principal, collateral }).exec()
+    if (hotColdWallet) {
+      agentAddresses.principalColdAddress = hotColdWallet.coldWalletAddress
+      agentAddresses.principalAddress = hotColdWallet.contractAddress
+    }
+  } else {
+    agentAddresses.principalAddress = checksumEncode(principalHotAddresses[0])
+    agentAddresses.principalAgentAddress = checksumEncode(principalHotAddresses[0])
+  }
+
+  return agentAddresses
 }
 
 module.exports = mongoose.model('LoanMarket', LoanMarketSchema)
