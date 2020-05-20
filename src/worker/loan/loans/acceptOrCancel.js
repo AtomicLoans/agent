@@ -6,8 +6,10 @@ const Agent = require('../../../models/Agent')
 const Loan = require('../../../models/Loan')
 const LoanMarket = require('../../../models/LoanMarket')
 const Secret = require('../../../models/Secret')
+const HotColdWalletProxy = require('../../../models/HotColdWalletProxy')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
+const { isProxyEnabled } = require('../../../utils/proxyEnabled')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
 const { isArbiter } = require('../../../utils/env')
@@ -30,12 +32,12 @@ function defineLoanAcceptOrCancelJobs (agenda) {
     const loan = await Loan.findOne({ _id: loanModelId }).exec()
     if (!loan) return log('error', `Accept Or Cancel Loan Job | Loan not found with Loan Model ID: ${loanModelId}`)
 
-    const { loanId, principal, lenderSecrets } = loan
+    const { loanId, principal, collateral, lenderSecrets } = loan
     const loans = getObject('loans', principal)
     const { off } = await loans.methods.bools(numToBytes32(loanId)).call()
 
     const loanMarket = await LoanMarket.findOne({ principal }).exec()
-    const { principalAddress } = await loanMarket.getAgentAddresses()
+    const { principalAddress, principalAgentAddress } = await loanMarket.getAgentAddresses()
 
     if (off === true) {
       log('info', `Accept Or Cancel Loan Job | Loan Model ID: ${loanModelId} | Loan already accepted`)
@@ -73,7 +75,20 @@ function defineLoanAcceptOrCancelJobs (agenda) {
         } else {
           txData = loans.methods.accept(numToBytes32(loanId), ensure0x(lenderSecrets[0])).encodeABI()
         }
-        const ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('loans', principal), loan)
+
+        let ethTx
+        if (isProxyEnabled()) {
+          const hotColdWalletProxy = await HotColdWalletProxy.findOne({ principal, collateral }).exec()
+          const { contractAddress } = hotColdWalletProxy
+
+          const proxy = getObject('hotcoldwallet', contractAddress)
+          const proxyTxData = proxy.methods.loans(txData).encodeABI()
+
+          ethTx = await setTxParams(proxyTxData, ensure0x(principalAgentAddress), contractAddress, loan)
+        } else {
+          ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('loans', principal), loan)
+        }
+
         await sendTransaction(ethTx, loan, agenda, done, txSuccess, txFailure)
       }
     }
