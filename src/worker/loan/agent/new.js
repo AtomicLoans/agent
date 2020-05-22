@@ -52,8 +52,8 @@ function defineNewAgentJobs (agenda) {
         } catch (e) {
           console.log('`notify-arbiter` failed. Retrying...')
 
-          const alreadyRunningJobs = await AgendaJob.find({ name: `notify-arbiter`, lastRunAt: { $ne: null }, lastFinishedAt: null }).exec()
-          const alreadyQueuedJobs = await AgendaJob.find({ name: `notify-arbiter`, nextRunAt: { $ne: null } }).exec()
+          const alreadyRunningJobs = await AgendaJob.find({ name: 'notify-arbiter', lastRunAt: { $ne: null }, lastFinishedAt: null }).exec()
+          const alreadyQueuedJobs = await AgendaJob.find({ name: 'notify-arbiter', nextRunAt: { $ne: null } }).exec()
 
           if (alreadyRunningJobs.length <= 1 && alreadyQueuedJobs.length <= 0) {
             agenda.schedule(getInterval('REQUEUE_NOTIFY_INTERVAL'), 'notify-arbiter')
@@ -65,8 +65,6 @@ function defineNewAgentJobs (agenda) {
 
         principalAddressFound = true
 
-        console.log('test6')
-
         done()
 
         break
@@ -74,11 +72,8 @@ function defineNewAgentJobs (agenda) {
     }
 
     if (!principalAddressFound) {
-      const alreadyRunningJobs = await AgendaJob.find({ name: `notify-arbiter`, lastRunAt: { $ne: null }, lastFinishedAt: null }).exec()
-      const alreadyQueuedJobs = await AgendaJob.find({ name: `notify-arbiter`, nextRunAt: { $ne: null } }).exec()
-
-      console.log('alreadyRunningJobs.length', alreadyRunningJobs.length)
-      console.log('alreadyQueuedJobs.length', alreadyQueuedJobs.length)
+      const alreadyRunningJobs = await AgendaJob.find({ name: 'notify-arbiter', lastRunAt: { $ne: null }, lastFinishedAt: null }).exec()
+      const alreadyQueuedJobs = await AgendaJob.find({ name: 'notify-arbiter', nextRunAt: { $ne: null } }).exec()
 
       if (alreadyRunningJobs.length <= 1 && alreadyQueuedJobs.length <= 0) {
         agenda.schedule(getInterval('REQUEUE_NOTIFY_INTERVAL'), 'notify-arbiter')

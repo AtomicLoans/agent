@@ -10,6 +10,7 @@ function rateToSec (apr) { // Convert interest rate to rate per second (i.e. 16.
 }
 
 function numToBytes32 (num) {
+  if (!num) throw Error('numToBytes32: No number provided')
   return padLeft(numberToHex(num), 64)
 }
 

@@ -21,7 +21,7 @@ function defineAgentsRouter (router) {
         verifyTimestampedSignatureUsingExpected(signature, `Register new agent (${principalAgentAddress} ${collateralPublicKey} ${ethSigner} ${url}) ${timestamp}`, timestamp, principalAgentAddress)
       } else {
         verifyTimestampedSignatureUsingExpected(signature, `Register new agent (${principalAddress} ${collateralPublicKey} ${ethSigner} ${url}) ${timestamp}`, timestamp, principalAddress)
-      } 
+      }
     } catch (e) {
       return next(res.createError(401, e.message))
     }

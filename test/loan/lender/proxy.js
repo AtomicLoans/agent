@@ -4,10 +4,7 @@ const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
 const BN = require('bignumber.js')
 const toSecs = require('@mblackmblack/to-seconds')
-const bitcoin = require('bitcoinjs-lib')
-const { ensure0x, remove0x } = require('@liquality/ethereum-utils')
 const { generateMnemonic } = require('bip39')
-const { sha256 } = require('@liquality/crypto')
 const { sleep } = require('@liquality/utils')
 const isCI = require('is-ci')
 
@@ -83,8 +80,6 @@ function testProxy (web3Chain, ethNode, btcChain) {
       // console.log('test', test)
 
       // console.log('test._address', test._address)
-
-      
 
       // deploy proxy and create fund in the process
       // -> send API request to funds / new with proxy address after 10 block confirmations

@@ -196,7 +196,7 @@ LoanSchema.methods.json = function () {
 LoanSchema.methods.setAgentAddresses = async function () {
   if (this.lenderPrincipalAddress) throw new Error('Address exists')
 
-  const loanMarket = await LoanMarket.find({ principal: this.principal, collateral: this.collateral }).exec()
+  const loanMarket = await LoanMarket.findOne({ principal: this.principal, collateral: this.collateral }).exec()
   const { principalAddress } = await loanMarket.getAgentAddresses()
 
   const collateralAddresses = await this.collateralClient().wallet.getAddresses()

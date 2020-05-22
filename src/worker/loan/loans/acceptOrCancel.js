@@ -9,10 +9,9 @@ const Secret = require('../../../models/Secret')
 const HotColdWalletProxy = require('../../../models/HotColdWalletProxy')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
-const { isProxyEnabled } = require('../../../utils/proxyEnabled')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
-const { isArbiter } = require('../../../utils/env')
+const { isArbiter, isProxyEnabled } = require('../../../utils/env')
 const getMailer = require('../utils/mailer')
 const { isCollateralRequirementsSatisfied } = require('../utils/collateral')
 const handleError = require('../../../utils/handleError')
@@ -82,7 +81,7 @@ function defineLoanAcceptOrCancelJobs (agenda) {
           const { contractAddress } = hotColdWalletProxy
 
           const proxy = getObject('hotcoldwallet', contractAddress)
-          const proxyTxData = proxy.methods.loans(txData).encodeABI()
+          const proxyTxData = proxy.methods.callLoans(txData).encodeABI()
 
           ethTx = await setTxParams(proxyTxData, ensure0x(principalAgentAddress), contractAddress, loan)
         } else {

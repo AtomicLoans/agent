@@ -38,10 +38,10 @@ function defineLoanStatusJobs (agenda) {
       for (let i = 0; i < loanMarkets.length; i++) {
         const loanMarket = loanMarkets[i]
 
-        const { principalAddress } = await loanMarket.getAgentAddresses()
+        const { principalAddress, proxyEnabled, principalAgentAddress } = await loanMarket.getAgentAddresses()
 
         if (principalAddress) {
-          const ethBalance = await web3().eth.getBalance(principalAddress)
+          const ethBalance = await web3().eth.getBalance(principalAgentAddress)
 
           if (ethBalance > 0) {
             const { principal, collateral } = loanMarket
@@ -50,7 +50,9 @@ function defineLoanStatusJobs (agenda) {
             const sales = getObject('sales', principal)
 
             if (!isArbiter()) {
-              await approveTokens(loanMarket, agenda)
+              if (!proxyEnabled) {
+                await approveTokens(loanMarket, agenda)
+              }
 
               const fundModel = await Fund.findOne({ principal }).exec()
               if (!fundModel) {

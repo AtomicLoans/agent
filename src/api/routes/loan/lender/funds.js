@@ -10,10 +10,9 @@ const { getObject } = require('../../../../utils/contracts')
 const { getInterval } = require('../../../../utils/intervals')
 const { getEthSigner } = require('../../../../utils/address')
 const { getEndpoint } = require('../../../../utils/endpoints')
-const { numToBytes32 } = require('../../../../utils/finance')
 
-const web3 = require('../../../../utils/web3')
-const { hexToNumber } = web3().utils
+const web3 = require('web3')
+const { hexToNumber } = web3.utils
 
 function defineFundsRouter (router) {
   router.get('/funds/:fundModelId', asyncHandler(async (req, res, next) => {
@@ -124,6 +123,8 @@ function defineFundsRouter (router) {
         const proxyModel = HotColdWalletProxy.fromWalletAddresses(proxyParams)
 
         await agenda.schedule(getInterval('ACTION_INTERVAL'), 'notify-arbiter')
+
+        fund.fundId = hexToNumber(await funds.methods.fundOwner(proxyAddress).call())
 
         await proxyModel.save()
         await fund.save()

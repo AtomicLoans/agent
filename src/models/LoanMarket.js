@@ -6,7 +6,7 @@ const web3 = require('../utils/web3')
 
 const HotColdWalletProxy = require('../models/HotColdWalletProxy')
 
-const { HOT_COLD_WALLET_PROXY_ENABLED } = process.env
+const { HOT_COLD_WALLET_PROXY_ENABLED, HOT_COLD_WALLET_PROXY_ENABLED_ARBITER, PARTY } = process.env
 
 const LoanMarketSchema = new mongoose.Schema({
   principal: {
@@ -90,14 +90,15 @@ LoanMarketSchema.methods.collateralClient = function () {
 LoanMarketSchema.methods.getAgentAddresses = async function () {
   const principalHotAddresses = await web3().currentProvider.getAddresses()
   const collateralAddresses = await this.collateralClient().wallet.getAddresses()
+  const proxyEnabled = (PARTY === 'arbiter' ? HOT_COLD_WALLET_PROXY_ENABLED_ARBITER : HOT_COLD_WALLET_PROXY_ENABLED) === 'true'
 
   const agentAddresses = {
     collateralAddress: collateralAddresses[0].address,
     collateralPublicKey: collateralAddresses[0].publicKey.toString('hex'),
-    proxyEnabled: HOT_COLD_WALLET_PROXY_ENABLED
+    proxyEnabled
   }
 
-  if (HOT_COLD_WALLET_PROXY_ENABLED) {
+  if (proxyEnabled) {
     agentAddresses.principalHotAddress = checksumEncode(principalHotAddresses[0])
     agentAddresses.principalAgentAddress = checksumEncode(principalHotAddresses[0])
 
