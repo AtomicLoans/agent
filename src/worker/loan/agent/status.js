@@ -88,16 +88,27 @@ function defineAgentStatusJobs (agenda) {
           console.log('principalAddress', principalAddress)
           console.log('collateralPublicKey', collateralPublicKey)
 
-          agent.markets[`${loanMarket.principal.toLowerCase()}PrincipalAddress`] = principalAddress
-
-          agent.principalAgentAddress = principalAgentAddress
           agent.collateralPublicKey = collateralPublicKey
 
           let agentAddress
           if (proxyEnabled) {
             agentAddress = principalAgentAddress
+            agent.principalAgentAddress = principalAgentAddress
+
+            let found = false
+            for (let i = 0; i < agent.principalAddresses.length; i++) {
+              if (agent.principalAddresses[i].principal === principal) {
+                found = true
+              }
+            }
+            if (!found) {
+              const currentPrincipalAddresses = agent.principalAddresses
+              currentPrincipalAddresses.push({ principal, collateral, principalAddress })
+              agent.principalAddress = currentPrincipalAddresses
+            }
           } else {
             agentAddress = principalAddress
+            agent.principalAgentAddress = principalAddress
           }
 
           const ethBalance = await web3().eth.getBalance(agentAddress)
