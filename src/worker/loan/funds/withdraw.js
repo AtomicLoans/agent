@@ -1,8 +1,14 @@
+const log = require('@mblackmblack/node-pretty-log')
+const { ensure0x } = require('@liquality/ethereum-utils')
+
 const Fund = require('../../../models/Fund')
 const EthTx = require('../../../models/EthTx')
+const LoanMarket = require('../../../models/LoanMarket')
 const Withdraw = require('../../../models/Withdraw')
 const AgendaJob = require('../../../models/AgendaJob')
+const HotColdWalletProxy = require('../../../models/HotColdWalletProxy')
 const { getObject, getContract } = require('../../../utils/contracts')
+const { isProxyEnabled } = require('../../../utils/env')
 const { getInterval } = require('../../../utils/intervals')
 const { getEthSigner } = require('../../../utils/address')
 const { numToBytes32 } = require('../../../utils/finance')
@@ -26,6 +32,11 @@ function defineFundWithdrawJobs (agenda) {
     if (!fund) return console.log('Error: Fund not found')
 
     const { principal, fundId } = fund
+
+    const loanMarket = await LoanMarket.findOne({ principal }).exec()
+    if (!loanMarket) return log('error', `Request Loan Job | Loan Market not found with principal: ${principal}`)
+    const { principalAgentAddress } = await loanMarket.getAgentAddresses()
+
     const unit = currencies[principal].unit
     const funds = getObject('funds', principal)
     const { lenderAddress } = await getFundParams(fund)
@@ -33,7 +44,18 @@ function defineFundWithdrawJobs (agenda) {
 
     const txData = funds.methods.withdrawTo(numToBytes32(fundId), toWei(amountToWithdraw.toString(), unit), address).encodeABI()
 
-    const ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
+    let ethTx
+    if (isProxyEnabled()) {
+      const hotColdWalletProxy = await HotColdWalletProxy.findOne({ principal }).exec()
+      const { contractAddress } = hotColdWalletProxy
+
+      const proxy = getObject('hotcoldwallet', contractAddress)
+      const proxyTxData = proxy.methods.callFunds(txData).encodeABI()
+
+      ethTx = await setTxParams(proxyTxData, ensure0x(principalAgentAddress), contractAddress, fund)
+    } else {
+      ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
+    }
 
     const withdraw = Withdraw.fromTxParams({ fundModelId, fundId, amount: amountToWithdraw, ethTxId: ethTx.id })
     await withdraw.save()

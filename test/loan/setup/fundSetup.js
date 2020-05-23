@@ -25,7 +25,7 @@ const arbiterServer = 'http://localhost:3032/api/loan'
 
 async function createCustomFund (web3Chain, arbiterChain, amount, principal) {
   const { body: loanMarkets } = await chai.request(server).get('/loanmarketinfo')
-  const { body: { principalAddress, proxyEnabled, principalAgentAddress } } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
+  const { body: { proxyEnabled, principalAgentAddress } } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
 
   await chains.ethereumWithNode.client.chain.sendTransaction(principalAgentAddress, toWei('0.2', 'ether'))
 
@@ -39,10 +39,6 @@ async function createCustomFund (web3Chain, arbiterChain, amount, principal) {
 
   if (proxyEnabled) {
     const funds = await getTestObject(web3Chain, 'funds', principal)
-    console.log('funds', funds)
-    console.log('funds.methods', funds.methods)
-    console.log('funds.methods.createCustom', funds.methods.createCustom)
-    console.log('fundParams', fundParams)
 
     const arbiterAddress = await getAgentAddress(arbiterServer)
     const agentAddress = await getAgentAddress(server)

@@ -4,9 +4,11 @@ const log = require('@mblackmblack/node-pretty-log')
 const Loan = require('../../../models/Loan')
 const Sale = require('../../../models/Sale')
 const LoanMarket = require('../../../models/LoanMarket')
+const HotColdWalletProxy = require('../../../models/HotColdWalletProxy')
 const { numToBytes32 } = require('../../../utils/finance')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
+const { isProxyEnabled } = require('../../../utils/env')
 const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
 const handleError = require('../../../utils/handleError')
 const getMailer = require('../utils/mailer')
@@ -21,7 +23,12 @@ function defineSalesAcceptJobs (agenda) {
     const sale = await Sale.findOne({ _id: saleModelId }).exec()
     if (!sale) return log('error', `Accept Sale Job | Fund not found with Fund Model ID: ${saleModelId}`)
 
-    const { claimTxHash, saleId, principal } = sale
+    const { claimTxHash, saleId, principal, collateral } = sale
+
+    const loanMarket = await LoanMarket.findOne({ principal }).exec()
+    if (!loanMarket) return log('error', `Accept Sale Job | Loan Market not found with principal: ${principal}`)
+    const { principalAddress, principalAgentAddress } = await loanMarket.getAgentAddresses()
+
     const sales = getObject('sales', principal)
     const { accepted, off } = await sales.methods.sales(numToBytes32(saleId)).call()
 
@@ -42,7 +49,6 @@ function defineSalesAcceptJobs (agenda) {
         done()
       } else {
         log('info', `Accept Sale Job | Sale Model ID: ${saleModelId} | Collateral needs to be reverted`)
-        // TODO: revert liquidation
       }
     } else {
       const claimTx = await sale.collateralClient().getMethod('getTransactionByHash')(claimTxHash)
@@ -56,10 +62,21 @@ function defineSalesAcceptJobs (agenda) {
 
       const txData = sales.methods.provideSecretsAndAccept(numToBytes32(saleId), [ensure0x(secretB), ensure0x(secretC), ensure0x(secretD)]).encodeABI()
 
-      const loanMarket = await LoanMarket.findOne({ principal }).exec()
-      const { principalAddress } = await loanMarket.getAgentAddresses()
+      let ethTx
+      if (isProxyEnabled()) {
+        const hotColdWalletProxy = await HotColdWalletProxy.findOne({ principal, collateral }).exec()
+        const { contractAddress } = hotColdWalletProxy
 
-      const ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('sales', principal), sale)
+        const proxy = getObject('hotcoldwallet', contractAddress)
+        const proxyTxData = proxy.methods.callSales(txData).encodeABI()
+
+        ethTx = await setTxParams(proxyTxData, ensure0x(principalAgentAddress), contractAddress, sale)
+      } else {
+        ethTx = await setTxParams(txData, ensure0x(principalAddress), getContract('sales', principal), sale)
+      }
+
+      await ethTx.save()
+
       await sendTransaction(ethTx, sale, agenda, done, txSuccess, txFailure)
     }
   })

@@ -7,9 +7,9 @@ function isArbiter () {
 
 function isProxyEnabled () {
   if (process.env.PARTY === 'arbiter') {
-    return process.env.HOT_COLD_WALLET_PROXY_ENABLED_ARBITER
+    return process.env.HOT_COLD_WALLET_PROXY_ENABLED_ARBITER === 'true'
   } else {
-    return process.env.HOT_COLD_WALLET_PROXY_ENABLED
+    return process.env.HOT_COLD_WALLET_PROXY_ENABLED === 'true'
   }
 }
 

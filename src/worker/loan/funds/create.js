@@ -50,7 +50,7 @@ function defineFundCreateJobs (agenda) {
         const proxy = getObject('hotcoldwallet', contractAddress)
         const proxyTxData = proxy.methods.callFunds(txData).encodeABI()
 
-        ethTx = await setTxParams(proxyTxData, ensure0x(principalAgentAddress), contractAddress, loan)
+        ethTx = await setTxParams(proxyTxData, ensure0x(principalAgentAddress), contractAddress, fund)
       } else {
         ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
       }

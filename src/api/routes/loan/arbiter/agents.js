@@ -30,8 +30,6 @@ function defineAgentsRouter (router) {
 
     try {
       const { status, data: loanMarkets } = await axios.get(`${url}/loanmarketinfo`)
-      console.log('status', status)
-      console.log('loanMarkets', loanMarkets)
 
       if (status === 200) {
         for (const loanMarket of loanMarkets) {
@@ -39,7 +37,6 @@ function defineAgentsRouter (router) {
 
           const { data: agent } = await axios.get(`${url}/agentinfo/${loanMarket.id}`)
           const { data: { version } } = await axios.get(`${url}/version`)
-          console.log('agent', agent)
 
           const { principalAddress: loanMarketPrincipalAddress } = agent
           if (proxyEnabled) {

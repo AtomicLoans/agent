@@ -77,6 +77,14 @@ async function getAgentAddresses (server) {
   return { principalAddress: checksumEncode(principalAgentAddress), collateralAddress, collateralPublicKey }
 }
 
+async function getAgentInfo (server) {
+  const { body: loanMarkets } = await chai.request(server).get('/loanmarketinfo')
+  const { body: addresses } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
+  const { principalAddress, principalAgentAddress, collateralAddress, collateralPublicKey, proxyEnabled } = addresses
+
+  return { principalAddress: checksumEncode(principalAddress), principalAgentAddress: checksumEncode(principalAgentAddress), collateralAddress, collateralPublicKey, proxyEnabled }
+}
+
 async function generateSecretHashesArbiter (principal) {
   const address = (await chains.web3WithArbiter.client.currentProvider.getAddresses())[0]
   const { publicKey } = await chains.bitcoinArbiter.client.wallet.getUnusedAddress()
@@ -179,6 +187,7 @@ module.exports = {
   isAgentProxy,
   getAgentAddress,
   getAgentAddresses,
+  getAgentInfo,
   generateSecretHashesArbiter,
   getLockParams,
   getTestContract,

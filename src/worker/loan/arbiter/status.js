@@ -7,7 +7,7 @@ const { getInterval } = require('../../../utils/intervals')
 
 function defineArbiterStatusJobs (agenda) {
   agenda.define('check-arbiter-status', async (job, done) => {
-    log('info', `Check Arbiter Status Job | Starting`)
+    log('info', 'Check Arbiter Status Job | Starting')
 
     const loanMarkets = await LoanMarket.find().exec()
 

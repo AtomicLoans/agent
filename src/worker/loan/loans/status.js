@@ -214,8 +214,6 @@ function defineLoanStatusJobs (agenda) {
                   const token = getObject('erc20', principal)
 
                   const next = await sales.methods.next(numToBytes32(loanId)).call()
-                  console.log('next', next)
-                  console.log('saleModels.length', saleModels.length)
                   if (parseInt(next) !== saleModels.length) {
                     await agenda.now('init-liquidation', { loanModelId: loan.id })
                   } else {
@@ -240,6 +238,16 @@ function defineLoanStatusJobs (agenda) {
                       } else {
                         loan.status = 'LIQUIDATED'
                         await loan.save()
+                      }
+                    } else {
+                      const collateralBlockHeight = await saleModel.collateralClient().getMethod('getBlockHeight')()
+                      const { latestCollateralBlock, claimTxHash, revertTxHash, status } = saleModel
+
+                      if (saleModel && collateralBlockHeight > latestCollateralBlock && !claimTxHash && !revertTxHash) {
+                        agenda.now('verify-collateral-claim', { saleModelId: saleModel.id })
+                      } else if (saleModel && status === 'COLLATERAL_CLAIMED' && claimTxHash) {
+                        console.log('COLLATERAL WAS CLAIMED, SPIN UP JOB TO ACCEPT')
+                        agenda.now('accept-sale', { saleModelId: saleModel.id })
                       }
                     }
                   }
