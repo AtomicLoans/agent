@@ -27,25 +27,30 @@ function defineAgentUpdateJobs (agenda) {
     const { agentModelId, latestVersion } = data
 
     const agent = await Agent.findOne({ _id: agentModelId }).exec()
+    const { status, url } = agent
 
-    try {
-      const { data: { version } } = await axios.get(`${agent.url}/version`)
-      const { data: { autoupdateEnabled } } = await axios.get(`${agent.url}/autoupdate`)
-      if (autoupdateEnabled && compareVersions.compare(version, latestVersion, '<')) {
-        const { data: { principalAddress } } = await axios.get(`${agent.url}/agentinfo/ticker/USDC/BTC`)
-        const timestamp = Math.floor(new Date().getTime() / 1000)
+    if (status === 'ACTIVE') {
+      try {
+        const { data: { version } } = await axios.get(`${url}/version`)
+        const { data: { autoupdateEnabled } } = await axios.get(`${url}/autoupdate`)
+        if (autoupdateEnabled && compareVersions.compare(version, latestVersion, '<')) {
+          const { data: { principalAddress } } = await axios.get(`${url}/agentinfo/ticker/USDC/BTC`)
+          const timestamp = Math.floor(new Date().getTime() / 1000)
 
-        const message = `Arbiter force update ${principalAddress} at ${timestamp}`
-        const signature = await web3().eth.personal.sign(message, (await web3().currentProvider.getAddresses())[0])
+          const message = `Arbiter force update ${principalAddress} at ${timestamp}`
+          const signature = await web3().eth.personal.sign(message, (await web3().currentProvider.getAddresses())[0])
 
-        await axios.post(`${agent.url}/autoupdate`, {
-          signature,
-          message,
-          timestamp
-        })
+          await axios.post(`${url}/autoupdate`, {
+            signature,
+            message,
+            timestamp
+          })
+        }
+      } catch (e) {
+        console.error('Update failed', e)
       }
-    } catch (e) {
-      console.error('Update failed', e)
+    } else {
+      console.log(`Agent ${url} inactive`)
     }
 
     done()
