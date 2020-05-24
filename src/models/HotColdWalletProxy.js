@@ -19,7 +19,8 @@ const HotColdWalletProxySchema = new mongoose.Schema({
   },
   contractAddress: {
     type: String,
-    index: true
+    index: true,
+    unique: true
   },
   status: {
     type: String,
