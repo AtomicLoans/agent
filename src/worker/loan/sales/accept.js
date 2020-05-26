@@ -120,14 +120,27 @@ async function txSuccess (transactionHash, ethTx, instance, agenda) {
 }
 
 async function txFailure (error, instance, ethTx) {
-  const accept = instance
+  const sale = instance
 
-  log('error', `Accept Sale Job | EthTx Model ID: ${ethTx.id} | Tx create failed`)
+  const { saleId, principal } = sale
 
-  accept.status = 'FAILED'
-  await accept.save()
+  const sales = getObject('sales', principal)
+  const { accepted, off } = await sales.methods.sales(numToBytes32(saleId)).call()
 
-  handleError(error)
+  // Should check if sale was already accepted. Only if not accepted should Sale be marked as fail
+  if (accepted === true) {
+    sale.status = 'ACCEPTED'
+  } else if (off === true) {
+    // TODO: check if collateral has actually been reverted
+    sale.status = 'COLLATERAL_REVERTED'
+  } else {
+    log('error', `Accept Sale Job | EthTx Model ID: ${ethTx.id} | Tx create failed`)
+
+    sale.status = 'FAILED'
+    await sale.save()
+
+    handleError(error)
+  }
 }
 
 module.exports = {

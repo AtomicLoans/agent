@@ -1,4 +1,6 @@
 const axios = require('axios')
+const log = require('@mblackmblack/node-pretty-log')
+
 const Sale = require('../../../models/Sale')
 const handleError = require('../../../utils/handleError')
 
@@ -6,7 +8,7 @@ function defineSalesClaimJobs (agenda) {
   agenda.define('verify-collateral-claim', async (job, done) => {
     // THIS JOB IS ONLY DONE BY THE LENDER AGENT
 
-    console.log('verify-collateral-claim')
+    log('info', 'Verify Collateral Claim Job | Starting')
 
     const { data } = job.attrs
     const { saleModelId } = data
