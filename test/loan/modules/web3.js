@@ -71,7 +71,7 @@ describe('Web3 Transaction', () => {
   })
 
   describe('bumpTxFee', () => {
-    it('should increase gasPrice by 1.51', async () => {
+    it('should increase gasPrice by 2', async () => {
       const principal = 'DAI'
       const loanId = 1
 
@@ -96,7 +96,7 @@ describe('Web3 Transaction', () => {
       await bumpTxFee(ethTx)
       const { gasPrice: gasPriceAfter } = ethTx
 
-      expect(gasPriceAfter).to.equal(gasPriceBefore * 1.51)
+      expect(gasPriceAfter).to.equal(gasPriceBefore * 2)
     })
   })
 
