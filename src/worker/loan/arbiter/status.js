@@ -41,9 +41,7 @@ function defineArbiterStatusJobs (agenda) {
           }
         }
 
-        console.log('pubKey', pubKey)
-        if (pubKey === null) {
-          console.log('setting pubkey')
+        if (!pubKey) {
           agenda.now('set-pubkey', { loanMarketId: loanMarket.id })
         }
 

@@ -85,9 +85,6 @@ function defineAgentStatusJobs (agenda) {
 
           const { data: { principalAddress, collateralPublicKey, proxyEnabled, principalAgentAddress } } = await axios.get(`${agent.url}/agentinfo/${loanMarket.id}`)
 
-          console.log('principalAddress', principalAddress)
-          console.log('collateralPublicKey', collateralPublicKey)
-
           agent.collateralPublicKey = collateralPublicKey
 
           let agentAddress
@@ -95,16 +92,21 @@ function defineAgentStatusJobs (agenda) {
             agentAddress = principalAgentAddress
             agent.principalAgentAddress = principalAgentAddress
 
-            let found = false
-            for (let i = 0; i < agent.principalAddresses.length; i++) {
-              if (agent.principalAddresses[i].principal === principal) {
-                found = true
+            if (principalAddress) {
+              let found = false
+              for (let i = 0; i < agent.principalAddresses.length; i++) {
+                if (agent.principalAddresses[i].principal === principal) {
+                  found = true
+                }
               }
-            }
-            if (!found) {
-              const currentPrincipalAddresses = agent.principalAddresses
-              currentPrincipalAddresses.push({ principal, collateral, principalAddress })
-              agent.principalAddress = currentPrincipalAddresses
+              if (!found) {
+                const currentPrincipalAddresses = agent.principalAddresses
+                currentPrincipalAddresses.push({ principal, collateral, principalAddress })
+                agent.principalAddresses = currentPrincipalAddresses
+                if (agent.principalAddress === undefined || agent.principalAddress === 'undefined') { // Set principalAddress to proxy address for backwards compatibility
+                  agent.principalAddress = principalAddress
+                }
+              }
             }
           } else {
             agentAddress = principalAddress

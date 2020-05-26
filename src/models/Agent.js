@@ -51,6 +51,11 @@ const AgentSchema = new mongoose.Schema({
     index: true,
     default: '0.1.17'
   },
+  proxyEnabled: {
+    type: Boolean,
+    index: true,
+    default: false
+  },
   status: {
     type: String,
     enum: ['ACTIVE', 'INACTIVE'],
@@ -78,6 +83,7 @@ AgentSchema.static('fromAgentParams', function (params) {
     collateralPublicKey: params.collateralPublicKey,
     ethBalance: params.ethBalance,
     version: params.version,
+    proxyEnabled: params.proxyEnabled,
     status: 'ACTIVE'
   })
 })

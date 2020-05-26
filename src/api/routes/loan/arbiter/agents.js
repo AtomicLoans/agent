@@ -38,8 +38,8 @@ function defineAgentsRouter (router) {
           const { data: agent } = await axios.get(`${url}/agentinfo/${loanMarket.id}`)
           const { data: { version } } = await axios.get(`${url}/version`)
 
-          const { principalAddress: loanMarketPrincipalAddress } = agent
-          if (proxyEnabled) {
+          const { principalAddress: loanMarketPrincipalAddress, proxyEnabled: agentProxyEnabled } = agent
+          if (agentProxyEnabled) {
             // if proxy is enabled check if principal address is set
             // find agent by url, ethSigner and principalAgentAddress
             if (loanMarketPrincipalAddress) {
@@ -50,7 +50,7 @@ function defineAgentsRouter (router) {
               if (!agentWithUrlExists && !agentWithEthSignerExists && !agentWithPrincipalAgentAddressExists) {
                 // define principal addresses
                 const ethBalance = await web3().eth.getBalance(principalAgentAddress)
-                const params = { ethSigner, principalAddress: loanMarketPrincipalAddress, principalAgentAddress, collateralPublicKey, url, endpoint, ethBalance: fromWei(ethBalance.toString(), 'ether'), version }
+                const params = { ethSigner, principalAddress: loanMarketPrincipalAddress, principalAgentAddress, collateralPublicKey, url, endpoint, ethBalance: fromWei(ethBalance.toString(), 'ether'), version, proxyEnabled: agentProxyEnabled }
                 const agent = Agent.fromAgentParams(params)
 
                 // update agent principalAddresses
@@ -96,11 +96,38 @@ function defineAgentsRouter (router) {
 
                 if (!principalAddressFound) {
                   principalAddresses = principalAddresses.push({ principal, collateral, principalAddress: loanMarketPrincipalAddress })
+                  if (agentModel.principalAddress === undefined || agentModel.principalAddress === 'undefined') { // Set principalAddress to proxy address for backwards compatibility
+                    agentModel.principalAddress = loanMarketPrincipalAddress
+                  }
                 }
 
-                agent.principalAddresses = principalAddresses
-
                 await agentModel.save()
+              }
+            } else {
+              const agentWithUrlExists = await Agent.findOne({ url }).exec()
+              const agentWithEthSignerExists = await Agent.findOne({ ethSigner }).exec()
+              const agentWithPrincipalAgentAddressExists = await Agent.findOne({ principalAgentAddress }).exec()
+
+              if (!agentWithUrlExists && !agentWithEthSignerExists && !agentWithPrincipalAgentAddressExists) {
+                const ethBalance = await web3().eth.getBalance(principalAgentAddress)
+                const params = { ethSigner, principalAddress: undefined, principalAgentAddress, collateralPublicKey, url, endpoint, ethBalance: fromWei(ethBalance.toString(), 'ether'), version, proxyEnabled: agentProxyEnabled }
+                const agent = Agent.fromAgentParams(params)
+                await agent.save()
+              } else if (!agentWithUrlExists && !agentWithEthSignerExists && agentWithPrincipalAgentAddressExists) {
+                agentWithPrincipalAgentAddressExists.url = url
+                agentWithPrincipalAgentAddressExists.ethSigner = ethSigner
+                await agentWithPrincipalAgentAddressExists.save()
+              } else if (!agentWithUrlExists && agentWithEthSignerExists && !agentWithPrincipalAgentAddressExists) {
+                agentWithEthSignerExists.url = url
+                agentWithEthSignerExists.principalAgentAddress = principalAgentAddress
+                agentWithEthSignerExists.collateralPublicKey = collateralPublicKey
+                await agentWithEthSignerExists.save()
+              } else if (agentWithUrlExists && !agentWithEthSignerExists && !agentWithPrincipalAgentAddressExists) {
+                agentWithUrlExists.ethSigner = ethSigner
+                agentWithUrlExists.principalAddress = principalAddress
+                agentWithUrlExists.principalAgentAddress = principalAgentAddress
+                agentWithUrlExists.collateralPublicKey = collateralPublicKey
+                await agentWithUrlExists.save()
               }
             }
           } else {
@@ -110,7 +137,7 @@ function defineAgentsRouter (router) {
 
             if (!agentWithUrlExists && !agentWithEthSignerExists && !agentWithPrincipalAddressExists) {
               const ethBalance = await web3().eth.getBalance(principalAddress)
-              const params = { ethSigner, principalAddress, principalAgentAddress: principalAddress, collateralPublicKey, url, endpoint, ethBalance: fromWei(ethBalance.toString(), 'ether'), version }
+              const params = { ethSigner, principalAddress, principalAgentAddress: principalAddress, collateralPublicKey, url, endpoint, ethBalance: fromWei(ethBalance.toString(), 'ether'), version, proxyEnabled: false }
               const agent = Agent.fromAgentParams(params)
               await agent.save()
             } else if (!agentWithUrlExists && !agentWithEthSignerExists && agentWithPrincipalAddressExists) {
