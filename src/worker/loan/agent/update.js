@@ -1,5 +1,7 @@
 const axios = require('axios')
 const compareVersions = require('compare-versions')
+const log = require('@mblackmblack/node-pretty-log')
+const handleError = require('../../../utils/handleError')
 const Agent = require('../../../models/Agent')
 const web3 = require('../../../utils/web3')
 
@@ -47,7 +49,11 @@ function defineAgentUpdateJobs (agenda) {
           })
         }
       } catch (e) {
-        console.error('Update failed', e)
+        const { url } = e.config
+        const { status, statusText, data: { error: dataError } } = e.response
+
+        log('error', `Update Agent Job | ${url} ${status} ${statusText} | ${dataError}`)
+        handleError(e)
       }
     } else {
       console.log(`Agent ${url} inactive`)
