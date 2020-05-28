@@ -140,7 +140,7 @@
     "keccak256": "^1.0.0",
     "level": "^6.0.0",
     "moment": "^2.24.0",
-    "mongodb": "^3.5.0",
+    "mongodb": "^3.5.8",
     "mongoose": "^5.6.6",
     "mongoose-timestamp": "^0.6.0",
     "mongoose-type-email": "^1.0.12",
