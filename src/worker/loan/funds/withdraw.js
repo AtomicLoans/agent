@@ -112,6 +112,54 @@ function defineFundWithdrawJobs (agenda) {
 
     done()
   })
+
+  agenda.define('fund-lender-withdraw', async (job, done) => {
+    console.log('fund-lender-withdraw')
+    const { data } = job.attrs
+    const { ethTxId, fundId, principal } = data
+
+    const fund = await Fund.findOne({ principal, fundId }).exec()
+    if (!fund) return done()
+    console.log(fund)
+    console.log(ethTxId)
+    if (fund.withdrawTxs.includes(ethTxId.toLowerCase())) return done()
+
+    const tokenTransferData = await getTokenTransferData(ethTxId)
+    console.log(tokenTransferData)
+    if (tokenTransferData) {
+      const { status, address, amount, to } = tokenTransferData
+      if (!status) return done()
+
+      if (address.toLowerCase() !== getContract('erc20', principal).toLowerCase()) return done()
+      if (`0x${to.substr(-40).toLowerCase()}` !== getContract('funds', principal).toLowerCase()) return done()
+
+      const amountInCurrency = BN(amount).dividedBy(currencies[principal].multiplier).toFixed(currencies[principal].decimals)
+      fund.netWithdraw = BN(fund.netWithdraw).plus(amountInCurrency).toFixed(18)
+      fund.withdrawTxs.push(ethTxId.toLowerCase())
+      await fund.save()
+      console.log('Withdraw recorded')
+    } else {
+      console.log('Null receipt failed... attempting again')
+
+      await agenda.schedule('in 4 seconds', 'fund-lender-withdraw', { principal, fundId, ethTxId })
+    }
+    done()
+  })
+}
+
+async function getTokenTransferData (txId) {
+  try {
+    const { logs, status } = await web3().eth.getTransactionReceipt(txId)
+
+    if (status && logs) {
+      const [{ address, data, topics: [, from, to] }] = logs
+      return { status, address, amount: BN(data), from, to }
+    }
+
+    return { status: false }
+  } catch (e) {
+    return null
+  }
 }
 
 async function txSuccess (transactionHash, ethTx, instance, agenda) {

@@ -219,20 +219,28 @@ function defineFundsRouter (router) {
 
     const agenda = req.app.get('agenda')
     const { params, body } = req
-    const { amountToWithdraw, signature, message, timestamp } = body
+    const { principal, fundId } = params
+    const { amountToWithdraw, signature, message, timestamp, ethTxId } = body
 
-    const fund = await Fund.findOne({ principal: params.principal, fundId: params.fundId }).exec()
+    const loanMarket = await LoanMarket.findOne({ principal }).exec()
+    if (!loanMarket) return next(res.createError(401, `LoanMarket not found with ${principal} principal`))
+
+    const fund = await Fund.findOne({ principal, fundId }).exec()
     if (!fund) return next(res.createError(401, 'Fund not found'))
 
-    const { principal } = fund
+    const { proxyEnabled } = await loanMarket.getAgentAddresses()
 
-    try {
-      verifyTimestampedSignature(signature, message, `Withdraw ${amountToWithdraw} ${principal} at ${timestamp}`, timestamp)
-    } catch (e) {
-      return next(res.createError(401, e.message))
+    if (proxyEnabled) {
+      await agenda.now('fund-lender-withdraw', { principal, fundId, ethTxId })
+    } else {
+      try {
+        verifyTimestampedSignature(signature, message, `Withdraw ${amountToWithdraw} ${principal} at ${timestamp}`, timestamp)
+      } catch (e) {
+        return next(res.createError(401, e.message))
+      }
+
+      await agenda.schedule(getInterval('ACTION_INTERVAL'), 'fund-withdraw', { fundModelId: fund.id, amountToWithdraw })
     }
-
-    await agenda.schedule(getInterval('ACTION_INTERVAL'), 'fund-withdraw', { fundModelId: fund.id, amountToWithdraw })
 
     console.log('end /funds/contract/:fundId/withdraw')
 
