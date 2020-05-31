@@ -197,6 +197,7 @@ function defineAgentStatusJobs (agenda) {
           }
         }
       } catch (e) {
+        log('error', `Check Agent Job | Agent Fund | ${e}`)
         handleError(e)
       }
     } else {
