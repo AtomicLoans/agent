@@ -120,6 +120,7 @@ function defineAgentStatusJobs (agenda) {
 
           const ethBalance = await web3().eth.getBalance(agentAddress)
           agent.ethBalance = fromWei(ethBalance.toString(), 'ether')
+          agent.proxyEnabled = proxyEnabled
 
           const funds = getObject('funds', principal)
           const loans = getObject('loans', principal)
@@ -170,6 +171,9 @@ function defineAgentStatusJobs (agenda) {
             agentFund.maxLoanLengthTimestamp = maxLoanLengthTimestamp
             agentFund.ethBalance = fromWei(ethBalance.toString(), 'ether')
             agentFund.status = 'ACTIVE'
+
+            log('info', `Check Agent Job | Agent Fund | Params ${agentFund}`)
+
             await agentFund.save()
           } else {
             const params = {
@@ -186,6 +190,9 @@ function defineAgentStatusJobs (agenda) {
               maxLoanLengthTimestamp
             }
             const newAgentFund = AgentFund.fromAgentFundParams(params)
+
+            log('info', `Check Agent Job | Agent Fund | Params ${newAgentFund}`)
+
             await newAgentFund.save()
           }
         }
