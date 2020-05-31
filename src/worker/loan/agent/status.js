@@ -1,5 +1,6 @@
 const axios = require('axios')
 const BN = require('bignumber.js')
+const log = require('@mblackmblack/node-pretty-log')
 const Agent = require('../../../models/Agent')
 const AgentFund = require('../../../models/AgentFund')
 const Liquidator = require('../../../models/Liquidator')
@@ -50,6 +51,8 @@ function defineAgentStatusJobs (agenda) {
 
       console.log(`${agent.url} status:`, status)
 
+      log('info', `Check Agent Job | Agent Url ${agent.url} | Starting`)
+
       loanMarkets = data
 
       if (!(loanMarkets.length > 0)) {
@@ -79,6 +82,8 @@ function defineAgentStatusJobs (agenda) {
         for (let i = 0; i < loanMarkets.length; i++) {
           const loanMarket = loanMarkets[i]
           const { principal, collateral } = loanMarket
+
+          log('info', `Check Agent Job | Agent Url ${agent.url} | Starting ${principal} Loan Market`)
 
           const multiplier = currencies[principal].multiplier
           const decimals = currencies[principal].decimals
