@@ -174,7 +174,7 @@ function defineAgentStatusJobs (agenda) {
               agentFund.ethBalance = fromWei(ethBalance.toString(), 'ether')
               agentFund.status = 'ACTIVE'
 
-              log('info', `Check Agent Job | Agent Fund | Params ${agentFund}`)
+              log('info', `Check Agent Job | Set Agent Fund ${agentFund.url}`)
 
               await agentFund.save()
             } else {
@@ -193,7 +193,7 @@ function defineAgentStatusJobs (agenda) {
               }
               const newAgentFund = AgentFund.fromAgentFundParams(params)
 
-              log('info', `Check Agent Job | Agent Fund | Params ${newAgentFund}`)
+              log('info', `Check Agent Job | Set Agent Fund ${agent.url}`)
 
               await newAgentFund.save()
             }
