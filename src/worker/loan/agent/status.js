@@ -116,6 +116,7 @@ function defineAgentStatusJobs (agenda) {
           } else {
             agentAddress = principalAddress
             agent.principalAgentAddress = principalAddress
+            agent.principalAddress = principalAddress
           }
 
           const ethBalance = await web3().eth.getBalance(agentAddress)
