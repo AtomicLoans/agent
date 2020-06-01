@@ -1,10 +1,12 @@
 /* eslint-env mocha */
 require('dotenv').config()
+const axios = require('axios')
 const chai = require('chai')
 const mongoose = require('mongoose')
 const BN = require('bignumber.js')
 const toSecs = require('@mblackmblack/to-seconds')
 const { checksumEncode } = require('@liquality/ethereum-utils')
+const { utils: { toWei } } = require('web3')
 
 const { chains } = require('../../common')
 // const { setTxParams, bumpTxFee, sendTransaction } = require('../../../src/worker/loan/utils/web3Transaction')
@@ -71,7 +73,7 @@ describe('Web3 Transaction', () => {
   })
 
   describe('bumpTxFee', () => {
-    it('should increase gasPrice by 1.51', async () => {
+    it('should increase gasPrice by 1.51 or fast price', async () => {
       const principal = 'DAI'
       const loanId = 1
 
@@ -96,7 +98,15 @@ describe('Web3 Transaction', () => {
       await bumpTxFee(ethTx)
       const { gasPrice: gasPriceAfter } = ethTx
 
-      expect(gasPriceAfter).to.equal(gasPriceBefore * 1.51)
+      const { data: gasPricesFromOracle } = await axios('https://www.etherchain.org/api/gasPriceOracle')
+      const { fastest } = gasPricesFromOracle
+      const fastPriceInWei = parseInt(toWei(fastest, 'gwei'))
+
+      if (fastPriceInWei > gasPriceBefore * 1.51) {
+        expect(gasPriceAfter).to.equal(fastPriceInWei)
+      } else {
+        expect(gasPriceAfter).to.equal(gasPriceBefore * 1.51)
+      }
     })
   })
 

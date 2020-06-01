@@ -1,3 +1,7 @@
+## [0.2.0](https://github.com/AtomicLoans/agent/compare/v0.1.59...v0.2.0) - 2020-05-31
+
+- Add hot/cold wallet
+
 ## [0.1.59](https://github.com/AtomicLoans/agent/compare/v0.1.58...v0.1.59) - 2020-04-03
 
 - Add signature checks

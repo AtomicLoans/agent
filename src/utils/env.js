@@ -5,6 +5,14 @@ function isArbiter () {
   return process.env.PARTY === 'arbiter'
 }
 
+function isProxyEnabled () {
+  if (process.env.PARTY === 'arbiter') {
+    return process.env.HOT_COLD_WALLET_PROXY_ENABLED_ARBITER === 'true'
+  } else {
+    return process.env.HOT_COLD_WALLET_PROXY_ENABLED === 'true'
+  }
+}
+
 function rewriteEnv (envFile, key, value) {
   if (fs.existsSync(path.resolve(process.cwd(), envFile))) {
     const env = fs.readFileSync(path.resolve(process.cwd(), envFile), 'utf-8')
@@ -26,6 +34,7 @@ function getEnvTestValue (key) {
 
 module.exports = {
   isArbiter,
+  isProxyEnabled,
   rewriteEnv,
   getEnvTestValue
 }

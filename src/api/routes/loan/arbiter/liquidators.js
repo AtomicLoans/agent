@@ -22,14 +22,10 @@ function defineLiquidatorsRouter (router) {
     }
 
     try {
-      const { status, data: loanMarkets } = await axios.get(`${url}/loanmarketinfo`)
-      console.log('status', status)
-      console.log('loanMarkets', loanMarkets)
+      const { status } = await axios.get(`${url}/loanmarketinfo`)
 
       if (status === 200) {
-        const { data: agent } = await axios.get(`${url}/agentinfo/${loanMarkets[0].id}`)
         const { data: { version } } = await axios.get(`${url}/version`)
-        console.log('agent', agent)
 
         const agentWithUrlExists = await Liquidator.findOne({ url }).exec()
         const agentWithEthSignerExists = await Liquidator.findOne({ ethSigner }).exec()

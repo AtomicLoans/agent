@@ -4,10 +4,13 @@ const log = require('@mblackmblack/node-pretty-log')
 
 const Approve = require('../../../models/Approve')
 const Fund = require('../../../models/Fund')
+const LoanMarket = require('../../../models/LoanMarket')
+const HotColdWalletProxy = require('../../../models/HotColdWalletProxy')
 const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
 const { getFundParams } = require('../utils/fundParams')
+const { isProxyEnabled } = require('../../../utils/env')
 const handleError = require('../../../utils/handleError')
 const web3 = require('../../../utils/web3')
 const { hexToNumber } = web3().utils
@@ -20,8 +23,11 @@ function defineFundCreateJobs (agenda) {
 
     const fund = await Fund.findOne({ _id: fundModelId }).exec()
     if (!fund) return log('error', `Create Fund Job | Fund not found with Fund Model ID: ${fundModelId}`)
+    const { principal, collateral, custom } = fund
 
-    const { principal, custom } = fund
+    const loanMarket = await LoanMarket.findOne({ principal, collateral }).exec()
+    if (!loanMarket) return log('error', `Request Loan Job | Loan Market not found with principal: ${principal}`)
+    const { principalAgentAddress } = await loanMarket.getAgentAddresses()
 
     const approves = await Approve.find({ principal, status: { $nin: ['FAILED'] } }).exec()
 
@@ -36,7 +42,18 @@ function defineFundCreateJobs (agenda) {
         txData = funds.methods.create(...fundParams).encodeABI()
       }
 
-      const ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
+      let ethTx
+      if (isProxyEnabled()) {
+        const hotColdWalletProxy = await HotColdWalletProxy.findOne({ principal, collateral }).exec()
+        const { contractAddress } = hotColdWalletProxy
+
+        const proxy = getObject('hotcoldwallet', contractAddress)
+        const proxyTxData = proxy.methods.callFunds(txData).encodeABI()
+
+        ethTx = await setTxParams(proxyTxData, ensure0x(principalAgentAddress), contractAddress, fund)
+      } else {
+        ethTx = await setTxParams(txData, lenderAddress, getContract('funds', principal), fund)
+      }
 
       fund.ethTxId = ethTx.id
       await fund.save()

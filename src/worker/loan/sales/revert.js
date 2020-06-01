@@ -1,4 +1,5 @@
 const axios = require('axios')
+const log = require('@mblackmblack/node-pretty-log')
 const Sale = require('../../../models/Sale')
 const Loan = require('../../../models/Loan')
 const Agent = require('../../../models/Agent')
@@ -34,7 +35,7 @@ function defineSalesRevertJobs (agenda) {
         const outputs = [{ address: collateralRefundableP2SHAddress }, { address: collateralSeizableP2SHAddress }]
 
         const multisigParams = [lockTxHash, ...swapParams, party, outputs]
-        console.log('multisigParams', multisigParams)
+        log('info', `Revert Init Liquidation Job | Multisig Params ${multisigParams}`)
         const agentSigs = await loan.collateralClient().loan.collateralSwap.multisigWrite(...multisigParams)
 
         const exampleRSSigValue = '0000000000000000000000000000000000000000000000000000000000000000'
@@ -45,9 +46,9 @@ function defineSalesRevertJobs (agenda) {
           seizable: [Buffer.from(agentSigs.seizableSig, 'hex'), Buffer.from(exampleSig, 'hex')]
         }
 
-        console.log('lockTxHash, sigs, ...swapParams, outputs', lockTxHash, sigs, ...swapParams, outputs)
+        log('info', `Revert Init Liquidation Job | Multisig Make Params ${lockTxHash} ${sigs} ${swapParams} ${outputs}`)
         const multisigSendTxRaw = await loan.collateralClient().loan.collateralSwap.multisigMake(lockTxHash, sigs, ...swapParams, outputs)
-        console.log('multisigSendTxRaw', multisigSendTxRaw)
+        log('info', `Revert Init Liquidation Job | multisigSendTxRaw ${multisigSendTxRaw}`)
 
         const multisigSendTx = await loan.collateralClient().getMethod('decodeRawTransaction')(multisigSendTxRaw)
         const multisigSendVouts = multisigSendTx._raw.data.vout
@@ -72,20 +73,26 @@ function defineSalesRevertJobs (agenda) {
 
         try {
           const agent = await Agent.findOne({ principalAddress: lenderPrincipalAddress }).exec()
-          const { url } = agent
 
-          console.log(`${url}/sales/contract/${principal}/${saleId}/revert`)
-          console.log({ principal, saleId, arbiterSigs: agentSigs, refundableAmount, seizableAmount })
-          const { data } = await axios.post(`${url}/sales/contract/${principal}/${saleId}/revert`, { arbiterSigs: agentSigs, refundableAmount, seizableAmount })
-          const { txHash } = data
+          if (agent) {
+            const { url } = agent
 
-          sale.revertTxHash = txHash
-          sale.status = 'COLLATERAL_REVERTING'
-          await sale.save()
+            console.log(`${url}/sales/contract/${principal}/${saleId}/revert`)
+            console.log({ principal, saleId, arbiterSigs: agentSigs, refundableAmount, seizableAmount })
+            const { data } = await axios.post(`${url}/sales/contract/${principal}/${saleId}/revert`, { arbiterSigs: agentSigs, refundableAmount, seizableAmount })
+            const { txHash } = data
 
-          await agenda.schedule(getInterval('CHECK_BTC_TX_INTERVAL'), 'verify-revert-init-liquidation', { saleModelId })
+            sale.revertTxHash = txHash
+            sale.status = 'COLLATERAL_REVERTING'
+            await sale.save()
+
+            await agenda.schedule(getInterval('CHECK_BTC_TX_INTERVAL'), 'verify-revert-init-liquidation', { saleModelId })
+          } else {
+            log('error', `Revert Init Liquidation Job | Agent with principal address ${lenderPrincipalAddress} not found`)
+          }
         } catch (e) {
           console.log('AGENT NOT FOUND OR OFFLINE')
+          log('error', `Revert Init Liquidation Job | ${e}`)
         }
       }
     } catch (e) {

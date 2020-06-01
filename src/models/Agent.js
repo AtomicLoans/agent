@@ -18,6 +18,26 @@ const AgentSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  principalAddresses: [
+    {
+      principal: {
+        type: String,
+        index: true
+      },
+      collateral: {
+        type: String,
+        index: true
+      },
+      principalAddress: {
+        type: String,
+        index: true
+      }
+    }
+  ],
+  principalAgentAddress: {
+    type: String,
+    index: true
+  },
   collateralPublicKey: {
     type: String,
     index: true
@@ -30,6 +50,11 @@ const AgentSchema = new mongoose.Schema({
     type: String,
     index: true,
     default: '0.1.17'
+  },
+  proxyEnabled: {
+    type: Boolean,
+    index: true,
+    default: false
   },
   status: {
     type: String,
@@ -54,9 +79,11 @@ AgentSchema.static('fromAgentParams', function (params) {
     endpoint: params.endpoint,
     url: params.url,
     principalAddress: params.principalAddress,
+    principalAgentAddress: params.principalAgentAddress,
     collateralPublicKey: params.collateralPublicKey,
     ethBalance: params.ethBalance,
     version: params.version,
+    proxyEnabled: params.proxyEnabled,
     status: 'ACTIVE'
   })
 })

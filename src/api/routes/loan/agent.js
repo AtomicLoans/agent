@@ -156,13 +156,13 @@ function defineAgentRoutes (router) {
       const { body } = req
       const { signature, message, timestamp } = body
 
-      const { data: { principalAddress: arbiterAddress } } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/agentinfo/ticker/USDC/BTC`)
+      const { data: { principalAgentAddress: arbiterAddress } } = await axios.get(`${getEndpoint('ARBITER_ENDPOINT')}/agentinfo/ticker/USDC/BTC`)
       const loanMarket = await LoanMarket.findOne().exec()
-      const { principalAddress } = await loanMarket.getAgentAddresses()
+      const { principalAgentAddress } = await loanMarket.getAgentAddresses()
 
       const currentTime = Math.floor(new Date().getTime() / 1000)
       if (!verifySignature(signature, message, arbiterAddress)) return next(res.createError(401, 'Signature verification failed'))
-      if (!(message === `Arbiter force update ${principalAddress} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
+      if (!(message === `Arbiter force update ${principalAgentAddress} at ${timestamp}`)) return next(res.createError(401, 'Message doesn\'t match params'))
       if (!(currentTime <= (timestamp + 60))) return next(res.createError(401, 'Signature is stale'))
       if (!(currentTime >= (timestamp - 120))) return next(res.createError(401, 'Timestamp is too far ahead in the future'))
       if (!(typeof timestamp === 'number')) return next(res.createError(401, 'Timestamp is not a number'))

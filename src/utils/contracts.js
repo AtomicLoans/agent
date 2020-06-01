@@ -14,6 +14,7 @@ schema.ctoken = require('../abi/ctoken')
 schema.medianizer = require('../abi/medianizer')
 schema.oracle = require('../abi/oracle')
 schema.fundoracles = require('../abi/fundoracles')
+schema.hotcoldwallet = require('../abi/hotcoldwallet')
 
 function loadObject (type, address) {
   const web3 = getWeb3()
@@ -21,7 +22,9 @@ function loadObject (type, address) {
 }
 
 function getContract (contract, principal) {
-  if (contract === 'medianizer' || contract === 'fundoracles') {
+  if (contract === 'hotcoldwallet') {
+    return principal
+  } else if (contract === 'medianizer' || contract === 'fundoracles') {
     return addresses[`${contract.toUpperCase()}`]
   } else if (contract === 'erc20' || contract === 'ctoken') {
     const cPrefix = contract === 'ctoken' ? 'C' : ''

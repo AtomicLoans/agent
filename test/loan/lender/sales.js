@@ -195,6 +195,8 @@ function testSales (web3Chain, ethNode, btcChain) {
 
       await checkSaleInitiated(saleId, principal)
 
+      await secondsCountDown(5)
+
       const secretB = await getSecret(server, principal, saleId, 'B')
       const secretC = await getSecret(arbiterServer, principal, saleId, 'C')
       const secretD = liquidatorSecret

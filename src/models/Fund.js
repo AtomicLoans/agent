@@ -93,12 +93,20 @@ const FundSchema = new mongoose.Schema({
     type: [String],
     index: true
   },
+  withdrawTxs: {
+    type: [String],
+    index: true
+  },
   status: {
     type: String,
     enum: ['INITIATED', 'WAITING_FOR_APPROVE', 'CREATING', 'CREATED', 'FAILED'],
     index: true
   },
   netDeposit: {
+    type: Number,
+    default: 0
+  },
+  netWithdraw: {
     type: Number,
     default: 0
   }

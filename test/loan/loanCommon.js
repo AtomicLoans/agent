@@ -43,9 +43,9 @@ async function fundLender () {
 async function fundAgent (server) {
   const { body: loanMarkets } = await chai.request(server).get('/loanmarketinfo')
   const { body: addresses } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
-  const { principalAddress } = addresses
+  const { principalAgentAddress } = addresses
 
-  await chains.ethereumWithNode.client.chain.sendTransaction(principalAddress, toWei('0.2', 'ether'))
+  await chains.ethereumWithNode.client.chain.sendTransaction(principalAgentAddress, toWei('0.2', 'ether'))
 }
 
 async function fundTokens (recipient, amount, principal) {
@@ -55,20 +55,34 @@ async function fundTokens (recipient, amount, principal) {
   await token.methods.transfer(recipient, amount).send({ gas: 100000 })
 }
 
+async function isAgentProxy (server) {
+  const { body: loanMarkets } = await chai.request(server).get('/loanmarketinfo')
+  const { body: { proxyEnabled } } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
+  return proxyEnabled
+}
+
 async function getAgentAddress (server) {
   const { body: loanMarkets } = await chai.request(server).get('/loanmarketinfo')
   const { body: addresses } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
-  const { principalAddress } = addresses
+  const { principalAgentAddress } = addresses
 
-  return checksumEncode(principalAddress)
+  return checksumEncode(principalAgentAddress)
 }
 
 async function getAgentAddresses (server) {
   const { body: loanMarkets } = await chai.request(server).get('/loanmarketinfo')
   const { body: addresses } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
-  const { principalAddress, collateralAddress, collateralPublicKey } = addresses
+  const { principalAgentAddress, collateralAddress, collateralPublicKey } = addresses
 
-  return { principalAddress: checksumEncode(principalAddress), collateralAddress, collateralPublicKey }
+  return { principalAddress: checksumEncode(principalAgentAddress), collateralAddress, collateralPublicKey }
+}
+
+async function getAgentInfo (server) {
+  const { body: loanMarkets } = await chai.request(server).get('/loanmarketinfo')
+  const { body: addresses } = await chai.request(server).get(`/agentinfo/${loanMarkets[0].id}`)
+  const { principalAddress, principalAgentAddress, collateralAddress, collateralPublicKey, proxyEnabled } = addresses
+
+  return { principalAddress: checksumEncode(principalAddress), principalAgentAddress: checksumEncode(principalAgentAddress), collateralAddress, collateralPublicKey, proxyEnabled }
 }
 
 async function generateSecretHashesArbiter (principal) {
@@ -170,8 +184,10 @@ module.exports = {
   fundLender,
   fundAgent,
   fundTokens,
+  isAgentProxy,
   getAgentAddress,
   getAgentAddresses,
+  getAgentInfo,
   generateSecretHashesArbiter,
   getLockParams,
   getTestContract,

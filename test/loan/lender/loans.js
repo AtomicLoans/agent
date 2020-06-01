@@ -5,7 +5,7 @@ const chaiAsPromised = require('chai-as-promised')
 const { generateMnemonic } = require('bip39')
 
 const { chains, importBitcoinAddresses, fundUnusedBitcoinAddress, rewriteEnv } = require('../../common')
-const { fundArbiter, fundAgent, generateSecretHashesArbiter, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, removeFunds, removeLoans, increaseTime, restartJobs, secondsCountDown } = require('../loanCommon')
+const { fundArbiter, fundAgent, generateSecretHashesArbiter, getTestObject, cancelLoans, fundWeb3Address, cancelJobs, removeFunds, removeLoans, increaseTime, restartJobs, secondsCountDown, isAgentProxy } = require('../loanCommon')
 const { providePofAndRequest } = require('./common')
 const { getWeb3Address } = require('../util/web3Helpers')
 const { numToBytes32 } = require('../../../src/utils/finance')
@@ -51,24 +51,28 @@ async function testSetup (web3Chain, btcChain) {
     await chains.bitcoinWithJs.client.chain.generateBlock(101)
   }
 
-  await increaseTime(3600)
-  const address = await getWeb3Address(web3Chain)
-  rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
-  await cancelLoans(web3Chain)
-  await cancelJobs(server)
-  await cancelJobs(arbiterServer)
-  rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
-  await removeFunds()
-  await removeLoans()
-  await fundAgent(server)
-  await fundArbiter()
-  await generateSecretHashesArbiter('USDC')
+  if (!isAgentProxy(server)) {
+    await increaseTime(3600)
+    const address = await getWeb3Address(web3Chain)
+    rewriteEnv('.env', 'METAMASK_ETH_ADDRESS', address)
+    await cancelLoans(web3Chain)
+    await cancelJobs(server)
+    await cancelJobs(arbiterServer)
+    rewriteEnv('.env', 'MNEMONIC', `"${generateMnemonic(128)}"`)
+    await removeFunds()
+    await removeLoans()
+    await fundAgent(server)
+    await fundArbiter()
+    await generateSecretHashesArbiter('USDC')
+  }
+
   await fundWeb3Address(web3Chain)
   await importBitcoinAddresses(btcChain)
   await fundUnusedBitcoinAddress(btcChain)
   await restartJobs(server)
   await restartJobs(arbiterServer)
   await createCustomFund(web3Chain, arbiterChain, 200, 'USDC') // Create Custom Loan Fund with 200 USDC
+  await increaseTime(5600)
 }
 
 describe('Lender Agent - Loans', () => {

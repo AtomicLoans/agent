@@ -1,5 +1,6 @@
 const axios = require('axios')
 const BN = require('bignumber.js')
+const log = require('@mblackmblack/node-pretty-log')
 const Agent = require('../../../models/Agent')
 const AgentFund = require('../../../models/AgentFund')
 const Liquidator = require('../../../models/Liquidator')
@@ -50,6 +51,8 @@ function defineAgentStatusJobs (agenda) {
 
       console.log(`${agent.url} status:`, status)
 
+      log('info', `Check Agent Job | Agent Url ${agent.url} | Starting`)
+
       loanMarkets = data
 
       if (!(loanMarkets.length > 0)) {
@@ -80,86 +83,124 @@ function defineAgentStatusJobs (agenda) {
           const loanMarket = loanMarkets[i]
           const { principal, collateral } = loanMarket
 
+          log('info', `Check Agent Job | Agent Url ${agent.url} | Starting ${principal} Loan Market`)
+
           const multiplier = currencies[principal].multiplier
           const decimals = currencies[principal].decimals
 
-          const { data: { principalAddress, collateralPublicKey } } = await axios.get(`${agent.url}/agentinfo/${loanMarket.id}`)
+          const { data: { principalAddress, collateralPublicKey, proxyEnabled, principalAgentAddress } } = await axios.get(`${agent.url}/agentinfo/${loanMarket.id}`)
 
-          agent.principalAddress = principalAddress
           agent.collateralPublicKey = collateralPublicKey
 
-          const ethBalance = await web3().eth.getBalance(principalAddress)
-          agent.ethBalance = fromWei(ethBalance.toString(), 'ether')
+          let agentAddress
+          if (proxyEnabled) {
+            agentAddress = principalAgentAddress
+            agent.principalAgentAddress = principalAgentAddress
 
-          const funds = getObject('funds', principal)
-          const loans = getObject('loans', principal)
-          const sales = getObject('sales', principal)
-
-          const fundId = await funds.methods.fundOwner(principalAddress).call()
-          const marketLiquidity = await funds.methods.balance(fundId).call()
-
-          const currentTime = await getCurrentTime()
-          const { maxLoanDur, fundExpiry } = await funds.methods.funds(fundId).call()
-          const maxLoanLengthTimestamp = BN.min(fundExpiry, BN(currentTime).plus(maxLoanDur)).toFixed()
-
-          let borrowed = 0
-          const lenderLoanCount = await loans.methods.lenderLoanCount(principalAddress).call()
-          for (let j = 0; j < lenderLoanCount; j++) {
-            const loanId = await loans.methods.lenderLoans(principalAddress, j).call()
-            const loanPrincipal = await loans.methods.principal(loanId).call()
-            const { sale: loanSale, off: loanOff } = await loans.methods.bools(loanId).call()
-            if (loanSale) {
-              const next = await sales.methods.next(loanId).call()
-              const saleIndexByLoan = next - 1
-              const saleId = await sales.methods.saleIndexByLoan(loanId, saleIndexByLoan).call()
-              const { accepted: saleAccepted } = await sales.methods.sales(saleId).call()
-
-              if (!saleAccepted) {
-                borrowed = BN(borrowed).plus(loanPrincipal)
+            if (principalAddress) {
+              let found = false
+              for (let i = 0; i < agent.principalAddresses.length; i++) {
+                if (agent.principalAddresses[i].principal === principal) {
+                  found = true
+                }
               }
-            } else if (!loanOff) {
-              borrowed = BN(borrowed).plus(loanPrincipal)
+              if (!found) {
+                const currentPrincipalAddresses = agent.principalAddresses
+                currentPrincipalAddresses.push({ principal, collateral, principalAddress })
+                agent.principalAddresses = currentPrincipalAddresses
+                if (agent.principalAddress === undefined || agent.principalAddress === 'undefined') { // Set principalAddress to proxy address for backwards compatibility
+                  agent.principalAddress = principalAddress
+                }
+              }
             }
+          } else {
+            agentAddress = principalAddress
+            agent.principalAgentAddress = principalAddress
+            agent.principalAddress = principalAddress
           }
 
-          const supplied = BN(borrowed).plus(marketLiquidity)
-          const utilizationRatio = supplied.toNumber() === 0 ? 0 : BN(borrowed).dividedBy(supplied).toFixed(4)
+          const ethBalance = await web3().eth.getBalance(agentAddress)
+          agent.ethBalance = fromWei(ethBalance.toString(), 'ether')
+          agent.proxyEnabled = proxyEnabled
 
-          const marketLiquidityFormatted = BN(marketLiquidity).dividedBy(multiplier).toFixed(decimals)
-          const borrowedFormatted = BN(borrowed).dividedBy(multiplier).toFixed(decimals)
-          const suppliedFormatted = BN(supplied).dividedBy(multiplier).toFixed(decimals)
+          if (principalAddress) {
+            const funds = getObject('funds', principal)
+            const loans = getObject('loans', principal)
+            const sales = getObject('sales', principal)
 
-          const agentFund = await AgentFund.findOne({ principal, collateral, principalAddress }).exec()
-          if (agentFund) {
-            agentFund.utilizationRatio = utilizationRatio
-            agentFund.marketLiquidity = marketLiquidityFormatted
-            agentFund.borrowed = borrowedFormatted
-            agentFund.supplied = suppliedFormatted
-            agentFund.fundId = hexToNumber(fundId)
-            agentFund.url = agent.url
-            agentFund.maxLoanLengthTimestamp = maxLoanLengthTimestamp
-            agentFund.ethBalance = fromWei(ethBalance.toString(), 'ether')
-            agentFund.status = 'ACTIVE'
-            await agentFund.save()
-          } else {
-            const params = {
-              principal,
-              collateral,
-              principalAddress,
-              utilizationRatio,
-              fundId: hexToNumber(fundId),
-              url: agent.url,
-              ethBalance: fromWei(ethBalance.toString(), 'ether'),
-              marketLiquidity: marketLiquidityFormatted,
-              borrowed: borrowedFormatted,
-              supplied: suppliedFormatted,
-              maxLoanLengthTimestamp
+            const fundId = await funds.methods.fundOwner(principalAddress).call()
+            const marketLiquidity = await funds.methods.balance(fundId).call()
+
+            const currentTime = await getCurrentTime()
+            const { maxLoanDur, fundExpiry } = await funds.methods.funds(fundId).call()
+            const maxLoanLengthTimestamp = BN.min(fundExpiry, BN(currentTime).plus(maxLoanDur)).toFixed()
+
+            let borrowed = 0
+            const lenderLoanCount = await loans.methods.lenderLoanCount(principalAddress).call()
+            for (let j = 0; j < lenderLoanCount; j++) {
+              const loanId = await loans.methods.lenderLoans(principalAddress, j).call()
+              const loanPrincipal = await loans.methods.principal(loanId).call()
+              const { sale: loanSale, off: loanOff } = await loans.methods.bools(loanId).call()
+              if (loanSale) {
+                const next = await sales.methods.next(loanId).call()
+                const saleIndexByLoan = next - 1
+                const saleId = await sales.methods.saleIndexByLoan(loanId, saleIndexByLoan).call()
+                const { accepted: saleAccepted } = await sales.methods.sales(saleId).call()
+
+                if (!saleAccepted) {
+                  borrowed = BN(borrowed).plus(loanPrincipal)
+                }
+              } else if (!loanOff) {
+                borrowed = BN(borrowed).plus(loanPrincipal)
+              }
             }
-            const newAgentFund = AgentFund.fromAgentFundParams(params)
-            await newAgentFund.save()
+
+            const supplied = BN(borrowed).plus(marketLiquidity)
+            const utilizationRatio = supplied.toNumber() === 0 ? 0 : BN(borrowed).dividedBy(supplied).toFixed(4)
+
+            const marketLiquidityFormatted = BN(marketLiquidity).dividedBy(multiplier).toFixed(decimals)
+            const borrowedFormatted = BN(borrowed).dividedBy(multiplier).toFixed(decimals)
+            const suppliedFormatted = BN(supplied).dividedBy(multiplier).toFixed(decimals)
+
+            const agentFund = await AgentFund.findOne({ principal, collateral, principalAddress }).exec()
+            if (agentFund) {
+              agentFund.utilizationRatio = utilizationRatio
+              agentFund.marketLiquidity = marketLiquidityFormatted
+              agentFund.borrowed = borrowedFormatted
+              agentFund.supplied = suppliedFormatted
+              agentFund.fundId = hexToNumber(fundId)
+              agentFund.url = agent.url
+              agentFund.maxLoanLengthTimestamp = maxLoanLengthTimestamp
+              agentFund.ethBalance = fromWei(ethBalance.toString(), 'ether')
+              agentFund.status = 'ACTIVE'
+
+              log('info', `Check Agent Job | Set Agent Fund ${agentFund.url}`)
+
+              await agentFund.save()
+            } else {
+              const params = {
+                principal,
+                collateral,
+                principalAddress,
+                utilizationRatio,
+                fundId: hexToNumber(fundId),
+                url: agent.url,
+                ethBalance: fromWei(ethBalance.toString(), 'ether'),
+                marketLiquidity: marketLiquidityFormatted,
+                borrowed: borrowedFormatted,
+                supplied: suppliedFormatted,
+                maxLoanLengthTimestamp
+              }
+              const newAgentFund = AgentFund.fromAgentFundParams(params)
+
+              log('info', `Check Agent Job | Set Agent Fund ${agent.url}`)
+
+              await newAgentFund.save()
+            }
           }
         }
       } catch (e) {
+        log('error', `Check Agent Job | Agent Fund | ${e}`)
         handleError(e)
       }
     } else {
