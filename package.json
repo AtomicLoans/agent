@@ -104,7 +104,7 @@
     "@mblackmblack/migrate-mongo": "^6.0.8",
     "@mblackmblack/node-pretty-log": "^1.1.0",
     "@mblackmblack/to-seconds": "^0.1.0",
-    "@sentry/node": "^5.5.0",
+    "@sentry/node": "^5.16.0",
     "@truffle/hdwallet-provider": "^1.0.18",
     "agenda": "^3.0.0",
     "agendash": "^1.0.0",
