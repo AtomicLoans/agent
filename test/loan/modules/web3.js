@@ -5,9 +5,11 @@ const mongoose = require('mongoose')
 const BN = require('bignumber.js')
 const toSecs = require('@mblackmblack/to-seconds')
 const { checksumEncode } = require('@liquality/ethereum-utils')
+const { ensure0x } = require('@liquality/ethereum-utils')
 
 const { chains } = require('../../common')
 // const { setTxParams, bumpTxFee, sendTransaction } = require('../../../src/worker/loan/utils/web3Transaction')
+const txFixtures = require('../fixtures/txFixtures')
 const { setTxParams, bumpTxFee, handleWeb3TransactionError } = require('../../../src/worker/loan/utils/web3Transaction')
 const { getObject } = require('../../../src/utils/contracts')
 const { numToBytes32 } = require('../../../src/utils/finance')
@@ -115,6 +117,56 @@ describe('Web3 Transaction', () => {
       await handleWeb3TransactionError(error, ethTx, null, null, null, null, null)
 
       expect(ethTx.failed).to.equal(true)
+    })
+  })
+
+  describe('replace failed txs', () => {
+    it('should replace txs above current txCount', async () => {
+      const web3WithNode = chains.web3WithNode
+
+      const { address: ethereumWithNodeAddress } = await chains.ethereumWithNode.client.wallet.getUnusedAddress()
+      const address = ensure0x(ethereumWithNodeAddress)
+
+      const hdWalletAddress = await getWeb3Address(chains.web3WithHDWallet)
+      await chains.ethereumWithNode.client.chain.sendTransaction(hdWalletAddress, 1000000000000000)
+
+      let txCount = await web3WithNode.client.eth.getTransactionCount(address)
+      while (txCount < 783) {
+        await chains.ethereumWithNode.client.chain.sendTransaction(hdWalletAddress, 1000000000000000)
+
+        txCount += 1
+      }
+
+      const txs = txFixtures.failedTxs()
+
+      for (const tx of txs) {
+        const ethTx = EthTx.fromTxParams(tx)
+        await ethTx.save()
+      }
+
+      const principal = 'DAI'
+      const loanId = 1
+
+      const loans = getObject('loans', principal)
+
+      const txData = loans.methods.approve(numToBytes32(loanId)).encodeABI()
+      const params = { principal: 'DAI', collateral: 'BTC', principalAmount: BN(10).pow(18).toFixed(), loanDuration: toSecs({ days: 2 }) }
+      const loanMarket = new LoanMarket({ minConf: 1, requestExpiresIn: 600000 })
+      const minCollateralAmount = BN(10).pow(8).toFixed()
+
+      const loan = Loan.fromLoanMarket(loanMarket, params, minCollateralAmount)
+      await loan.save()
+
+      const from = address
+      const to = '0x0000000000000000000000000000000000000000'
+
+      const txParams = await setTxParams(txData, from, to, loan)
+
+      const { nonce } = txParams
+
+      const newTxCount = await web3WithNode.client.eth.getTransactionCount(address)
+
+      expect(nonce).to.equal(newTxCount)
     })
   })
 
