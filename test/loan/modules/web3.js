@@ -132,7 +132,7 @@ describe('Web3 Transaction', () => {
 
       let txCount = await web3WithNode.client.eth.getTransactionCount(address)
       while (txCount < 783) {
-        await chains.ethereumWithNode.client.chain.sendTransaction(hdWalletAddress, 1000000000000000)
+        chains.ethereumWithNode.client.chain.sendTransaction(hdWalletAddress, 1000000000000000)
 
         txCount += 1
       }
@@ -166,7 +166,7 @@ describe('Web3 Transaction', () => {
 
       const newTxCount = await web3WithNode.client.eth.getTransactionCount(address)
 
-      expect(nonce).to.equal(newTxCount)
+      expect(nonce).to.equal(newTxCount + 1)
     })
   })
 
