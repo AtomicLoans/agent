@@ -15,11 +15,9 @@ async function setTxParams (data, from, to, instance) {
 
   let txCount, gasPrice, gasLimit, lastBlock
   try {
-    [txCount, gasPrice, lastBlock] = await Promise.all([
-      web3().eth.getTransactionCount(from),
-      web3().eth.getGasPrice(),
-      web3().eth.getBlock('latest')
-    ])
+    txCount = await web3().eth.getTransactionCount(from)
+    gasPrice = await web3().eth.getGasPrice()
+    lastBlock = await web3().eth.getBlock('latest')
 
     try {
       if (process.env.NODE_ENV === 'test') {
@@ -65,7 +63,7 @@ async function setTxParams (data, from, to, instance) {
     txParams.nonce = txCount
   } else {
     // check to see if any txs have timed out
-    const ethTxsFailed = await EthTx.find({ failed: true, overWritten: false }).sort({ nonce: 'ascending' }).exec()
+    const ethTxsFailed = await EthTx.find({ failed: true, overWritten: false, nonce: { $gte: txCount } }).sort({ nonce: 'ascending' }).exec()
     if (ethTxsFailed.length > 0) {
       const ethTxToReplace = ethTxsFailed[0]
       if (ethTxToReplace.nonce >= txCount) {
