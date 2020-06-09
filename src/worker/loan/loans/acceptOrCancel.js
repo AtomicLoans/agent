@@ -11,8 +11,6 @@ const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
 const { isArbiter } = require('../../../utils/env')
-const getMailer = require('../utils/mailer')
-const { isCollateralRequirementsSatisfied } = require('../utils/collateral')
 const handleError = require('../../../utils/handleError')
 
 function defineLoanAcceptOrCancelJobs (agenda) {
@@ -82,34 +80,20 @@ function defineLoanAcceptOrCancelJobs (agenda) {
 }
 
 async function verifySuccess (instance, agenda, _) {
-  const mailer = getMailer(agenda)
   const loan = instance
 
   const { principal, loanId } = loan
   const loans = getObject('loans', principal)
-  const { approved, paid } = await loans.methods.bools(numToBytes32(loanId)).call()
+  const { paid } = await loans.methods.bools(numToBytes32(loanId)).call()
 
   if (paid) {
     log('success', `Verify Accept Or Cancel Loan Job | Loan Model ID: ${loan.id} | Loan #${loanId} Accepted | TxHash: ${loan.acceptOrCancelTxHash}`)
     loan.status = 'ACCEPTED'
-    mailer.notify(loan.borrowerPrincipalAddress, 'loan-accepted', {
-      loanId: loan.loanId,
-      asset: loan.principal
-    })
+
     await loan.save()
   } else {
     log('success', `Verify Accept Or Cancel Loan Job | Loan Model ID: ${loan.id} | Loan #${loanId} Cancelled | TxHash: ${loan.acceptOrCancelTxHash}`)
     loan.status = 'CANCELLED'
-
-    const collateralRequirementsMet = await isCollateralRequirementsSatisfied(loan)
-
-    mailer.notify(loan.borrowerPrincipalAddress, 'loan-cancelled', {
-      loanId: loan.loanId,
-      asset: loan.principal,
-      approved,
-      collateralRequirementsMet,
-      minCollateralAmount: loan.minimumCollateralAmount
-    })
 
     await loan.save()
   }
