@@ -1,6 +1,5 @@
 const LoanMarket = require('../../../models/LoanMarket')
 const Market = require('../../../models/Market')
-require('../../../models/Email')
 
 async function getMarketModels (principal, collateral) {
   const loanMarket = await LoanMarket.findOne({ principal, collateral }).exec()
