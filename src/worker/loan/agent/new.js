@@ -1,6 +1,7 @@
 const axios = require('axios')
 
 const { getEndpoint } = require('../../../utils/endpoints')
+const AgendaJob = require('../../../models/AgendaJob')
 const LoanMarket = require('../../../models/LoanMarket')
 const { getInterval } = require('../../../utils/intervals')
 const web3 = require('../../../utils/web3')
@@ -39,10 +40,18 @@ function defineNewAgentJobs (agenda) {
       done()
     } catch (e) {
       console.log('`notify-arbiter` failed. Retrying...')
-      agenda.schedule(getInterval('ACTION_INTERVAL'), 'notify-arbiter')
+
+      const alreadyRunningJobs = await AgendaJob.find({ name: 'notify-arbiter', lastRunAt: { $ne: null }, lastFinishedAt: null }).exec()
+      const alreadyQueuedJobs = await AgendaJob.find({ name: 'notify-arbiter', nextRunAt: { $ne: null } }).exec()
+
+      if (alreadyRunningJobs.length <= 1 && alreadyQueuedJobs.length <= 0) {
+        agenda.schedule(getInterval('REQUEUE_NOTIFY_INTERVAL'), 'notify-arbiter')
+      }
+
       console.log(e)
       done(e)
     }
+
     // TODO: verify that this was done correctly, and create an endpoint for checking this
   })
 }

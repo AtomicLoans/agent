@@ -1,8 +1,3 @@
-const axios = require('axios')
-
-const BASE_URL = 'https://api.sendgrid.com/v3'
-const MAIL_SEND_ENDPOINT = '/mail/send'
-
 function defineMailerJobs (agenda) {
   agenda.define('mail-collateral-locked', async (job, done) => {
     const { data } = job.attrs
@@ -110,17 +105,6 @@ function sendEmail (emails, subject, data, templateId) {
   //     template_id: templateId
   //   }
   // })
-}
-
-function getHTTPClient () {
-  const instance = axios.create({
-    baseURL: BASE_URL
-  })
-
-  instance.defaults.headers.common.Authorization = `Bearer ${process.env.SENDGRID_KEY}`
-  instance.defaults.headers.post['Content-Type'] = 'application/json'
-
-  return instance
 }
 
 module.exports = {
