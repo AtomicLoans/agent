@@ -86,30 +86,30 @@ function defineMailerJobs (agenda) {
 }
 
 function sendEmail (emails, subject, data, templateId) {
-  const client = getHTTPClient()
-  client({
-    method: 'post',
-    url: MAIL_SEND_ENDPOINT,
-    data: {
-      personalizations: [
-        {
-          to: emails.map((email) => ({ email })),
-          dynamic_template_data: {
-            subject,
-            ...data
-          }
-        }
-      ],
-      from: {
-        email: 'support@atomicloans.io',
-        name: 'Atomic Loans'
-      },
-      asm: {
-        group_id: parseInt(process.env.SENDGRID_UNSUBSCRIBE_ID)
-      },
-      template_id: templateId
-    }
-  })
+  // const client = getHTTPClient()
+  // client({
+  //   method: 'post',
+  //   url: MAIL_SEND_ENDPOINT,
+  //   data: {
+  //     personalizations: [
+  //       {
+  //         to: emails.map((email) => ({ email })),
+  //         dynamic_template_data: {
+  //           subject,
+  //           ...data
+  //         }
+  //       }
+  //     ],
+  //     from: {
+  //       email: 'support@atomicloans.io',
+  //       name: 'Atomic Loans'
+  //     },
+  //     asm: {
+  //       group_id: parseInt(process.env.SENDGRID_UNSUBSCRIBE_ID)
+  //     },
+  //     template_id: templateId
+  //   }
+  // })
 }
 
 function getHTTPClient () {
