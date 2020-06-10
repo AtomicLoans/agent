@@ -73,7 +73,7 @@ describe('Web3 Transaction', () => {
   })
 
   describe('bumpTxFee', () => {
-    it('should increase gasPrice by 1.51', async () => {
+    it.skip('should increase gasPrice by 1.51', async () => {
       const principal = 'DAI'
       const loanId = 1
 
