@@ -19,16 +19,13 @@ const { getInterval } = require('../../../utils/intervals')
 const { isArbiter } = require('../../../utils/env')
 const { currencies } = require('../../../utils/fx')
 const { getEndpoint } = require('../../../utils/endpoints')
-const moment = require('moment')
-const { getLockArgs, getCollateralAmounts, isCollateralRequirementsSatisfied } = require('../utils/collateral')
-const getMailer = require('../utils/mailer')
+const { getLockArgs, getCollateralAmounts } = require('../utils/collateral')
 const handleError = require('../../../utils/handleError')
 
 const web3 = require('../../../utils/web3')
 const { hexToNumber, fromWei } = web3().utils
 
 function defineLoanStatusJobs (agenda) {
-  const mailer = getMailer(agenda)
   agenda.define('check-loan-statuses-and-update', async (job, done) => {
     log('info', 'Check Loan Statuses and Update Job | Starting')
 
@@ -66,7 +63,7 @@ function defineLoanStatusJobs (agenda) {
 
           for (let j = 0; j < loanModels.length; j++) {
             const loan = loanModels[j]
-            const { loanId, loanExpiration, lastWarningSent } = loan
+            const { loanId } = loan
 
             const { approved, withdrawn, sale, paid, off } = await loans.methods.bools(numToBytes32(loanId)).call()
 
@@ -79,21 +76,6 @@ function defineLoanStatusJobs (agenda) {
             if ((currentTime > (parseInt(approveExpiration) + 79200)) && !withdrawn) {
               log('info', `Check Loan Statuses and Update Job | ${principal} Loan #${loanId} was not withdrawn within 22 hours | Cancelling loan`)
               await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
-            }
-
-            if (isArbiter() && !loan.off && !loan.sale) {
-              // Warn if loan is about to expire in a day
-              if (((Date.now() / 1000) - ((lastWarningSent / 1000) || 0) > 43200) && (currentTime > (parseInt(loanExpiration) - 86400))) {
-                const fromNow = moment().to(moment.unix(parseInt(loanExpiration)), true)
-
-                mailer.notify(loan.borrowerPrincipalAddress, 'loan-expiring', {
-                  loanId: loan.loanId,
-                  asset: loan.principal,
-                  fromNow
-                })
-                loan.lastWarningSent = Date.now()
-                await loan.save()
-              }
             }
 
             if (!approved && !withdrawn && !paid && !sale && !off) {
@@ -131,36 +113,6 @@ function defineLoanStatusJobs (agenda) {
               }
             } else if (withdrawn && !paid && !sale && !off) {
               loan.status = 'WITHDRAWN'
-
-              const alertCollateralAmount = loan.minimumCollateralAmount * 1.1
-
-              const market = await Market.findOne({ from: loan.collateral, to: loan.principal }).exec()
-              const { rate } = market
-
-              if (isArbiter()) {
-                if (((Date.now() / 1000) - ((lastWarningSent / 1000) || 0) > 86400) && loan.collateralAmount < alertCollateralAmount) {
-                  console.log('LIQPRICE-DEBUG:')
-                  console.log('rate:', rate)
-                  console.log('alertCollateralAmount:', alertCollateralAmount)
-                  console.log('minimumCollateralAmount:', loan.minimumCollateralAmount)
-                  console.log('loan.collateralAmount', loan.collateralAmount)
-
-                  const liquidationPrice = BN(loan.minimumCollateralAmount).dividedBy(loan.collateralAmount).times(rate).toFixed(2)
-
-                  if (liquidationPrice > 10000) {
-                    console.log('liqprice error:', liquidationPrice)
-                  } else {
-                    mailer.notify(loan.borrowerPrincipalAddress, 'loan-near-liquidation', {
-                      loanId: loan.loanId,
-                      asset: loan.principal,
-                      liquidation_price: liquidationPrice
-                    })
-                  }
-
-                  loan.lastWarningSent = Date.now()
-                }
-              }
-
               await loan.save()
             } else if (withdrawn && paid && !sale && !off) {
               loan.status = 'REPAID'
@@ -242,32 +194,13 @@ function defineLoanStatusJobs (agenda) {
               }
             } else if (off) {
               if (!paid) {
-                const collateralRequirementsMet = await isCollateralRequirementsSatisfied(loan)
-
-                mailer.notify(loan.borrowerPrincipalAddress, 'loan-cancelled', {
-                  loanId: loan.loanId,
-                  asset: loan.principal,
-                  approved,
-                  collateralRequirementsMet,
-                  minCollateralAmount: loan.minimumCollateralAmount
-                })
                 loan.status = 'CANCELLED'
               } else {
-                mailer.notify(loan.borrowerPrincipalAddress, 'loan-accepted', {
-                  loanId: loan.loanId,
-                  asset: loan.principal
-                })
                 loan.status = 'ACCEPTED'
               }
               await loan.save()
               console.log('LOAN IS ACCEPTED, CANCELLED, OR REFUNDED')
             } else if (approved && loan.status === 'AWAITING_COLLATERAL') {
-              mailer.notify(loan.borrowerPrincipalAddress, 'collateral-locked', {
-                amount: loan.principalAmount,
-                asset: loan.principal,
-                loanId: loan.loanId
-              })
-
               loan.status = 'APPROVED'
               await loan.save()
             }

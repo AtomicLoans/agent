@@ -9,7 +9,6 @@ const { getObject, getContract } = require('../../../utils/contracts')
 const { getInterval } = require('../../../utils/intervals')
 const { setTxParams, sendTransaction } = require('../utils/web3Transaction')
 const handleError = require('../../../utils/handleError')
-const getMailer = require('../utils/mailer')
 
 function defineSalesAcceptJobs (agenda) {
   agenda.define('accept-sale', async (job, done) => {
@@ -66,7 +65,6 @@ function defineSalesAcceptJobs (agenda) {
 }
 
 async function verifySuccess (instance, agenda, _) {
-  const mailer = getMailer(agenda)
   const sale = instance
 
   log('success', `Verify Accept Sale Job | Sale Model ID: ${sale.id} | Tx confirmed and Fund #${sale.saleId} Created | TxHash: ${sale.acceptTxHash}`)
@@ -76,11 +74,6 @@ async function verifySuccess (instance, agenda, _) {
 
   const loan = await Loan.findOne({ _id: sale.loanModelId }).exec()
   if (!loan) return log('error', `Verify Accept Sale Job | Loan not found with Loan Model ID: ${sale.loanModelId}`)
-
-  mailer.notify(loan.borrowerPrincipalAddress, 'loan-liquidated', {
-    loanId: loan.loanId,
-    asset: loan.principal
-  })
 
   loan.status = 'LIQUIDATED'
   await loan.save()
