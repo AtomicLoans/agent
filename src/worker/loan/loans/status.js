@@ -438,10 +438,16 @@ async function updateMinCollateralValues (loanModels, loanMarket) {
 
       const minSeizableCollateralValue = await loans.methods.minSeizableCollateral(numToBytes32(loanId)).call()
 
-      const minCollateralValue = BN(Math.ceil(BN(minSeizableCollateralValue).times(liquidationRatio).toNumber())).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
+      const largeNumber = BN(2).pow(200).minus(1).toFixed()
 
-      loan.minimumCollateralAmount = minCollateralValue
-      await loan.save()
+      if (BN(minSeizableCollateralValue).gt(largeNumber)) {
+        console.log('Oracles not set!')
+      } else {
+        const minCollateralValue = BN(Math.ceil(BN(minSeizableCollateralValue).times(liquidationRatio).toNumber())).dividedBy(currencies[collateral].multiplier).toFixed(currencies[collateral].decimals)
+
+        loan.minimumCollateralAmount = minCollateralValue
+        await loan.save()
+      }
     } catch (e) {
       console.log('Error updateMinCollateralValues:', e)
       handleError(e)
