@@ -109,8 +109,9 @@ function defineLoanStatusJobs (agenda) {
                   await agenda.schedule(getInterval('ACTION_INTERVAL'), 'accept-or-cancel-loan', { loanModelId: loan.id })
                   console.log('accept or cancel 5')
                 } else {
+                  const { NETWORK } = process.env
                   const { collateralRefundableP2SHAddress, collateralSeizableP2SHAddress, refundableCollateralAmount, seizableCollateralAmount } = loan
-                  const minConfirmations = loan.principalAmount >= 1000 ? 3 : 1 // 3 confirmations minimum if loan size is greaer than 1000
+                  const minConfirmations = NETWORK === 'kovan' ? 0 : (loan.principalAmount >= 1000 ? 3 : 1) // 3 confirmations minimum if loan size is greaer than 1000 (or 0 if kovan)
 
                   const [refundableBalance, seizableBalance, refundableUnspent, seizableUnspent] = await Promise.all([
                     loan.collateralClient().chain.getBalance([collateralRefundableP2SHAddress]),
