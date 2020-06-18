@@ -120,7 +120,7 @@ describe('Web3 Transaction', () => {
     })
   })
 
-  describe('replace failed txs', () => {
+  describe.skip('replace failed txs', () => {
     it('should replace txs above current txCount', async () => {
       const web3WithNode = chains.web3WithNode
 
