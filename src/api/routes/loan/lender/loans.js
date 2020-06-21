@@ -135,15 +135,19 @@ function defineLoansRouter (router) {
     if (approved) {
       res.json({ message: 'Loan was already approved', status: 1 })
     } else {
-      const refundableBalance = await loan.collateralClient().chain.getBalance([collateralRefundableP2SHAddress])
-      const seizableBalance = await loan.collateralClient().chain.getBalance([collateralSeizableP2SHAddress])
+      const { NETWORK } = process.env
+      const minConfirmations = NETWORK === 'kovan' ? 0 : (loan.principalAmount >= 1000 ? 3 : 1) // 3 confirmations minimum if loan size is greaer than 1000 (or 0 if kovan)
 
-      const refundableUnspent = await loan.collateralClient().getMethod('getUnspentTransactions')([collateralRefundableP2SHAddress])
-      const seizableUnspent = await loan.collateralClient().getMethod('getUnspentTransactions')([collateralSeizableP2SHAddress])
+      const [refundableBalance, seizableBalance, refundableUnspent, seizableUnspent] = await Promise.all([
+        loan.collateralClient().chain.getBalance([collateralRefundableP2SHAddress]),
+        loan.collateralClient().chain.getBalance([collateralSeizableP2SHAddress]),
+        loan.collateralClient().getMethod('getUnspentTransactions')([collateralRefundableP2SHAddress]),
+        loan.collateralClient().getMethod('getUnspentTransactions')([collateralSeizableP2SHAddress])
+      ])
 
       const collateralRequirementsMet = (refundableBalance.toNumber() >= refundableCollateralAmount && seizableBalance.toNumber() >= seizableCollateralAmount)
-      const refundableConfirmationRequirementsMet = refundableUnspent.length === 0 ? false : refundableUnspent[0].confirmations > 0
-      const seizableConfirmationRequirementsMet = seizableUnspent.length === 0 ? false : seizableUnspent[0].confirmations > 0
+      const refundableConfirmationRequirementsMet = refundableUnspent.length === 0 ? false : refundableUnspent.every(unspent => unspent.confirmations >= minConfirmations)
+      const seizableConfirmationRequirementsMet = seizableUnspent.length === 0 ? false : seizableUnspent.every(unspent => unspent.confirmations >= minConfirmations)
 
       if (collateralRequirementsMet && refundableConfirmationRequirementsMet && seizableConfirmationRequirementsMet) {
         await agenda.now('approve-loan', { loanModelId: loan.id })
