@@ -76,8 +76,12 @@ function defineLoansRouter (router) {
       const loan = await Loan.findOne({ _id: params.loanModelId }).exec()
       if (!loan) return next(res.createError(401, 'Loan not found'))
       const {
-        collateral, principalAmount, minimumCollateralAmount, requestExpiresAt, requestCreatedAt
+        collateral, principalAmount, minimumCollateralAmount, requestExpiresAt, requestCreatedAt, status
       } = loan
+
+      if (status !== 'QUOTE') {
+        return next(res.createError(401, 'Proof of Funds already set'))
+      }
 
       ;['borrowerSecretHashes', 'borrowerCollateralPublicKey', 'borrowerPrincipalAddress'].forEach(key => {
         if (!body[key]) return next(res.createError(401, `${key} is missing`))
@@ -106,6 +110,7 @@ function defineLoansRouter (router) {
       if (!(requestExpiresAt >= currentTime && currentTime >= requestCreatedAt)) return next(res.createError(401, 'Request details provided too late. Please request again'))
 
       await loan.setSecretHashes(collateralAmount)
+      loan.status = 'POF_SET'
 
       await loan.save()
 
