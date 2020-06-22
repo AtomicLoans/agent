@@ -1,3 +1,8 @@
+## [0.1.60](https://github.com/AtomicLoans/agent/compare/v0.1.59...v0.1.60) - 2020-06-21
+
+- Refactor verify jobs for DRY
+- Ensure API for collateral locks checks BTC confs for all utxos
+
 ## [0.1.59](https://github.com/AtomicLoans/agent/compare/v0.1.58...v0.1.59) - 2020-04-03
 
 - Add signature checks
