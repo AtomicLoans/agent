@@ -59,7 +59,7 @@ function defineLoanStatusJobs (agenda) {
             }
           }
 
-          const loanModels = await Loan.find({ principal, status: { $nin: ['QUOTE', 'REQUESTING', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] } })
+          const loanModels = await Loan.find({ principal, status: { $nin: ['QUOTE', 'POF_SET', 'REQUESTING', 'CANCELLING', 'CANCELLED', 'ACCEPTING', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] } })
 
           for (let j = 0; j < loanModels.length; j++) {
             const loan = loanModels[j]
@@ -378,7 +378,7 @@ async function repopulateLenderFund (loanMarket) {
 async function checkCollateralLocked (loanMarket) {
   const { principal } = loanMarket
   const finalLoanModels = await Loan.find({ principal, status: { $in: ['CANCELLED', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] }, collateralLocked: true }).exec()
-  const onGoingLoanModels = await Loan.find({ principal, status: { $nin: ['QUOTE', 'REQUESTING', 'CANCELLED', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] } }).exec()
+  const onGoingLoanModels = await Loan.find({ principal, status: { $nin: ['QUOTE', 'POF_SET', 'REQUESTING', 'CANCELLED', 'ACCEPTED', 'LIQUIDATED', 'FAILED'] } }).exec()
 
   await updateCollateralValues([...finalLoanModels, ...onGoingLoanModels], loanMarket)
 
