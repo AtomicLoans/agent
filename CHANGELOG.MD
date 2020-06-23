@@ -1,3 +1,7 @@
+## [0.1.61](https://github.com/AtomicLoans/agent/compare/v0.1.60...v0.1.61) - 2020-06-22
+
+- Pause new loans
+
 ## [0.1.60](https://github.com/AtomicLoans/agent/compare/v0.1.59...v0.1.60) - 2020-06-21
 
 - Refactor verify jobs for DRY
