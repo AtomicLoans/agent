@@ -109,6 +109,15 @@ function defineAgentsRouter (router) {
     res.json(result.map(r => r.json()))
   }))
 
+  router.get('/agents/funds/:principal/:collateral', asyncHandler(async (req, res, next) => {
+    const { params } = req
+    const { principal, collateral } = params
+
+    const result = await AgentFund.find({ principal, collateral }).exec()
+
+    res.json(result.map(r => r.json()))
+  }))
+
   router.get('/agents/matchfunds/:principal/:collateral', asyncHandler(async (req, res, next) => {
     const { params, query } = req
     const { principal, collateral } = params
